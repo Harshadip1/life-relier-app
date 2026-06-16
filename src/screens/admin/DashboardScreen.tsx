@@ -85,7 +85,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* Recent Bookings */}
-      <SectionHeader title="Recent Bookings" onViewAll={() => {}} />
+      <SectionHeader title="Recent Bookings" onViewAll={() => { }} />
       {DUMMY_BOOKINGS.slice(0, 4).map((b) => (
         <BookingCard key={b.id} booking={b} />
       ))}
