@@ -71,7 +71,7 @@ export default function PatientNavigator() {
         tabBarIcon: ({ color, size, focused }) => {
           let iconName: any;
           if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
-          else if (route.name === 'Reports') iconName = focused ? 'file-text' : 'file-text-outline';
+          else if (route.name === 'Reports') iconName = focused ? 'document-text' : 'document-text-outline';
           else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
           
           return (
