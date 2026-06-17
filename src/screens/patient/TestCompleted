@@ -1,0 +1,12 @@
+// screens/patient/TestsCompletedScreen.tsx
+
+import React from 'react';
+import { View, Text } from 'react-native';
+
+export default function TestsCompletedScreen() {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Tests Completed Screen</Text>
+    </View>
+  );
+}
