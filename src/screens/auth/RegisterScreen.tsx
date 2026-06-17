@@ -13,33 +13,36 @@ const { width, height } = Dimensions.get('window');
 const BG_IMAGE = "https://th.bing.com/th/id/OIP.xl8T2seL8gQkgKz5x3xHWQHaQd?o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3";
 const LOGO_IMAGE = "https://liferelier.com/wp-content/uploads/2023/05/life-relier-logo-transparent.png";
 
-export default function LoginScreen() {
-  const { login } = useAuth();
-  const [username, setUsername] = useState('');
+export default function RegisterScreen() {
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ fullName?: string; email?: string; password?: string }>({});
 
   function validate() {
     const e: typeof errors = {};
-    if (!username.trim()) e.username = 'Username is required';
+    if (!fullName.trim()) e.fullName = 'Full Name is required';
+    if (!email.trim()) e.email = 'Email is required';
     if (!password.trim()) e.password = 'Password is required';
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
-  async function handleLogin() {
+  async function handleRegister() {
     if (!validate()) return;
-    setLoading(true);
-    try {
-      await login({ username: username.trim(), password });
-    } catch (err: any) {
-      Alert.alert('Login Failed', err.message || 'Invalid credentials');
-    } finally {
-      setLoading(false);
+    if (!agreed) {
+      Alert.alert('Agreement Required', 'Please agree to the Terms & Conditions');
+      return;
     }
+    setLoading(true);
+    // Registration logic would go here
+    setTimeout(() => {
+      setLoading(false);
+      Alert.alert('Success', 'Account created successfully!');
+    }, 1500);
   }
 
   return (
@@ -50,13 +53,13 @@ export default function LoginScreen() {
           colors={['rgba(21, 101, 192, 0.4)', 'rgba(106, 27, 154, 0.6)', 'rgba(74, 20, 140, 0.7)']}
           style={styles.gradientOverlay}
         />
-
+        
         <KeyboardAvoidingView
           style={styles.root}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <ScrollView
-            contentContainerStyle={styles.scroll}
+          <ScrollView 
+            contentContainerStyle={styles.scroll} 
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
@@ -67,22 +70,43 @@ export default function LoginScreen() {
                 <Text style={styles.cloudVersion}>( Cloud Version )</Text>
               </View>
 
-              {/* Username Field */}
+              <View style={styles.titleSection}>
+                <Text style={styles.title}>Registration</Text>
+                <View style={styles.titleUnderline} />
+              </View>
+
+              {/* Full Name Field */}
               <View style={styles.inputContainer}>
-                <View style={[styles.inputWrapper, errors.username ? styles.inputError : null]}>
+                <View style={[styles.inputWrapper, errors.fullName ? styles.inputError : null]}>
                   <Ionicons name="person-outline" size={20} color="#FFF" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="Username"
+                    placeholder="Full Name"
                     placeholderTextColor="rgba(255, 255, 255, 0.7)"
-                    value={username}
-                    onChangeText={(t) => { setUsername(t); setErrors((e) => ({ ...e, username: undefined })); }}
-                    autoCapitalize="none"
-                    autoCorrect={false}
+                    value={fullName}
+                    onChangeText={(t) => { setFullName(t); setErrors((e) => ({ ...e, fullName: undefined })); }}
                     editable={!loading}
                   />
                 </View>
-                {errors.username ? <Text style={styles.errorText}>{errors.username}</Text> : null}
+                {errors.fullName ? <Text style={styles.errorText}>{errors.fullName}</Text> : null}
+              </View>
+
+              {/* Email Field */}
+              <View style={styles.inputContainer}>
+                <View style={[styles.inputWrapper, errors.email ? styles.inputError : null]}>
+                  <Ionicons name="mail-outline" size={20} color="#FFF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Email"
+                    placeholderTextColor="rgba(255, 255, 255, 0.7)"
+                    value={email}
+                    onChangeText={(t) => { setEmail(t); setErrors((e) => ({ ...e, email: undefined })); }}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    editable={!loading}
+                  />
+                </View>
+                {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
               </View>
 
               {/* Password Field */}
@@ -109,52 +133,48 @@ export default function LoginScreen() {
                 {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
               </View>
 
-              {/* Login Button */}
+              {/* Terms Checkbox */}
+              <TouchableOpacity 
+                style={styles.termsSection} 
+                onPress={() => setAgreed(!agreed)}
+                activeOpacity={0.5}
+              >
+                <MaterialCommunityIcons 
+                  name={agreed ? "checkbox-marked" : "checkbox-blank-outline"} 
+                  size={20} 
+                  color="#FFF" 
+                />
+                <Text style={styles.termsText}>
+                  I agree to the <Text style={styles.termsLink}>Terms & Conditions</Text>
+                </Text>
+              </TouchableOpacity>
+
+              {/* Register Button */}
               <TouchableOpacity
-                onPress={handleLogin}
+                onPress={handleRegister}
                 disabled={loading}
                 activeOpacity={0.8}
-                style={styles.loginBtnWrapper}
+                style={styles.registerBtnWrapper}
               >
                 <LinearGradient
                   colors={['rgba(138, 43, 226, 0.6)', 'rgba(106, 27, 154, 0.7)']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={styles.loginBtn}
+                  style={styles.registerBtn}
                 >
                   {loading ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.loginBtnText}>Login</Text>
+                    <Text style={styles.registerBtnText}>Register</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
 
-              {/* Remember Me & Forget Password */}
-              <View style={styles.optionsRow}>
-                <TouchableOpacity
-                  style={styles.rememberSection}
-                  onPress={() => setRememberMe(!rememberMe)}
-                  activeOpacity={0.5}
-                >
-                  <MaterialCommunityIcons
-                    name={rememberMe ? "checkbox-marked" : "checkbox-blank-outline"}
-                    size={20}
-                    color="#FFF"
-                  />
-                  <Text style={styles.optionText}>Remember me</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity activeOpacity={0.5}>
-                  <Text style={styles.optionText}>Forget password?</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Register Link */}
-              <View style={styles.registerContainer}>
-                <Text style={styles.noAccountText}>Don't have an account? </Text>
+              {/* Login Link */}
+              <View style={styles.footerContainer}>
+                <Text style={styles.footerText}>Already have an account? </Text>
                 <TouchableOpacity>
-                  <Text style={styles.registerText}>Register</Text>
+                  <Text style={styles.loginLink}>Login</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -188,7 +208,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)', // Reduced opacity for card
     borderRadius: 40,
     paddingHorizontal: 24,
     paddingVertical: 40,
@@ -203,18 +223,34 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 20,
   },
   logo: {
-    width: 220,
-    height: 80,
+    width: 180,
+    height: 65,
     marginBottom: 5,
   },
   cloudVersion: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#FFF',
     fontWeight: '500',
     opacity: 0.8,
+  },
+  titleSection: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#4a148c', // Darker purple title as per image
+    marginBottom: 5,
+  },
+  titleUnderline: {
+    width: 40,
+    height: 3,
+    backgroundColor: '#999',
+    borderRadius: 2,
   },
   inputContainer: {
     width: '100%',
@@ -223,10 +259,10 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)', // Reduced opacity for inputs
     borderRadius: 20,
     paddingHorizontal: 16,
-    height: 58,
+    height: 55,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.15)',
   },
@@ -245,48 +281,49 @@ const styles = StyleSheet.create({
   eyeBtn: {
     padding: 8,
   },
-  loginBtnWrapper: {
+  termsSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 10,
+    marginBottom: 25,
+  },
+  termsText: {
+    color: '#FFF',
+    fontSize: 13,
+    marginLeft: 10,
+    opacity: 0.9,
+  },
+  termsLink: {
+    color: '#007AFF', // Blue link coloration
+    fontWeight: '600',
+  },
+  registerBtnWrapper: {
     width: '100%',
     marginTop: 10,
   },
-  loginBtn: {
-    height: 58,
+  registerBtn: {
+    height: 55,
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loginBtnText: {
+  registerBtnText: {
     color: '#FFF',
     fontSize: 18,
     fontWeight: '700',
   },
-  optionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 20,
-    marginBottom: 35,
-  },
-  rememberSection: {
+  footerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 30,
   },
-  optionText: {
-    color: '#FFF',
-    fontSize: 13,
-    marginLeft: 8,
-    opacity: 0.9,
-  },
-  registerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  noAccountText: {
+  footerText: {
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 14,
   },
-  registerText: {
-    color: '#FFF',
+  loginLink: {
+    color: '#4a148c',
     fontSize: 15,
     fontWeight: '700',
   },
