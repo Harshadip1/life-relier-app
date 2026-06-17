@@ -129,26 +129,27 @@ export default function PatientProfileScreen({ navigation }: any) {
           <Text style={styles.sectionTitle}>Health Summary</Text>
         </View>
         <View style={styles.summaryContainer}>
-          <SummaryCard 
-            icon="file-text-outline" 
-            count="12" 
-            label="Reports Available" 
-            color="#0D9488" 
-            bgColor="#F0FDFA"
+          <SummaryCard
+            icon="file-document-outline"
+            count="12"
+            label="Reports Available"
+            color="#0D9488"
+            bgColor="#CCFBF1"
             onPress={() => navigation.navigate('Reports')}
           />
-          <SummaryCard 
-            icon="beaker-outline" 
-            count="18" 
-            label="Tests Completed" 
-            color="#6366F1" 
+          <SummaryCard
+            icon="beaker-outline"
+            count="18"
+            label="Tests Completed"
+            color="#6366F1"
             bgColor="#EEF2FF"
+            onPress={() => navigation.navigate('TestsCompleted')}
           />
-          <SummaryCard 
-            icon="calendar-outline" 
-            count="2" 
-            label="Active Bookings" 
-            color="#8B5CF6" 
+          <SummaryCard
+            icon="calendar-outline"
+            count="2"
+            label="Active Bookings"
+            color="#8B5CF6"
             bgColor="#F5F3FF"
             onPress={() => navigation.navigate('MyBookings')}
           />
@@ -182,7 +183,6 @@ export default function PatientProfileScreen({ navigation }: any) {
           </View>
         ))}
 
-
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Feather name="log-out" size={20} color={COLORS.danger} />
@@ -206,7 +206,6 @@ function SummaryCard({ icon, count, label, color, bgColor, onPress }: any) {
     </TouchableOpacity>
   );
 }
-
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F9FAFB' },
@@ -327,4 +326,3 @@ const styles = StyleSheet.create({
   },
   logoutText: { fontSize: 16, fontWeight: '700', color: COLORS.danger },
 });
-
