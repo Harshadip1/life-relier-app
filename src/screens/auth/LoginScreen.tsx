@@ -209,6 +209,8 @@ const styles = StyleSheet.create({
     width: 220,
     height: 80,
     marginBottom: 5,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   cloudVersion: {
     fontSize: 18,
