@@ -206,11 +206,11 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logo: {
-    width: 220,
-    height: 80,
-    marginBottom: 5,
+    width: 90,
+    height: 90,
     borderRadius: 16,
     overflow: 'hidden',
+    marginBottom: 5,
   },
   cloudVersion: {
     fontSize: 18,
