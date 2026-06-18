@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 const { width, height } = Dimensions.get('window');
 
 const BG_IMAGE = "https://th.bing.com/th/id/OIP.xl8T2seL8gQkgKz5x3xHWQHaQd?o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3";
-const LOGO_IMAGE = "https://liferelier.com/wp-content/uploads/2023/05/life-relier-logo-transparent.png";
+const LOGO_IMAGE = "https://media.licdn.com/dms/image/v2/D4D0BAQGUElF2YnVswQ/company-logo_200_200/company-logo_200_200/0/1736934578140?e=2147483647&v=beta&t=wFaY-cVe0ezRImOrxBa96UWFWU22-yaskrQZHJArLCM";
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -64,7 +64,7 @@ export default function LoginScreen() {
               {/* Logo Section */}
               <View style={styles.logoSection}>
                 <Image source={{ uri: LOGO_IMAGE }} style={styles.logo} resizeMode="contain" />
-                <Text style={styles.cloudVersion}>( Cloud Version )</Text>
+                <Text style={styles.cloudVersion}>Life Relier</Text>
               </View>
 
               {/* Username Field */}
@@ -211,10 +211,11 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   cloudVersion: {
-    fontSize: 14,
+    fontSize: 18,
     color: '#FFF',
-    fontWeight: '500',
-    opacity: 0.8,
+    fontWeight: '700',
+    opacity: 0.9,
+    marginTop: 8,
   },
   inputContainer: {
     width: '100%',
