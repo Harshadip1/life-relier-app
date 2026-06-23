@@ -35,8 +35,14 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login({ username: username.trim(), password });
+      // Removed Alert to speed up navigation transition
     } catch (err: any) {
-      Alert.alert('Login Failed', err.message || 'Invalid credentials');
+      console.log(err);
+      if (err.message.includes('API') || err.message.includes('network')) {
+        Alert.alert('Error', 'Cannot connect to API');
+      } else {
+        Alert.alert('Error', 'Invalid Username or Password');
+      }
     } finally {
       setLoading(false);
     }

@@ -1,18 +1,18 @@
-export type UserRole = 'admin' | 'patient';
+export type UserRole = 'Admin' | 'Patient' | string;
 
 export interface User {
   id: string;
-  name: string;
-  email: string;
-  role: UserRole;
+  username: string;
+  userType: UserRole;
+  branchID: string;
+  name?: string; // Optional for backward compatibility in UI
+  email?: string;
   phone?: string;
-  address?: string;
-  avatar?: string;
 }
 
 export interface AuthState {
   user: User | null;
-  token: string | null;
+  token?: string | null;
   role: UserRole | null;
   isLoading: boolean;
 }
@@ -23,9 +23,10 @@ export interface LoginCredentials {
 }
 
 export interface AuthResponse {
-  user: User;
-  token: string;
-  role: UserRole;
+  username: string;
+  id: string;
+  userType: UserRole;
+  branchID: string;
 }
 
 export interface BookingItem {

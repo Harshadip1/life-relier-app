@@ -42,9 +42,7 @@ export const BORDER_RADIUS = {
 };
 
 export const STORAGE_KEYS = {
-  AUTH_TOKEN: '@lims_auth_token',
-  USER_DATA: '@lims_user_data',
-  USER_ROLE: '@lims_user_role',
+  USER: '@lims_user',
 };
 
 export const API_BASE_URL = 'https://api.liferelier.com/v1';

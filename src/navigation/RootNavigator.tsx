@@ -17,7 +17,7 @@ export default function RootNavigator() {
     <NavigationContainer>
       {user === null
         ? <AuthNavigator />
-        : role === 'admin'
+        : role?.toLowerCase() === 'admin'
         ? <AdminNavigator />
         : <PatientNavigator />}
     </NavigationContainer>
