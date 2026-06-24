@@ -1,6 +1,6 @@
 import { LoginCredentials, AuthResponse } from '../utils/types';
 
-const API_BASE_URL = 'http://10.45.29.122:5284/api';
+const API_BASE_URL = 'http://10.140.60.46:5284/api';
 
 export async function loginUser(credentials: LoginCredentials): Promise<AuthResponse> {
   const requestBody = {

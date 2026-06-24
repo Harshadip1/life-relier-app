@@ -56,7 +56,7 @@ export default function PatientProfileScreen({ navigation }: any) {
   };
 
   // Safely get user initials
-  const initials = user?.name ? user.name.charAt(0).toUpperCase() : 'I';
+  const initials = (user?.name || user?.username || 'U').charAt(0).toUpperCase();
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 20) }]}>
@@ -78,7 +78,7 @@ export default function PatientProfileScreen({ navigation }: any) {
           </View>
 
           <View style={styles.profileInfo}>
-            <Text style={styles.userName} numberOfLines={1}>{user?.name || 'INTERNSVEDA EDUTECH PVT LTD'}</Text>
+            <Text style={styles.userName} numberOfLines={1}>{user?.name || user?.username || ''}</Text>
             
             <View style={styles.infoRow}>
               <Text style={styles.idLabel}>Patient ID: </Text>

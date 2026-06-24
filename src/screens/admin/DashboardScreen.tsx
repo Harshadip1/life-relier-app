@@ -32,7 +32,7 @@ export default function DashboardScreen() {
       {/* Top Header */}
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.greeting}>{greeting}, {user?.name?.split(' ')[0]} 👋</Text>
+          <Text style={styles.greeting}>{greeting}, {user?.name?.split(' ')[0] || user?.username} 👋</Text>
           <Text style={styles.date}>{dateStr}</Text>
         </View>
         <View style={styles.notifBtn}>

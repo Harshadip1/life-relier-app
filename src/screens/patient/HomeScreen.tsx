@@ -95,7 +95,7 @@ export default function HomeScreen() {
     setTimeout(() => setRefreshing(false), 1200);
   }
 
-  const greetingName = user?.name || 'Ubaid';
+  const greetingName = user?.name || user?.username || 'User';
   const displayDateStr = 'Tuesday, 20 May 2025';
 
   function handleQuickAction(actionId: string) {

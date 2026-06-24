@@ -6,7 +6,10 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../context/AuthContext';
+import { AuthStackParamList } from '../../navigation/AuthNavigator';
 
 const { width, height } = Dimensions.get('window');
 
@@ -15,6 +18,7 @@ const LOGO_IMAGE = "https://media.licdn.com/dms/image/v2/D4D0BAQGUElF2YnVswQ/com
 
 export default function LoginScreen() {
   const { login } = useAuth();
+  const navigation = useNavigation<StackNavigationProp<AuthStackParamList, 'Login'>>();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -159,7 +163,7 @@ export default function LoginScreen() {
               {/* Register Link */}
               <View style={styles.registerContainer}>
                 <Text style={styles.noAccountText}>Don't have an account? </Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('Register')}>
                   <Text style={styles.registerText}>Register</Text>
                 </TouchableOpacity>
               </View>

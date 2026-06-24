@@ -85,7 +85,7 @@ export default function AdminProfileScreen({ navigation }: any) {
             </View>
 
             <View style={styles.profileInfo}>
-              <Text style={styles.userName}>{user?.name || 'Admin User'}</Text>
+              <Text style={styles.userName}>{user?.name || user?.username || ''}</Text>
               <Text style={styles.userEmail}>{user?.email || 'admin@liferelier.com'}</Text>
               
               <View style={styles.idContainer}>

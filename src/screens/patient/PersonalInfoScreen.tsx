@@ -6,8 +6,8 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
 
 export default function PersonalInfoScreen({ navigation }: any) {
   const { user } = useAuth();
-  const [name, setName] = useState(user?.name || 'Ubaid Jasnaik');
-  const [email, setEmail] = useState(user?.email || 'ubaid@example.com');
+  const [name, setName] = useState(user?.name || user?.username || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState('+91 98765 43210');
   const [dob, setDob] = useState('12/05/1995');
   const [gender, setGender] = useState('Male');
