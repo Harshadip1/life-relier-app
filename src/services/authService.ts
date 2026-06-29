@@ -1,19 +1,18 @@
 import { LoginCredentials, AuthResponse } from '../utils/types';
-
-const API_BASE_URL = 'http://10.140.60.46:5284/api';
+import { API_BASE_URL } from '../utils/constants';
 
 export async function loginUser(credentials: LoginCredentials): Promise<AuthResponse> {
   const requestBody = {
-    username: credentials.username,
-    password: credentials.password,
+    UserName: credentials.username,
+    Password: credentials.password,
   };
 
   console.log('--- Login Request ---');
-  console.log('URL:', `${API_BASE_URL}/auth/login`);
+  console.log('URL:', `${API_BASE_URL}/ManageUser/Login`);
   console.log('Body:', JSON.stringify(requestBody, null, 2));
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}/ManageUser/Login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

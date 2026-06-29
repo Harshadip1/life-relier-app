@@ -45,4 +45,4 @@ export const STORAGE_KEYS = {
   USER: '@lims_user',
 };
 
-export const API_BASE_URL = 'https://api.liferelier.com/v1';
+export const API_BASE_URL = 'https://dn8labapi.liferelier.in/api';
