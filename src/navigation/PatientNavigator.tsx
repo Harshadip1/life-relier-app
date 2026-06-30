@@ -9,10 +9,11 @@ import HomeScreen from '../screens/patient/HomeScreen';
 import ServicesScreen from '../screens/patient/ServicesScreen';
 import PatientProfileScreen from '../screens/patient/PatientProfileScreen';
 import PersonalInfoScreen from '../screens/patient/PersonalInfoScreen';
-import MyBookingsScreen from '../screens/patient/MyBookingsScreen';
+import MyBookingsScreen from '../screens/patient/BookingTests';
 import PaymentsScreen from '../screens/patient/PaymentsScreen';
 import ReportsScreen from '../screens/patient/ReportsScreen';
 import ScheduleCollectionScreen from '../screens/patient/ScheduleCollectionScreen';
+import BookAppointmentScreen from '../screens/patient/BookAppointmentScreen';
 
 import { COLORS } from '../utils/constants';
 
@@ -27,6 +28,7 @@ function HomeStack() {
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
       <Stack.Screen name="ScheduleCollection" component={ScheduleCollectionScreen} />
       <Stack.Screen name="Payments" component={PaymentsScreen} />
+      <Stack.Screen name="BookAppointment" component={BookAppointmentScreen} />
     </Stack.Navigator>
   );
 }

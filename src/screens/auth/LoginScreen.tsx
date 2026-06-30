@@ -6,10 +6,14 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+<<<<<<< HEAD
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../context/AuthContext';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
+=======
+import { useAuth } from '../../context/AuthContext';
+>>>>>>> 8be68597c5b7e5bd61e576296b97e322a74a2eb8
 
 const { width, height } = Dimensions.get('window');
 
@@ -163,7 +167,11 @@ export default function LoginScreen() {
               {/* Register Link */}
               <View style={styles.registerContainer}>
                 <Text style={styles.noAccountText}>Don't have an account? </Text>
+<<<<<<< HEAD
                 <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+=======
+                <TouchableOpacity>
+>>>>>>> 8be68597c5b7e5bd61e576296b97e322a74a2eb8
                   <Text style={styles.registerText}>Register</Text>
                 </TouchableOpacity>
               </View>
@@ -309,4 +317,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 5,
   },
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> 8be68597c5b7e5bd61e576296b97e322a74a2eb8
