@@ -22,6 +22,7 @@ const ADMIN_SECTIONS = [
     items: [
       { id: 'inventory', icon: 'box', label: 'Inventory', sublabel: 'Manage lab supplies & kits', type: 'feather' },
       { id: 'billing', icon: 'dollar-sign', label: 'Billing Logs', sublabel: 'View all payment transactions', type: 'feather' },
+      // 👇 This is the button we are wiring up for the new Polyclinic features
       { id: 'doctors', icon: 'heart', label: 'Doctor Registry', sublabel: 'Manage partner physicians', type: 'feather' },
     ]
   },
@@ -48,6 +49,15 @@ export default function AdminProfileScreen({ navigation }: any) {
   const renderIcon = (name: string, type: string, color = COLORS.primary) => {
     if (type === 'feather') return <Feather name={name as any} size={20} color={color} />;
     return <MaterialCommunityIcons name={name as any} size={20} color={color} />;
+  };
+
+  // 👇 Added a dedicated handler to route specific menu items to their new screens
+  const handleMenuPress = (item: any) => {
+    if (item.id === 'doctors') {
+      navigation.navigate('DoctorManagement');
+    } else {
+      Alert.alert('Action', `Opening ${item.label}...`);
+    }
   };
 
   return (
@@ -85,8 +95,8 @@ export default function AdminProfileScreen({ navigation }: any) {
             </View>
 
             <View style={styles.profileInfo}>
-              <Text style={styles.userName}>{user?.name || 'Admin User'}</Text>
-              <Text style={styles.userEmail}>{user?.email || 'admin@liferelier.com'}</Text>
+              <Text style={styles.userName}>{user?.name || 'INTERNSVEDA EDUTECH PVT LTD'}</Text>
+              <Text style={styles.userEmail}>{user?.email || 'admin@internsveda.com'}</Text>
               
               <View style={styles.idContainer}>
                 <Text style={styles.idLabel}>STAFF ID:</Text>
@@ -139,14 +149,15 @@ export default function AdminProfileScreen({ navigation }: any) {
           <View key={sIdx} style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
             <View style={styles.menuCard}>
-              {section.items.map((item, iIdx) => (
+              {section.items.map((item: any, iIdx) => (
                 <TouchableOpacity 
                   key={item.id} 
                   style={[
                     styles.menuItem, 
                     iIdx === section.items.length - 1 && { borderBottomWidth: 0 }
                   ]}
-                  onPress={() => Alert.alert('Action', `Opening ${item.label}...`)}
+                  // 👇 Triggering the new navigation handler here
+                  onPress={() => handleMenuPress(item)}
                 >
                   <View style={[styles.menuIconContainer, { backgroundColor: '#F8FAFC' }]}>
                     {renderIcon(item.icon, item.type, '#4F46E5')}
@@ -310,4 +321,3 @@ const styles = StyleSheet.create({
   },
   logoutText: { fontSize: 16, fontWeight: '700', color: COLORS.danger },
 });
-

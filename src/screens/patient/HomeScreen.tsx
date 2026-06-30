@@ -159,7 +159,7 @@ export default function HomeScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <ScrollView
         style={styles.root}
-        contentContainerStyle={[styles.content, { paddingBottom: 130 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: 30 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
       >
@@ -302,6 +302,22 @@ export default function HomeScreen() {
             ))}
           </View>
         </View>
+
+        {/* ── Consult Doctor Button ── */}
+<TouchableOpacity 
+  style={styles.consultCard} 
+  activeOpacity={0.8}
+  // 👇 Here is exactly where the navigation goes!
+  onPress={() => navigation.navigate('BookAppointment')}
+>
+  <View style={styles.consultCardLeft}>
+    <Text style={styles.consultCardTitle}>Consult a Doctor</Text>
+    <Text style={styles.consultCardSub}>Book a clinic appointment with our top specialists.</Text>
+  </View>
+  <View style={styles.consultIconBox}>
+    <MaterialCommunityIcons name="stethoscope" size={32} color="#0F766E" />
+  </View>
+</TouchableOpacity>
 
         {/* Upcoming Appointment */}
         <SectionHeader title="Upcoming Appointment" />
@@ -1269,4 +1285,43 @@ const styles = StyleSheet.create({
   contactItemText: { fontSize: 12, color: '#64748B', lineHeight: 16 },
   contactItemAction: { alignSelf: 'flex-start', marginTop: 8 },
   contactItemActionText: { color: '#0D9488', fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' },
+
+  consultCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDFA', // Light Teal background
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    marginBottom: 16,
+  },
+  consultCardLeft: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  consultCardTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F766E',
+    marginBottom: 4,
+  },
+  consultCardSub: {
+    fontSize: 12,
+    color: '#115E59',
+    lineHeight: 18,
+  },
+  consultIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#0F766E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
 });

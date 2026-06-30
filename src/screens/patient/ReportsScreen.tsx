@@ -1,386 +1,192 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  SafeAreaView,
-  TextInput,
-  Image,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
-// Assuming you have these constants, otherwise standard values are applied below
-const COLORS = {
-  primary: '#0D9488',
+const THEME = {
+  primary: '#0D9488', // Teal
+  primaryLight: '#F0FDFA',
+  bg: '#FFFFFF',
+  screenBg: '#F8FAFC',
   textPrimary: '#0F172A',
-  textMuted: '#64748B',
-  bgLight: '#FAFAFA',
-  cardBg: '#FFFFFF',
+  textSecondary: '#64748B',
   border: '#E2E8F0',
-  successText: '#16A34A',
-  successBg: '#DCFCE7',
-  warningText: '#D97706',
-  warningBg: '#FEF3C7',
 };
 
-const TABS = ['All', 'Ready', 'Processing', 'Pending'];
+// ─── Dummy Data ───
+const LAB_REPORTS = [
+  { id: 'REP-1029', date: '12 May 2026', title: 'Complete Blood Count (CBC)', lab: 'CityCare Diagnostics', isNew: true },
+  { id: 'REP-0984', date: '01 Apr 2026', title: 'Thyroid Profile (T3, T4, TSH)', lab: 'CityCare Diagnostics', isNew: false },
+  { id: 'REP-0855', date: '15 Jan 2026', title: 'Lipid Profile', lab: 'CityCare Diagnostics', isNew: false },
+];
 
-// Exact data mapping to your UI image
-const MOCK_REPORTS = [
-  {
-    id: '1',
-    testName: 'CBC Report',
-    date: '15 Jun 2026',
-    time: '09:30 AM',
-    status: 'Ready',
-    // Add cbc.png to your assets folder!
-    // icon: require('../../../assets/cbc.png'), 
-  },
-  {
-    id: '2',
-    testName: 'Thyroid Profile',
-    date: '10 Jun 2026',
-    time: '08:45 AM',
-    status: 'Ready',
-    // Add thyroid.png to your assets folder!
-    // icon: require('../../../assets/thyroid.png'),
-  },
-  {
-    id: '3',
-    testName: 'Liver Function Test',
-    date: '08 Jun 2026',
-    time: '11:15 AM',
-    status: 'Processing',
-    // Add liver.png to your assets folder!
-    // icon: require('../../../assets/liver.png'),
-  },
+const PRESCRIPTIONS = [
+  { id: 'RX-8832', date: '10 May 2026', doctor: 'Dr. Rahul Sharma', spec: 'Cardiologist', diagnosis: 'Hypertension Checkup' },
+  { id: 'RX-7441', date: '22 Feb 2026', doctor: 'Dr. Priya Patil', spec: 'General Physician', diagnosis: 'Viral Fever' },
 ];
 
 export default function ReportsScreen({ navigation }: any) {
-  const [activeTab, setActiveTab] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Filter logic (optional, just for completeness)
-  const filteredReports = MOCK_REPORTS.filter((report) => {
-    const matchesTab = activeTab === 'All' || report.status === activeTab;
-    const matchesSearch = report.testName.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
-
-  const renderHeader = () => (
-    <View style={styles.listHeaderContainer}>
-      {/* Search Bar */}
-      <View style={styles.searchBar}>
-        <Feather name="search" size={20} color={COLORS.textMuted} />
-        <TextInput
-          placeholder="Search reports by test name"
-          style={styles.searchInput}
-          placeholderTextColor={COLORS.textMuted}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <TouchableOpacity>
-          <Feather name="sliders" size={20} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        {TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tabPill, activeTab === tab && styles.tabPillActive]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-
-  const renderFooter = () => (
-    <View style={styles.helpBanner}>
-      <View style={styles.helpIconBox}>
-        <MaterialCommunityIcons name="clipboard-text-outline" size={32} color={COLORS.primary} />
-        <View style={styles.helpShieldIcon}>
-          <MaterialCommunityIcons name="shield-check" size={16} color={COLORS.primary} />
-        </View>
-      </View>
-      <View style={styles.helpTextContainer}>
-        <Text style={styles.helpTitle}>Having trouble finding your report?</Text>
-        <Text style={styles.helpDesc}>
-          Reports may take up to 24–48 hours to be processed and made available.
-        </Text>
-      </View>
-      <TouchableOpacity style={styles.helpBtn}>
-        <Text style={styles.helpBtnText}>Contact Lab</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const insets = useSafeAreaInsets();
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('Lab Reports'); 
 
   return (
-    <SafeAreaView style={styles.root}>
-      {/* Top Navigation Bar */}
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
+      
+      {/* ── Header ── */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Reports</Text>
-        <TouchableOpacity style={styles.bellBtn}>
-          <Feather name="bell" size={22} color={COLORS.textPrimary} />
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>3</Text>
-          </View>
+        <Text style={styles.headerTitle}>Medical Records</Text>
+        <TouchableOpacity style={styles.iconBtn}>
+          <Feather name="filter" size={22} color={THEME.textPrimary} />
         </TouchableOpacity>
       </View>
 
-      {/* FlatList for Reports */}
-      <FlatList
-        data={filteredReports}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={renderHeader}
-        ListFooterComponent={renderFooter}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-            
-            {/* Left Icon */}
-            {/* <View style={styles.cardIconBox}>
-              <Image source={item.icon} style={styles.cardImage} resizeMode="contain" />
-            </View> */}
+      {/* ── Search Bar ── */}
+      <View style={styles.searchContainer}>
+        <Feather name="search" size={18} color={THEME.textSecondary} style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder={`Search ${activeTab.toLowerCase()}...`}
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
 
-            {/* Right Content */}
-            <View style={styles.cardBody}>
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.testName}>{item.testName}</Text>
-                <Feather name="chevron-right" size={18} color={COLORS.textMuted} />
-              </View>
+      {/* ── Top Tabs ── */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity 
+          style={[styles.tabBtn, activeTab === 'Lab Reports' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('Lab Reports')}
+        >
+          <MaterialCommunityIcons name="flask-outline" size={18} color={activeTab === 'Lab Reports' ? THEME.primary : THEME.textSecondary} style={{ marginRight: 6 }} />
+          <Text style={[styles.tabText, activeTab === 'Lab Reports' && styles.tabTextActive]}>Lab Reports</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.tabBtn, activeTab === 'Prescriptions' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('Prescriptions')}
+        >
+          <MaterialCommunityIcons name="pill" size={18} color={activeTab === 'Prescriptions' ? THEME.primary : THEME.textSecondary} style={{ marginRight: 6 }} />
+          <Text style={[styles.tabText, activeTab === 'Prescriptions' && styles.tabTextActive]}>Prescriptions</Text>
+        </TouchableOpacity>
+      </View>
 
-              <View style={styles.dateRow}>
-                <Feather name="calendar" size={12} color={COLORS.textMuted} />
-                <Text style={styles.dateText}>
-                  {item.date} • {item.time}
-                </Text>
-              </View>
-
-              <View style={styles.cardActionRow}>
-                {/* Status Badge */}
-                <View
-                  style={[
-                    styles.statusBadge,
-                    item.status === 'Ready' ? styles.statusBadgeReady : styles.statusBadgeProcessing,
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name={item.status === 'Ready' ? 'check-circle' : 'clock-outline'}
-                    size={14}
-                    color={item.status === 'Ready' ? COLORS.successText : COLORS.warningText}
-                  />
-                  <Text
-                    style={[
-                      styles.statusText,
-                      item.status === 'Ready' ? styles.statusTextReady : styles.statusTextProcessing,
-                    ]}
-                  >
-                    {item.status}
-                  </Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        
+        {/* ==============================================
+            VIEW 1: LAB REPORTS
+        ============================================== */}
+        {activeTab === 'Lab Reports' && (
+          <View>
+            {LAB_REPORTS.map(report => (
+              <View key={report.id} style={styles.card}>
+                <View style={styles.cardHeaderFlex}>
+                  <View style={styles.dateBox}>
+                    <Text style={styles.dateMonth}>{report.date.split(' ')[1]}</Text>
+                    <Text style={styles.dateDay}>{report.date.split(' ')[0]}</Text>
+                    <Text style={styles.dateYear}>{report.date.split(' ')[2]}</Text>
+                  </View>
+                  
+                  <View style={styles.reportInfo}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                      <Text style={styles.reportTitle} numberOfLines={1}>{report.title}</Text>
+                      {report.isNew && <View style={styles.newBadge}><Text style={styles.newBadgeText}>NEW</Text></View>}
+                    </View>
+                    <Text style={styles.reportLab}>{report.lab}</Text>
+                    <Text style={styles.reportId}>Report ID: {report.id}</Text>
+                  </View>
                 </View>
 
-                {/* View Report Button - Only show if ready */}
-                {item.status === 'Ready' && (
-                  <TouchableOpacity style={styles.viewReportBtn}>
-                    <Feather name="eye" size={14} color={COLORS.primary} />
-                    <Text style={styles.viewReportText}>View Report</Text>
+                <View style={styles.actionRow}>
+                  <TouchableOpacity style={styles.secondaryBtn}>
+                    <Feather name="share-2" size={16} color={THEME.textSecondary} style={{ marginRight: 6 }} />
+                    <Text style={styles.secondaryBtnText}>Share</Text>
                   </TouchableOpacity>
-                )}
+                  <TouchableOpacity style={styles.primaryBtn}>
+                    <Feather name="download" size={16} color="#FFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.primaryBtnText}>Download PDF</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
+            ))}
+          </View>
         )}
-      />
-    </SafeAreaView>
+
+        {/* ==============================================
+            VIEW 2: PRESCRIPTIONS
+        ============================================== */}
+        {activeTab === 'Prescriptions' && (
+          <View>
+            {PRESCRIPTIONS.map(rx => (
+              <View key={rx.id} style={styles.card}>
+                <View style={styles.cardHeaderFlex}>
+                  <View style={[styles.dateBox, { backgroundColor: '#EEF2FF' }]}>
+                    <Feather name="file-text" size={24} color="#4F46E5" />
+                  </View>
+                  
+                  <View style={styles.reportInfo}>
+                    <Text style={styles.reportTitle}>{rx.diagnosis}</Text>
+                    <Text style={[styles.reportLab, { color: THEME.primary, fontWeight: '600' }]}>{rx.doctor}</Text>
+                    <Text style={styles.reportId}>{rx.date} • {rx.spec}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.actionRow}>
+                  <TouchableOpacity style={[styles.primaryBtn, { width: '100%', backgroundColor: '#EEF2FF' }]}>
+                    <Feather name="eye" size={16} color="#4F46E5" style={{ marginRight: 6 }} />
+                    <Text style={[styles.primaryBtnText, { color: '#4F46E5' }]}>View Prescription</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.bgLight },
+  root: { flex: 1, backgroundColor: THEME.screenBg },
   
-  // Header Styles
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 15,
-    backgroundColor: COLORS.bgLight,
-  },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
-  bellBtn: { position: 'relative', padding: 4 },
-  badge: {
-    position: 'absolute',
-    top: 0,
-    right: 2,
-    backgroundColor: COLORS.primary,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: COLORS.bgLight,
-  },
-  badgeText: { color: '#fff', fontSize: 9, fontWeight: 'bold' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: THEME.textPrimary },
+  iconBtn: { padding: 8, backgroundColor: THEME.bg, borderRadius: 12, borderWidth: 1, borderColor: THEME.border },
 
-  listContent: { paddingHorizontal: 20, paddingBottom: 30 },
-  listHeaderContainer: { marginBottom: 15 },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.bg, marginHorizontal: 20, borderRadius: 12, paddingHorizontal: 14, height: 48, borderWidth: 1, borderColor: THEME.border, marginBottom: 16 },
+  searchIcon: { marginRight: 10 },
+  searchInput: { flex: 1, fontSize: 14, color: THEME.textPrimary },
 
-  // Search Bar
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 50,
-    marginBottom: 20,
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 14,
-    color: COLORS.textPrimary,
-  },
+  tabContainer: { flexDirection: 'row', marginHorizontal: 20, backgroundColor: '#E2E8F0', borderRadius: 12, padding: 4, marginBottom: 16 },
+  tabBtn: { flex: 1, flexDirection: 'row', paddingVertical: 10, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
+  tabBtnActive: { backgroundColor: THEME.bg, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
+  tabText: { fontSize: 13, fontWeight: '600', color: THEME.textSecondary },
+  tabTextActive: { color: THEME.primary },
 
-  // Tabs
-  tabsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  tabPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: COLORS.cardBg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  tabPillActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  tabText: { fontSize: 13, color: COLORS.textMuted, fontWeight: '600' },
-  tabTextActive: { color: '#FFF' },
+  scrollContent: { paddingHorizontal: 20 },
 
-  // Card Styles
-  card: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#F8FAFC',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  cardIconBox: {
-    width: 65,
-    height: 65,
-    borderRadius: 33,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardImage: { width: 40, height: 40 },
+  card: { backgroundColor: THEME.bg, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: THEME.border, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  cardHeaderFlex: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   
-  cardBody: { flex: 1, marginLeft: 16 },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  testName: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    marginBottom: 12,
-    gap: 6,
-  },
-  dateText: { fontSize: 12, color: COLORS.textMuted },
-  
-  cardActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  
-  // Status Badges
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  statusBadgeReady: { backgroundColor: COLORS.successBg },
-  statusBadgeProcessing: { backgroundColor: COLORS.warningBg },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  statusTextReady: { color: COLORS.successText },
-  statusTextProcessing: { color: COLORS.warningText },
+  dateBox: { width: 54, height: 64, backgroundColor: THEME.primaryLight, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 14, borderWidth: 1, borderColor: '#CCFBF1' },
+  dateMonth: { fontSize: 10, fontWeight: '700', color: THEME.primary, textTransform: 'uppercase' },
+  dateDay: { fontSize: 20, fontWeight: '800', color: THEME.primary, marginVertical: -2 },
+  dateYear: { fontSize: 10, fontWeight: '600', color: THEME.primary },
 
-  viewReportBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  viewReportText: { fontSize: 12, fontWeight: '600', color: COLORS.primary },
+  reportInfo: { flex: 1, justifyContent: 'center' },
+  reportTitle: { fontSize: 15, fontWeight: '700', color: THEME.textPrimary, flex: 1 },
+  newBadge: { backgroundColor: '#EF4444', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 8 },
+  newBadgeText: { fontSize: 8, fontWeight: '800', color: '#FFF' },
+  reportLab: { fontSize: 13, color: THEME.textSecondary, marginBottom: 4 },
+  reportId: { fontSize: 11, color: '#94A3B8', fontWeight: '500' },
 
-  // Help Banner
-  helpBanner: {
-    flexDirection: 'row',
-    backgroundColor: '#F0FDFA',
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  helpIconBox: { position: 'relative', width: 40 },
-  helpShieldIcon: {
-    position: 'absolute',
-    bottom: -4,
-    right: 2,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-  },
-  helpTextContainer: { flex: 1, paddingHorizontal: 12 },
-  helpTitle: { fontSize: 13, fontWeight: '700', color: COLORS.primary, marginBottom: 4 },
-  helpDesc: { fontSize: 11, color: COLORS.textMuted, lineHeight: 16 },
-  helpBtn: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  helpBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  actionRow: { flexDirection: 'row', gap: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 16 },
+  secondaryBtn: { flex: 1, flexDirection: 'row', height: 40, borderRadius: 10, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: THEME.border },
+  secondaryBtnText: { color: THEME.textSecondary, fontSize: 13, fontWeight: '600' },
+  primaryBtn: { flex: 1.5, flexDirection: 'row', height: 40, borderRadius: 10, backgroundColor: THEME.primary, alignItems: 'center', justifyContent: 'center' },
+  primaryBtnText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
 });

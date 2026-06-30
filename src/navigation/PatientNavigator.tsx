@@ -3,22 +3,22 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, Dimensions } from 'react-native';
+
 // Import your actual screens
 import HomeScreen from '../screens/patient/HomeScreen';
 import ServicesScreen from '../screens/patient/ServicesScreen';
 import PatientProfileScreen from '../screens/patient/PatientProfileScreen';
 import PersonalInfoScreen from '../screens/patient/PersonalInfoScreen';
-import MyBookingsScreen from '../screens/patient/MyBookingsScreen';
+import MyBookingsScreen from '../screens/patient/BookingTests';
 import PaymentsScreen from '../screens/patient/PaymentsScreen';
 import ReportsScreen from '../screens/patient/ReportsScreen';
 import ScheduleCollectionScreen from '../screens/patient/ScheduleCollectionScreen';
+import BookAppointmentScreen from '../screens/patient/BookAppointmentScreen';
 
 import { COLORS } from '../utils/constants';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
-const screenWidth = Dimensions.get('window').width;
 
 // Stack for Home tab
 function HomeStack() {
@@ -28,6 +28,7 @@ function HomeStack() {
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
       <Stack.Screen name="ScheduleCollection" component={ScheduleCollectionScreen} />
       <Stack.Screen name="Payments" component={PaymentsScreen} />
+      <Stack.Screen name="BookAppointment" component={BookAppointmentScreen} />
     </Stack.Navigator>
   );
 }
@@ -66,26 +67,19 @@ export default function PatientNavigator() {
       return { display: 'none' as const };
     }
 
-    // Exact floating pill styling
+    // ─── STANDARD FLAT TAB BAR ───
     return {
-      position: 'absolute' as const,
-      bottom: 15,          
-      
-      // 👇 THE ULTIMATE FIX: Exact physical pixels instead of percentages
-      width: screenWidth - 40, // Total screen width minus 20px for each side
-      left: 20,                // Push exactly 20px from the left wall
-      
       backgroundColor: '#FFFFFF',
-      borderRadius: 40,    
-      height: 70,          
-      borderTopWidth: 0,   
-      paddingBottom: 0,
-      
-      elevation: 8,
+      height: 65,          
+      borderTopWidth: 1,
+      borderTopColor: '#F1F5F9', // Clean, subtle line separating it from content
+      paddingBottom: 8,          // Slight padding for modern phones
+      paddingTop: 8,
+      elevation: 10,
       shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 15,
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
     };
   };
 
@@ -93,35 +87,10 @@ export default function PatientNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        
-        // 👇 FIX 1: This stops React Navigation from squishing the bottom of the pill!
-        safeAreaInsets: { bottom: 0 }, 
-        
-        tabBarStyle: {
-          position: 'absolute' as const,
-          
-          // 👇 FIX 2: Push it higher so it escapes the phone's physical bezel
-          bottom: 10,          
-          
-          width: screenWidth - 40,
-          left: 20,
-          
-          backgroundColor: '#FFFFFF',
-          borderRadius: 40,    
-          height: 70,          
-          borderTopWidth: 0,   
-          paddingBottom: 0,
-          
-          elevation: 8,
-          shadowColor: '#000000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 15,
-        },
+        tabBarStyle: getTabBarStyle(route),
         tabBarItemStyle: {
           justifyContent: 'center',
           alignItems: 'center',
-          paddingVertical: 12,
         },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: '#9CA3AF',
@@ -132,9 +101,14 @@ export default function PatientNavigator() {
         },
         tabBarIcon: ({ color, focused }) => {
           let iconName: any;
-          if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
-          else if (route.name === 'Reports') iconName = focused ? 'document-text' : 'document-text-outline';
-          else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
+          
+          if (route.name === 'Home') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Reports') {
+            iconName = focused ? 'document-text' : 'document-text-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
           
           return <Ionicons name={iconName} size={26} color={color} />;
         },

@@ -2,16 +2,23 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator,
+  Image, ImageBackground, Dimensions, StatusBar
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
+
+const { width, height } = Dimensions.get('window');
+
+const BG_IMAGE = "https://th.bing.com/th/id/OIP.xl8T2seL8gQkgKz5x3xHWQHaQd?o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3";
+const LOGO_IMAGE = "https://media.licdn.com/dms/image/v2/D4D0BAQGUElF2YnVswQ/company-logo_200_200/company-logo_200_200/0/1736934578140?e=2147483647&v=beta&t=wFaY-cVe0ezRImOrxBa96UWFWU22-yaskrQZHJArLCM";
 
 export default function LoginScreen() {
   const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
 
@@ -36,164 +43,260 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.logoCircle}>
-            <MaterialCommunityIcons name="flask" size={40} color={COLORS.surface} />
-          </View>
-          <Text style={styles.brand}>Life Relier</Text>
-          <Text style={styles.tagline}>Laboratory Information Management System</Text>
-        </View>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <ImageBackground source={{ uri: BG_IMAGE }} style={styles.background}>
+        <LinearGradient
+          colors={['rgba(21, 101, 192, 0.4)', 'rgba(106, 27, 154, 0.6)', 'rgba(74, 20, 140, 0.7)']}
+          style={styles.gradientOverlay}
+        />
 
-        {/* Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Welcome Back 👋</Text>
-          <Text style={styles.cardSubtitle}>Sign in to your account</Text>
-
-          {/* Username */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Username</Text>
-            <View style={[styles.inputRow, errors.username ? styles.inputError : null]}>
-              <MaterialCommunityIcons name="account-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your username"
-                placeholderTextColor={COLORS.textMuted}
-                value={username}
-                onChangeText={(t) => { setUsername(t); setErrors((e) => ({ ...e, username: undefined })); }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-              />
-            </View>
-            {errors.username ? <Text style={styles.errorText}>{errors.username}</Text> : null}
-          </View>
-
-          {/* Password */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={[styles.inputRow, errors.password ? styles.inputError : null]}>
-              <MaterialCommunityIcons name="lock-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor={COLORS.textMuted}
-                value={password}
-                onChangeText={(t) => { setPassword(t); setErrors((e) => ({ ...e, password: undefined })); }}
-                secureTextEntry={!showPass}
-                editable={!loading}
-              />
-              <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeBtn}>
-                <MaterialCommunityIcons
-                  name={showPass ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color={COLORS.textMuted}
-                />
-              </TouchableOpacity>
-            </View>
-            {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
-          </View>
-
-          <TouchableOpacity
-            style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-            activeOpacity={0.85}
+        <KeyboardAvoidingView
+          style={styles.root}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <MaterialCommunityIcons name="login" size={18} color="#fff" />
-                <Text style={styles.loginBtnText}>Sign In</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
+            <View style={styles.card}>
+              {/* Logo Section */}
+              <View style={styles.logoSection}>
+                <Image source={{ uri: LOGO_IMAGE }} style={styles.logo} resizeMode="contain" />
+                <Text style={styles.cloudVersion}>Life Relier</Text>
+              </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <MaterialCommunityIcons name="shield-check" size={14} color={COLORS.textMuted} />
-          <Text style={styles.footerText}>Secured by Life Relier © 2026</Text>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+              {/* Username Field */}
+              <View style={styles.inputContainer}>
+                <View style={[styles.inputWrapper, errors.username ? styles.inputError : null]}>
+                  <Ionicons name="person-outline" size={20} color="#FFF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Username"
+                    placeholderTextColor="rgba(255, 255, 255, 0.7)"
+                    value={username}
+                    onChangeText={(t) => { setUsername(t); setErrors((e) => ({ ...e, username: undefined })); }}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!loading}
+                  />
+                </View>
+                {errors.username ? <Text style={styles.errorText}>{errors.username}</Text> : null}
+              </View>
+
+              {/* Password Field */}
+              <View style={styles.inputContainer}>
+                <View style={[styles.inputWrapper, errors.password ? styles.inputError : null]}>
+                  <Ionicons name="lock-closed-outline" size={20} color="#FFF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Password"
+                    placeholderTextColor="rgba(255, 255, 255, 0.7)"
+                    value={password}
+                    onChangeText={(t) => { setPassword(t); setErrors((e) => ({ ...e, password: undefined })); }}
+                    secureTextEntry={!showPass}
+                    editable={!loading}
+                  />
+                  <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeBtn}>
+                    <Ionicons
+                      name={showPass ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color="#FFF"
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+              </View>
+
+              {/* Login Button */}
+              <TouchableOpacity
+                onPress={handleLogin}
+                disabled={loading}
+                activeOpacity={0.8}
+                style={styles.loginBtnWrapper}
+              >
+                <LinearGradient
+                  colors={['rgba(138, 43, 226, 0.6)', 'rgba(106, 27, 154, 0.7)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.loginBtn}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.loginBtnText}>Login</Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Remember Me & Forget Password */}
+              <View style={styles.optionsRow}>
+                <TouchableOpacity
+                  style={styles.rememberSection}
+                  onPress={() => setRememberMe(!rememberMe)}
+                  activeOpacity={0.5}
+                >
+                  <MaterialCommunityIcons
+                    name={rememberMe ? "checkbox-marked" : "checkbox-blank-outline"}
+                    size={20}
+                    color="#FFF"
+                  />
+                  <Text style={styles.optionText}>Remember me</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity activeOpacity={0.5}>
+                  <Text style={styles.optionText}>Forget password?</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Register Link */}
+              <View style={styles.registerContainer}>
+                <Text style={styles.noAccountText}>Don't have an account? </Text>
+                <TouchableOpacity>
+                  <Text style={styles.registerText}>Register</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.primary },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: SPACING.lg },
-  header: { alignItems: 'center', marginBottom: SPACING.xl },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.md,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
+  container: {
+    flex: 1,
   },
-  brand: { fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: 1 },
-  tagline: { fontSize: 12, color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginTop: 4 },
+  background: {
+    flex: 1,
+    width: width,
+    height: height,
+  },
+  gradientOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  root: {
+    flex: 1,
+  },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
   card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.xl,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  cardTitle: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 4 },
-  cardSubtitle: { fontSize: 14, color: COLORS.textSecondary, marginBottom: SPACING.lg },
-  fieldGroup: { marginBottom: SPACING.md },
-  label: { fontSize: 13, fontWeight: '600', color: COLORS.textPrimary, marginBottom: 6 },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 40,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.background,
-    paddingHorizontal: SPACING.sm,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  inputError: { borderColor: COLORS.danger },
-  inputIcon: { marginRight: 8 },
-  input: { flex: 1, height: 50, color: COLORS.textPrimary, fontSize: 15 },
-  eyeBtn: { padding: 4 },
-  errorText: { fontSize: 12, color: COLORS.danger, marginTop: 4 },
+  logoSection: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logo: {
+    width: 90,
+    height: 90,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 5,
+  },
+  cloudVersion: {
+    fontSize: 18,
+    color: '#FFF',
+    fontWeight: '700',
+    opacity: 0.9,
+    marginTop: 8,
+  },
+  inputContainer: {
+    width: '100%',
+    marginBottom: 15,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    height: 58,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  inputError: {
+    borderColor: 'rgba(255, 82, 82, 0.5)',
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#FFF',
+    fontWeight: '500',
+  },
+  eyeBtn: {
+    padding: 8,
+  },
+  loginBtnWrapper: {
+    width: '100%',
+    marginTop: 10,
+  },
   loginBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: BORDER_RADIUS.md,
-    height: 52,
+    height: 58,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loginBtnText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 20,
+    marginBottom: 35,
+  },
+  rememberSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: SPACING.sm,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  loginBtnDisabled: { opacity: 0.7 },
-  loginBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  footer: {
+  optionText: {
+    color: '#FFF',
+    fontSize: 13,
+    marginLeft: 8,
+    opacity: 0.9,
+  },
+  registerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: SPACING.xl,
-    gap: 6,
   },
-  footerText: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+  noAccountText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+  },
+  registerText: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  errorText: {
+    color: '#FF5252',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 5,
+  },
 });
