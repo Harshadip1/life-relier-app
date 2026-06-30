@@ -21,6 +21,7 @@ import SectionHeader from '../../components/SectionHeader';
 import ReportCard from '../../components/ReportCard';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
 import { DUMMY_REPORTS } from '../../utils/dummy_data';
+import { saveAppointment } from '../../services/appointmentService';
 import { ReportItem } from '../../utils/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -81,10 +82,18 @@ export default function HomeScreen() {
   const [bookingStep, setBookingStep] = useState<1 | 2 | 3>(1);
   const [selectedTest, setSelectedTest] = useState<typeof AVAILABLE_TESTS[0] | null>(null);
   const [collectionType, setCollectionType] = useState<'home' | 'lab'>('home');
-  const [bookingDate, setBookingDate] = useState('18 Jun 2026');
+  const [bookingDate, setBookingDate] = useState('2026-06-18');
   const [bookingTime, setBookingTime] = useState('09:00 AM');
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
 
+  // Patient detail fields for appointment
+  const [apptFirstName, setApptFirstName] = useState('');
+  const [apptLastName, setApptLastName]   = useState('');
+  const [apptMobile, setApptMobile]       = useState('');
+  const [apptAddress, setApptAddress]     = useState('');
+  const [apptDob, setApptDob]             = useState('');
+  const [apptGender, setApptGender]       = useState<1|2|3>(1);   // 1=Male 2=Female 3=Other
+  const [apptInitial, setApptInitial]     = useState<1|2|3|4>(1); // 1=Mr 2=Mrs 3=Ms 4=Dr
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'card' | 'net_banking'>('upi');
   const [isPaymentSubmitting, setIsPaymentSubmitting] = useState(false);
 
@@ -116,25 +125,50 @@ export default function HomeScreen() {
     }
   }
 
-  function handleConfirmBooking() {
+  async function handleConfirmBooking() {
     if (!selectedTest) return;
+    if (!apptFirstName.trim() || !apptLastName.trim() || !apptMobile.trim()) {
+      Alert.alert('Missing Info', 'Please fill in First Name, Last Name and Mobile before confirming.');
+      return;
+    }
     setIsBookingSubmitting(true);
-    setTimeout(() => {
+    try {
+      const result = await saveAppointment({
+        DrId: 20,
+        FirstName: apptFirstName.trim(),
+        LastName: apptLastName.trim(),
+        Mobile: apptMobile.trim(),
+        AppointmentDate: bookingDate,          // already "YYYY-MM-DD"
+        Slot: bookingTime,
+        Address: apptAddress.trim() || '',
+        GenderId: apptGender,
+        InitialId: apptInitial,
+        BirthDate: apptDob || '1990-01-01',
+        BranchId: Number(user?.branchID) || 1,
+        CreatedBy: user?.username || 'App',
+      });
+
       const newAppt: AppointmentItem = {
-        id: `appt_${Date.now()}`,
+        id: `appt_${result.AppointmentId}`,
         testName: selectedTest.name,
         date: `${bookingDate} • ${bookingTime}`,
-        collectionType: collectionType,
+        collectionType,
         phlebotomist: collectionType === 'home' ? 'Amit Kumar' : 'Lab Front Desk',
       };
       setUpcomingTests([newAppt, ...upcomingTests]);
-      setIsBookingSubmitting(false);
       setBookModalVisible(false);
       Alert.alert(
-        'Booking Confirmed!',
-        `Your booking for ${selectedTest.name} on ${bookingDate} at ${bookingTime} is successful.`
+        '✅ Booking Confirmed!',
+        `Appointment ID: ${result.AppointmentId}\nTest: ${selectedTest.name}\nDate: ${bookingDate} at ${bookingTime}`
       );
-    }, 1200);
+      // reset form
+      setApptFirstName(''); setApptLastName(''); setApptMobile('');
+      setApptAddress(''); setApptDob(''); setBookingStep(1); setSelectedTest(null);
+    } catch (err: any) {
+      Alert.alert('Booking Failed', err.message || 'Could not save appointment. Please try again.');
+    } finally {
+      setIsBookingSubmitting(false);
+    }
   }
 
   function handleConfirmPayment() {
@@ -523,46 +557,104 @@ export default function HomeScreen() {
 
               {bookingStep === 2 && (
                 <ScrollView showsVerticalScrollIndicator={false} style={{ gap: SPACING.md }}>
-                  <Text style={styles.wizardSectionTitle}>Select Collection Mode</Text>
-                  <View style={{ flexDirection: 'row', gap: 12 }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.modeSelectBtn,
-                        collectionType === 'home' && styles.modeSelectBtnActive,
-                      ]}
-                      onPress={() => setCollectionType('home')}
-                    >
-                      <MaterialCommunityIcons name="home-outline" size={22} color={collectionType === 'home' ? '#0D9488' : '#64748B'} />
-                      <Text style={[styles.modeSelectText, collectionType === 'home' && styles.modeSelectTextActive]}>Home Collection</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.modeSelectBtn,
-                        collectionType === 'lab' && styles.modeSelectBtnActive,
-                      ]}
-                      onPress={() => setCollectionType('lab')}
-                    >
-                      <MaterialCommunityIcons name="hospital-building" size={22} color={collectionType === 'lab' ? '#0D9488' : '#64748B'} />
-                      <Text style={[styles.modeSelectText, collectionType === 'lab' && styles.modeSelectTextActive]}>Lab Visit</Text>
-                    </TouchableOpacity>
+
+                  {/* ── Patient Details ── */}
+                  <Text style={styles.wizardSectionTitle}>Patient Details</Text>
+
+                  {/* Initial + Gender row */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                    {([{ id: 1, label: 'Mr' }, { id: 2, label: 'Mrs' }, { id: 3, label: 'Ms' }, { id: 4, label: 'Dr' }] as const).map((i) => (
+                      <TouchableOpacity
+                        key={i.id}
+                        style={[styles.dateChoiceBtn, apptInitial === i.id && styles.dateChoiceBtnActive]}
+                        onPress={() => setApptInitial(i.id)}
+                      >
+                        <Text style={[styles.dateChoiceText, apptInitial === i.id && styles.dateChoiceTextActive]}>{i.label}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
 
-                  <Text style={[styles.wizardSectionTitle, { marginTop: 12 }]}>Choose Appointment Date</Text>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    {['18 Jun 2026', '19 Jun 2026', '20 Jun 2026'].map((d) => (
+                  {/* First & Last Name */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                    <TextInput
+                      style={[styles.apptInput, { flex: 1 }]}
+                      placeholder="First Name *"
+                      placeholderTextColor="#94A3B8"
+                      value={apptFirstName}
+                      onChangeText={setApptFirstName}
+                    />
+                    <TextInput
+                      style={[styles.apptInput, { flex: 1 }]}
+                      placeholder="Last Name *"
+                      placeholderTextColor="#94A3B8"
+                      value={apptLastName}
+                      onChangeText={setApptLastName}
+                    />
+                  </View>
+
+                  {/* Mobile */}
+                  <TextInput
+                    style={[styles.apptInput, { marginBottom: 10 }]}
+                    placeholder="Mobile Number *"
+                    placeholderTextColor="#94A3B8"
+                    value={apptMobile}
+                    onChangeText={setApptMobile}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                  />
+
+                  {/* DOB */}
+                  <TextInput
+                    style={[styles.apptInput, { marginBottom: 10 }]}
+                    placeholder="Birth Date (YYYY-MM-DD)"
+                    placeholderTextColor="#94A3B8"
+                    value={apptDob}
+                    onChangeText={setApptDob}
+                  />
+
+                  {/* Address */}
+                  <TextInput
+                    style={[styles.apptInput, { marginBottom: 10, height: 60 }]}
+                    placeholder="Address"
+                    placeholderTextColor="#94A3B8"
+                    value={apptAddress}
+                    onChangeText={setApptAddress}
+                    multiline
+                  />
+
+                  {/* Gender */}
+                  <Text style={[styles.wizardSectionTitle, { marginTop: 4 }]}>Gender</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                    {([{ id: 1, label: 'Male' }, { id: 2, label: 'Female' }, { id: 3, label: 'Other' }] as const).map((g) => (
+                      <TouchableOpacity
+                        key={g.id}
+                        style={[styles.dateChoiceBtn, apptGender === g.id && styles.dateChoiceBtnActive, { flex: 1 }]}
+                        onPress={() => setApptGender(g.id)}
+                      >
+                        <Text style={[styles.dateChoiceText, apptGender === g.id && styles.dateChoiceTextActive]}>{g.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* ── Schedule ── */}
+                  <Text style={styles.wizardSectionTitle}>Appointment Date</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                    {(['2026-06-18', '2026-06-19', '2026-06-20'] as const).map((d) => (
                       <TouchableOpacity
                         key={d}
                         style={[styles.dateChoiceBtn, bookingDate === d && styles.dateChoiceBtnActive]}
                         onPress={() => setBookingDate(d)}
                       >
-                        <Text style={[styles.dateChoiceText, bookingDate === d && styles.dateChoiceTextActive]}>{d.split(' ')[0]} {d.split(' ')[1]}</Text>
+                        <Text style={[styles.dateChoiceText, bookingDate === d && styles.dateChoiceTextActive]}>
+                          {d.split('-')[2]} {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(d.split('-')[1]) - 1]}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
 
-                  <Text style={[styles.wizardSectionTitle, { marginTop: 12 }]}>Preferred Time Slot</Text>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    {['08:00 AM', '10:00 AM', '02:00 PM'].map((t) => (
+                  <Text style={styles.wizardSectionTitle}>Time Slot</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                    {(['09:00 AM', '11:00 AM', '02:00 PM'] as const).map((t) => (
                       <TouchableOpacity
                         key={t}
                         style={[styles.dateChoiceBtn, bookingTime === t && styles.dateChoiceBtnActive]}
@@ -572,6 +664,25 @@ export default function HomeScreen() {
                       </TouchableOpacity>
                     ))}
                   </View>
+
+                  {/* Collection Mode */}
+                  <Text style={styles.wizardSectionTitle}>Collection Mode</Text>
+                  <View style={{ flexDirection: 'row', gap: 12, marginBottom: 8 }}>
+                    <TouchableOpacity
+                      style={[styles.modeSelectBtn, collectionType === 'home' && styles.modeSelectBtnActive]}
+                      onPress={() => setCollectionType('home')}
+                    >
+                      <MaterialCommunityIcons name="home-outline" size={22} color={collectionType === 'home' ? '#0D9488' : '#64748B'} />
+                      <Text style={[styles.modeSelectText, collectionType === 'home' && styles.modeSelectTextActive]}>Home</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modeSelectBtn, collectionType === 'lab' && styles.modeSelectBtnActive]}
+                      onPress={() => setCollectionType('lab')}
+                    >
+                      <MaterialCommunityIcons name="hospital-building" size={22} color={collectionType === 'lab' ? '#0D9488' : '#64748B'} />
+                      <Text style={[styles.modeSelectText, collectionType === 'lab' && styles.modeSelectTextActive]}>Lab Visit</Text>
+                    </TouchableOpacity>
+                  </View>
                 </ScrollView>
               )}
 
@@ -579,6 +690,14 @@ export default function HomeScreen() {
                 <View style={{ gap: 16 }}>
                   <Text style={styles.wizardSectionTitle}>Review details</Text>
                   <View style={styles.summaryCard}>
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Patient Name</Text>
+                      <Text style={styles.summaryVal}>{apptFirstName} {apptLastName}</Text>
+                    </View>
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Mobile</Text>
+                      <Text style={styles.summaryVal}>{apptMobile}</Text>
+                    </View>
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Test Name</Text>
                       <Text style={styles.summaryVal}>{selectedTest?.name}</Text>
@@ -1191,6 +1310,17 @@ const styles = StyleSheet.create({
   },
   modeSelectText: { fontSize: 12, color: '#64748B', fontWeight: '600' },
   modeSelectTextActive: { color: '#0F766E', fontWeight: '700' },
+
+  apptInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#0F172A',
+  },
 
   dateChoiceBtn: {
     flex: 1,
