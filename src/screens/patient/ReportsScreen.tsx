@@ -212,12 +212,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   helpBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-});
-=======
   actionRow: { flexDirection: 'row', gap: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 16 },
   secondaryBtn: { flex: 1, flexDirection: 'row', height: 40, borderRadius: 10, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: THEME.border },
   secondaryBtnText: { color: THEME.textSecondary, fontSize: 13, fontWeight: '600' },
   primaryBtn: { flex: 1.5, flexDirection: 'row', height: 40, borderRadius: 10, backgroundColor: THEME.primary, alignItems: 'center', justifyContent: 'center' },
   primaryBtnText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
 });
->>>>>>> 8be68597c5b7e5bd61e576296b97e322a74a2eb8

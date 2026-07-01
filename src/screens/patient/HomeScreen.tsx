@@ -1543,47 +1543,19 @@ const styles = StyleSheet.create({
   contactItemText: { fontSize: 12, color: '#64748B', lineHeight: 16 },
   contactItemAction: { alignSelf: 'flex-start', marginTop: 8 },
   contactItemActionText: { color: '#0D9488', fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' },
-<<<<<<< HEAD
-});
-=======
 
   consultCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0FDFA', // Light Teal background
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#CCFBF1',
-    marginBottom: 16,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#F0FDFA', padding: 16, borderRadius: 16,
+    borderWidth: 1, borderColor: '#CCFBF1', marginBottom: 16,
   },
-  consultCardLeft: {
-    flex: 1,
-    paddingRight: 16,
-  },
-  consultCardTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F766E',
-    marginBottom: 4,
-  },
-  consultCardSub: {
-    fontSize: 12,
-    color: '#115E59',
-    lineHeight: 18,
-  },
+  consultCardLeft: { flex: 1, paddingRight: 16 },
+  consultCardTitle: { fontSize: 18, fontWeight: '800', color: '#0F766E', marginBottom: 4 },
+  consultCardSub: { fontSize: 12, color: '#115E59', lineHeight: 18 },
   consultIconBox: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#0F766E',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFFFFF',
+    alignItems: 'center', justifyContent: 'center', elevation: 2,
+    shadowColor: '#0F766E', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 4,
   },
 });
->>>>>>> 8be68597c5b7e5bd61e576296b97e322a74a2eb8

@@ -58,9 +58,6 @@ export default function PatientProfileScreen({ navigation }: any) {
 <<<<<<< HEAD
   // Safely get user initials
   const initials = (user?.name || user?.username || 'U').charAt(0).toUpperCase();
-=======
-  const initials = user?.name ? user.name.charAt(0).toUpperCase() : 'I';
->>>>>>> 8be68597c5b7e5bd61e576296b97e322a74a2eb8
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 20) }]}>
@@ -75,8 +72,6 @@ export default function PatientProfileScreen({ navigation }: any) {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 <<<<<<< HEAD
         
-=======
->>>>>>> 8be68597c5b7e5bd61e576296b97e322a74a2eb8
         {/* ── Profile Card ── */}
         <View style={styles.profileCard}>
           {/* Default Initial Avatar */}
@@ -85,11 +80,7 @@ export default function PatientProfileScreen({ navigation }: any) {
           </View>
 
           <View style={styles.profileInfo}>
-<<<<<<< HEAD
             <Text style={styles.userName} numberOfLines={1}>{user?.name || user?.username || ''}</Text>
-=======
-            <Text style={styles.userName} numberOfLines={1}>{user?.name || 'INTERNSVEDA EDUTECH PVT LTD'}</Text>
->>>>>>> 8be68597c5b7e5bd61e576296b97e322a74a2eb8
             
             <View style={styles.infoRow}>
               <Text style={styles.idLabel}>Patient ID: </Text>
@@ -207,8 +198,4 @@ const styles = StyleSheet.create({
     paddingVertical: 16, borderRadius: 16, gap: 8, marginTop: 8,
   },
   logoutText: { fontSize: 16, fontWeight: '700', color: COLORS.danger || '#EF4444' },
-<<<<<<< HEAD
 });
-=======
-});
->>>>>>> 8be68597c5b7e5bd61e576296b97e322a74a2eb8
