@@ -21,7 +21,7 @@ import SectionHeader from '../../components/SectionHeader';
 import ReportCard from '../../components/ReportCard';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
 import { DUMMY_REPORTS } from '../../utils/dummy_data';
-import { saveAppointment } from '../../services/appointmentService';
+import { saveAppointment, updateAppointment, deleteAppointment } from '../../services/appointmentService';
 import { ReportItem } from '../../utils/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -169,6 +169,32 @@ export default function HomeScreen() {
     } finally {
       setIsBookingSubmitting(false);
     }
+  }
+
+  async function handleDeleteAppointment(apptId: number) {
+    Alert.alert(
+      'Delete Appointment',
+      `Are you sure you want to delete appointment #${apptId}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAppointment({
+                AppointmentId: apptId,
+                BranchId: Number(user?.branchID) || 1,
+              });
+              setUpcomingTests((prev) => prev.filter((t) => t.id !== `appt_${apptId}`));
+              Alert.alert('✅ Deleted', `Appointment #${apptId} deleted successfully.`);
+            } catch (err: any) {
+              Alert.alert('Delete Failed', err.message || 'Could not delete appointment.');
+            }
+          },
+        },
+      ]
+    );
   }
 
   function handleConfirmPayment() {
@@ -397,6 +423,33 @@ export default function HomeScreen() {
                     />
                   </View>
                   <Text style={styles.apptPhlName}>{t.phlebotomist}</Text>
+                </View>
+                {/* Edit & Delete action buttons */}
+                <View style={styles.apptActionRow}>
+                  <TouchableOpacity
+                    style={styles.editApptBtn}
+                    onPress={() => {
+                      const idNum = parseInt(t.id.replace('appt_', '')) || 0;
+                      setEditApptId(idNum);
+                      setEditFirstName(''); setEditLastName(''); setEditMobile('');
+                      setEditAddress(''); setEditDob('');
+                      setEditDate('2026-06-18'); setEditSlot('09:00 AM');
+                      setEditModalVisible(true);
+                    }}
+                  >
+                    <MaterialCommunityIcons name="pencil-outline" size={13} color={COLORS.primary} />
+                    <Text style={styles.editApptBtnText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteApptBtn}
+                    onPress={() => {
+                      const idNum = parseInt(t.id.replace('appt_', '')) || 0;
+                      handleDeleteAppointment(idNum);
+                    }}
+                  >
+                    <MaterialCommunityIcons name="trash-can-outline" size={13} color="#EF4444" />
+                    <Text style={styles.deleteApptBtnText}>Delete</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -1195,6 +1248,20 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   editApptBtnText: { fontSize: 12, color: '#0D9488', fontWeight: '600' },
+
+  apptActionRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  deleteApptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    alignSelf: 'flex-start',
+  },
+  deleteApptBtnText: { fontSize: 12, color: '#EF4444', fontWeight: '600' },
 
   // ================= MODALS STYLES =================
   modalOverlay: {
