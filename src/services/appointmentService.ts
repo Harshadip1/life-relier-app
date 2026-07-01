@@ -137,3 +137,38 @@ export async function deleteAppointment(
 
   return data as DeleteAppointmentResponse;
 }
+
+// ── Cancel Appointment ───────────────────────────────────────────────────────
+
+export interface CancelAppointmentPayload {
+  AppointmentId: number;
+  BranchId: number;
+}
+
+export interface CancelAppointmentResponse {
+  Message: string;
+}
+
+export async function cancelAppointment(
+  payload: CancelAppointmentPayload
+): Promise<CancelAppointmentResponse> {
+  console.log('--- CancelAppointment Request ---');
+  console.log('URL:', `${API_BASE}/DrAppointment/CancelAppointment`);
+  console.log('Body:', JSON.stringify(payload, null, 2));
+
+  const response = await fetch(`${API_BASE}/DrAppointment/CancelAppointment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  let data: any;
+  try { data = await response.json(); } catch { data = null; }
+
+  console.log('--- CancelAppointment Response ---');
+  console.log('Status:', response.status, '| Data:', JSON.stringify(data));
+
+  if (!response.ok) throw new Error(data?.Message || 'Failed to cancel appointment');
+
+  return data as CancelAppointmentResponse;
+}

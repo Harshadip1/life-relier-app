@@ -21,7 +21,7 @@ import SectionHeader from '../../components/SectionHeader';
 import ReportCard from '../../components/ReportCard';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
 import { DUMMY_REPORTS } from '../../utils/dummy_data';
-import { saveAppointment, updateAppointment, deleteAppointment } from '../../services/appointmentService';
+import { saveAppointment, updateAppointment, deleteAppointment, cancelAppointment } from '../../services/appointmentService';
 import { ReportItem } from '../../utils/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -169,6 +169,36 @@ export default function HomeScreen() {
     } finally {
       setIsBookingSubmitting(false);
     }
+  }
+
+  async function handleCancelAppointment(apptId: number) {
+    Alert.alert(
+      'Cancel Appointment',
+      `Are you sure you want to cancel appointment #${apptId}?`,
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelAppointment({
+                AppointmentId: apptId,
+                BranchId: Number(user?.branchID) || 1,
+              });
+              setUpcomingTests((prev) =>
+                prev.map((t) =>
+                  t.id === `appt_${apptId}` ? { ...t, testName: `${t.testName} (Cancelled)` } : t
+                )
+              );
+              Alert.alert('✅ Cancelled', `Appointment #${apptId} has been cancelled.`);
+            } catch (err: any) {
+              Alert.alert('Cancel Failed', err.message || 'Could not cancel appointment.');
+            }
+          },
+        },
+      ]
+    );
   }
 
   async function handleDeleteAppointment(apptId: number) {
@@ -441,11 +471,15 @@ export default function HomeScreen() {
                     <Text style={styles.editApptBtnText}>Edit</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
+                    style={styles.cancelApptBtn}
+                    onPress={() => handleCancelAppointment(parseInt(t.id.replace('appt_', '')) || 0)}
+                  >
+                    <MaterialCommunityIcons name="cancel" size={13} color="#F59E0B" />
+                    <Text style={styles.cancelApptBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
                     style={styles.deleteApptBtn}
-                    onPress={() => {
-                      const idNum = parseInt(t.id.replace('appt_', '')) || 0;
-                      handleDeleteAppointment(idNum);
-                    }}
+                    onPress={() => handleDeleteAppointment(parseInt(t.id.replace('appt_', '')) || 0)}
                   >
                     <MaterialCommunityIcons name="trash-can-outline" size={13} color="#EF4444" />
                     <Text style={styles.deleteApptBtnText}>Delete</Text>
@@ -1262,6 +1296,19 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   deleteApptBtnText: { fontSize: 12, color: '#EF4444', fontWeight: '600' },
+
+  cancelApptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    alignSelf: 'flex-start',
+  },
+  cancelApptBtnText: { fontSize: 12, color: '#F59E0B', fontWeight: '600' },
 
   // ================= MODALS STYLES =================
   modalOverlay: {
