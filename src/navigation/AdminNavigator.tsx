@@ -30,6 +30,8 @@ import AddDoctorSlotScreen    from '../screens/admin/AddDoctorSlotScreen';
 import AppointmentRecordsScreen   from '../screens/admin/AppointmentRecordsScreen';
 import SearchAvailableSlotsScreen from '../screens/admin/SearchAvailableSlotsScreen';
 import ShowAppointmentScreen      from '../screens/admin/ShowAppointmentScreen';
+import TestChargeDetailScreen     from '../screens/admin/TestChargeDetailScreen';
+import PackagesScreen             from '../screens/admin/PackagesScreen';
 
 import { COLORS } from '../utils/constants';
 
@@ -165,6 +167,8 @@ function MasterStack() {
         component={PlaceholderScreen}
         initialParams={{ title: 'Test Master', icon: 'test-tube' }}
       />
+      <Stack.Screen name="TestChargeDetail" component={TestChargeDetailScreen} />
+      <Stack.Screen name="Packages"         component={PackagesScreen} />
       <Stack.Screen name="PackageMaster"
         component={PlaceholderScreen}
         initialParams={{ title: 'Package Master', icon: 'package-variant' }}

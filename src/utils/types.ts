@@ -68,3 +68,25 @@ export interface ServiceCard {
   bgColor: string;
   screen: string;
 }
+
+// ── Test Charges ──────────────────────────────────────────────────────────────
+export interface TestCharge {
+  TestChargeId: number;
+  SubDeptId: number;
+  MainTestId: number;
+  PackageId: number | null;
+  PackageName: string | null;
+  RateTypeName: string;
+  RateTypeId: number;
+  TestType: string;
+  MTCODE: string;
+  TestName: string;
+  Amount: number;
+  [key: string]: any; // allow any extra fields the API may return
+}
+
+// ── Packages ──────────────────────────────────────────────────────────────────
+export interface Package {
+  PackageId: number;
+  PackageName: string;
+}
