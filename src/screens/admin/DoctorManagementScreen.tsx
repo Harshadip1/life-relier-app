@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Image, Modal, KeyboardAvoidingView, Platform, Switch
+  Image, Alert, ActivityIndicator
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import {
+  getDoctorDropdown,
+  getAllDoctorSchedules,
+  getAllSlots,
+  deleteSchedule,
+  deleteSlot,
+  DoctorDropdownItem,
+  DoctorScheduleRecord
+} from '../../services/doctorScheduleService';
 
 const THEME = {
   primary: '#4F46E5', // Indigo matching your Admin Profile
@@ -18,31 +28,113 @@ const THEME = {
   successBg: '#ECFDF5',
 };
 
-// ─── Dummy Data based on your APIs ───
-const DUMMY_DOCTORS = [
-  { id: 1, name: 'Dr. Rahul Sharma', spec: 'Cardiologist', phone: '9876543210', avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=150&auto=format&fit=crop' },
-  { id: 12, name: 'Dr. Priya Patil', spec: 'General Physician', phone: '9876512345', avatar: 'https://images.unsplash.com/photo-1594824416928-8ae8acae7446?q=80&w=150&auto=format&fit=crop' },
-];
+function fmtDate(iso: string): string {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+  } catch { return iso; }
+}
 
-const DUMMY_SCHEDULES = [
-  { id: 2, drName: 'Dr. Rahul Sharma', startDate: '2026-06-03', endDate: '2026-06-30', startTime: '09:00 AM', endTime: '06:00 PM', active: true },
-];
-
-const DUMMY_SLOTS = [
-  { id: 5, drName: 'Dr. Priya Patil', slot: '30 Min' },
-  { id: 6, drName: 'Dr. Rahul Sharma', slot: '15 Min' },
-];
+function fmtTime(t: string | null): string {
+  if (!t) return '—';
+  if (t.toUpperCase().includes('AM') || t.toUpperCase().includes('PM')) {
+    return t; // Already formatted
+  }
+  try {
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    return `${String(h % 12 || 12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+  } catch { return t; }
+}
 
 export default function DoctorManagementScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   
   // ─── States ───
   const [activeTab, setActiveTab] = useState('Schedules');
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [showSlotModal, setShowSlotModal] = useState(false);
+  const [doctors, setDoctors] = useState<DoctorDropdownItem[]>([]);
+  const [schedules, setSchedules] = useState<DoctorScheduleRecord[]>([]);
+  const [slots, setSlots] = useState<any[]>([]);
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Form States
-  const [isActive, setIsActive] = useState(true);
+  // ─── Fetch Data ───
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // 1. Fetch doctors
+      const drList = await getDoctorDropdown(1);
+      setDoctors(drList);
+
+      const doctorMap = new Map<number, string>();
+      drList.forEach(d => doctorMap.set(d.Id, d.FullName));
+
+      // 2. Fetch schedules
+      const schedList = await getAllDoctorSchedules(4);
+      setSchedules(schedList);
+
+      // 3. Fetch slots and map doctor names
+      const slotList = await getAllSlots(4);
+      const enrichedSlots = slotList.map(slot => ({
+        ...slot,
+        DoctorName: doctorMap.get(slot.DrId) || `Doctor ID: ${slot.DrId}`
+      }));
+      setSlots(enrichedSlots);
+
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to load registry data.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
+
+  // ─── Delete Actions ───
+  const handleDeleteSchedule = (scheduleId: number) => {
+    Alert.alert('Confirm Delete', 'Are you sure you want to delete this doctor schedule?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteSchedule(scheduleId);
+            Alert.alert('Success', 'Doctor schedule deleted successfully.');
+            fetchData();
+          } catch (err: any) {
+            Alert.alert('Error', err?.message ?? 'Failed to delete schedule.');
+          }
+        }
+      }
+    ]);
+  };
+
+  const handleDeleteSlot = (slotId: number) => {
+    Alert.alert('Confirm Delete', 'Are you sure you want to delete this slot?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteSlot(slotId);
+            Alert.alert('Success', 'Slot deleted successfully.');
+            fetchData();
+          } catch (err: any) {
+            Alert.alert('Error', err?.message ?? 'Failed to delete slot.');
+          }
+        }
+      }
+    ]);
+  };
 
   // ─── Tab Navigation ───
   const TABS = ['Doctors', 'Schedules', 'Slots'];
@@ -56,8 +148,8 @@ export default function DoctorManagementScreen({ navigation }: any) {
           <Feather name="arrow-left" size={24} color={THEME.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Doctor Registry</Text>
-        <TouchableOpacity style={styles.iconBtn}>
-          <Feather name="search" size={20} color={THEME.primary} />
+        <TouchableOpacity style={styles.iconBtn} onPress={fetchData}>
+          <Feather name="refresh-cw" size={20} color={THEME.primary} />
         </TouchableOpacity>
       </View>
 
@@ -74,213 +166,156 @@ export default function DoctorManagementScreen({ navigation }: any) {
         ))}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* ==========================================
-            TAB 1: DOCTORS
-        ========================================== */}
-        {activeTab === 'Doctors' && (
-          <View>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Registered Doctors</Text>
-              <Text style={styles.countText}>{DUMMY_DOCTORS.length} Total</Text>
-            </View>
-            {DUMMY_DOCTORS.map(doc => (
-              <View key={doc.id} style={styles.card}>
-                <Image source={{ uri: doc.avatar }} style={styles.avatar} />
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>{doc.name}</Text>
-                  <Text style={styles.cardSub}>{doc.spec}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                    <Feather name="phone" size={12} color={THEME.textSecondary} />
-                    <Text style={styles.metaText}>{doc.phone}</Text>
+      {loading && (
+        <View style={styles.loaderBox}>
+          <ActivityIndicator size="large" color={THEME.primary} />
+        </View>
+      )}
+
+      {error && !loading && (
+        <View style={styles.errorBox}>
+          <Feather name="alert-triangle" size={32} color="#EF4444" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={fetchData}>
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {!loading && !error && (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          
+          {/* ==========================================
+              TAB 1: DOCTORS
+          ========================================== */}
+          {activeTab === 'Doctors' && (
+            <View>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>Registered Doctors</Text>
+                <Text style={styles.countText}>{doctors.length} Total</Text>
+              </View>
+              {doctors.length === 0 ? (
+                <Text style={styles.emptyText}>No registered doctors found.</Text>
+              ) : doctors.map(doc => (
+                <View key={doc.Id} style={styles.card}>
+                  <View style={styles.iconCircle}>
+                    <MaterialCommunityIcons name="doctor" size={24} color={THEME.primary} />
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardTitle}>{doc.FullName}</Text>
+                    <Text style={styles.cardSub}>Doctor ID: {doc.Id}</Text>
                   </View>
                 </View>
-                <TouchableOpacity style={styles.actionIconBtn}>
-                  <Feather name="edit-2" size={16} color={THEME.textSecondary} />
+              ))}
+            </View>
+          )}
+
+          {/* ==========================================
+              TAB 2: SCHEDULES
+          ========================================== */}
+          {activeTab === 'Schedules' && (
+            <View>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>Doctor Schedules</Text>
+                <TouchableOpacity style={styles.addMiniBtn} onPress={() => navigation.navigate('AddDoctorSchedule')}>
+                  <Feather name="plus" size={14} color="#FFF" />
+                  <Text style={styles.addMiniBtnText}>Add Schedule</Text>
                 </TouchableOpacity>
               </View>
-            ))}
-          </View>
-        )}
+              
+              {schedules.length === 0 ? (
+                <Text style={styles.emptyText}>No schedules found.</Text>
+              ) : schedules.map(sched => (
+                <View key={sched.ScheduleId} style={styles.cardVertical}>
+                  <View style={styles.cardHeaderFlex}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={styles.iconCircle}>
+                        <MaterialCommunityIcons name="calendar-clock" size={20} color={THEME.primary} />
+                      </View>
+                      <Text style={styles.cardTitle}>{sched.DoctorName ?? `Doctor ID: ${sched.DrId}`}</Text>
+                    </View>
+                    <View style={[styles.statusBadge, sched.IsActive ? styles.bgSuccess : styles.bgMuted]}>
+                      <Text style={[styles.statusText, sched.IsActive ? styles.textSuccess : styles.textMuted]}>
+                        {sched.IsActive ? 'Active' : 'Inactive'}
+                      </Text>
+                    </View>
+                  </View>
 
-        {/* ==========================================
-            TAB 2: SCHEDULES
-        ========================================== */}
-        {activeTab === 'Schedules' && (
-          <View>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Doctor Schedules</Text>
-              <TouchableOpacity style={styles.addMiniBtn} onPress={() => setShowScheduleModal(true)}>
-                <Feather name="plus" size={14} color="#FFF" />
-                <Text style={styles.addMiniBtnText}>Add Schedule</Text>
-              </TouchableOpacity>
+                  <View style={styles.grid2Col}>
+                    <View>
+                      <Text style={styles.metaLabel}>Valid Period</Text>
+                      <Text style={styles.metaValue}>{fmtDate(sched.StartDate)} to {fmtDate(sched.EndDate)}</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.metaLabel}>Working Hours</Text>
+                      <Text style={styles.metaValue}>{fmtTime(sched.StartTime)} - {fmtTime(sched.EndTime)}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.cardActionsRow}>
+                    <TouchableOpacity
+                      style={styles.actionTextBtn}
+                      onPress={() => navigation.navigate('AddDoctorSchedule', { schedule: sched })}
+                    >
+                      <Text style={styles.actionTextBlue}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionTextBtn}
+                      onPress={() => handleDeleteSchedule(sched.ScheduleId)}
+                    >
+                      <Text style={styles.actionTextRed}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
             </View>
-            
-            {DUMMY_SCHEDULES.map(sched => (
-              <View key={sched.id} style={styles.cardVertical}>
-                <View style={styles.cardHeaderFlex}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={styles.iconCircle}><MaterialCommunityIcons name="calendar-clock" size={20} color={THEME.primary} /></View>
-                    <Text style={styles.cardTitle}>{sched.drName}</Text>
-                  </View>
-                  <View style={[styles.statusBadge, sched.active ? styles.bgSuccess : styles.bgMuted]}>
-                    <Text style={[styles.statusText, sched.active ? styles.textSuccess : styles.textMuted]}>
-                      {sched.active ? 'Active' : 'Inactive'}
-                    </Text>
-                  </View>
-                </View>
+          )}
 
-                <View style={styles.grid2Col}>
-                  <View>
-                    <Text style={styles.metaLabel}>Valid Period</Text>
-                    <Text style={styles.metaValue}>{sched.startDate} to {sched.endDate}</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.metaLabel}>Working Hours</Text>
-                    <Text style={styles.metaValue}>{sched.startTime} - {sched.endTime}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.cardActionsRow}>
-                  <TouchableOpacity style={styles.actionTextBtn}><Text style={styles.actionTextBlue}>Edit</Text></TouchableOpacity>
-                  <TouchableOpacity style={styles.actionTextBtn}><Text style={styles.actionTextRed}>Delete</Text></TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* ==========================================
-            TAB 3: SLOTS
-        ========================================== */}
-        {activeTab === 'Slots' && (
-          <View>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Appointment Slots</Text>
-              <TouchableOpacity style={styles.addMiniBtn} onPress={() => setShowSlotModal(true)}>
-                <Feather name="plus" size={14} color="#FFF" />
-                <Text style={styles.addMiniBtnText}>Add Slot</Text>
-              </TouchableOpacity>
-            </View>
-
-            {DUMMY_SLOTS.map(slot => (
-              <View key={slot.id} style={[styles.card, { alignItems: 'center' }]}>
-                <View style={[styles.iconCircle, { backgroundColor: '#F3E8FF' }]}>
-                  <Feather name="clock" size={20} color="#9333EA" />
-                </View>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>{slot.drName}</Text>
-                  <Text style={styles.cardSub}>Consultation Slot</Text>
-                </View>
-                <View style={styles.slotBadge}>
-                  <Text style={styles.slotBadgeText}>{slot.slot}</Text>
-                </View>
-                <TouchableOpacity style={[styles.actionIconBtn, { marginLeft: 10 }]}>
-                  <Feather name="trash-2" size={16} color="#EF4444" />
+          {/* ==========================================
+              TAB 3: SLOTS
+          ========================================== */}
+          {activeTab === 'Slots' && (
+            <View>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>Appointment Slots</Text>
+                <TouchableOpacity style={styles.addMiniBtn} onPress={() => navigation.navigate('DrSlot')}>
+                  <Feather name="plus" size={14} color="#FFF" />
+                  <Text style={styles.addMiniBtnText}>Add Slot</Text>
                 </TouchableOpacity>
               </View>
-            ))}
-          </View>
-        )}
 
-        <View style={{ height: 100 }} />
-      </ScrollView>
-
-      {/* ── ADD SCHEDULE MODAL (JSON: /SaveDoctorSchedule) ── */}
-      <Modal visible={showScheduleModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.bottomSheet}>
-            <View style={styles.dragHandle} />
-            <Text style={styles.sheetTitle}>Create Schedule</Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Select Doctor</Text>
-              <View style={styles.dropdown}>
-                <Text style={{ color: THEME.textPrimary }}>Dr. Rahul Sharma</Text>
-                <Feather name="chevron-down" size={20} color={THEME.textSecondary} />
-              </View>
+              {slots.length === 0 ? (
+                <Text style={styles.emptyText}>No consultation slots found.</Text>
+              ) : slots.map(slot => (
+                <View key={slot.SlotId || slot.id} style={[styles.card, { alignItems: 'center' }]}>
+                  <View style={[styles.iconCircle, { backgroundColor: '#F3E8FF' }]}>
+                    <Feather name="clock" size={20} color="#9333EA" />
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardTitle}>{slot.DoctorName}</Text>
+                    <Text style={styles.cardSub}>Consultation Slot</Text>
+                  </View>
+                  <View style={styles.slotBadge}>
+                    <Text style={styles.slotBadgeText}>{slot.SlotMins || slot.slot} Min</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.actionIconBtn, { marginLeft: 10 }]}
+                    onPress={() => handleDeleteSlot(slot.SlotId || slot.id)}
+                  >
+                    <Feather name="trash-2" size={16} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+              ))}
             </View>
+          )}
 
-            <View style={styles.grid2Col}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Start Date</Text>
-                <TextInput style={styles.input} placeholder="YYYY-MM-DD" value="2026-06-03" />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>End Date</Text>
-                <TextInput style={styles.input} placeholder="YYYY-MM-DD" value="2026-06-30" />
-              </View>
-            </View>
-
-            <View style={styles.grid2Col}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Start Time</Text>
-                <TextInput style={styles.input} placeholder="09:00 AM" value="09:00 AM" />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>End Time</Text>
-                <TextInput style={styles.input} placeholder="06:00 PM" value="06:00 PM" />
-              </View>
-            </View>
-
-            <View style={[styles.inputGroup, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }]}>
-              <Text style={styles.inputLabel}>Is Active?</Text>
-              <Switch value={isActive} onValueChange={setIsActive} trackColor={{ true: THEME.primary, false: '#CBD5E1' }} />
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
-              <TouchableOpacity style={[styles.secondaryBtn, { flex: 1 }]} onPress={() => setShowScheduleModal(false)}>
-                <Text style={styles.secondaryBtnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.primaryBtn, { flex: 1 }]} onPress={() => setShowScheduleModal(false)}>
-                <Text style={styles.primaryBtnText}>Save Schedule</Text>
-              </TouchableOpacity>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
-
-      {/* ── ADD SLOT MODAL (JSON: /SaveDrSlot) ── */}
-      <Modal visible={showSlotModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.bottomSheet}>
-            <View style={styles.dragHandle} />
-            <Text style={styles.sheetTitle}>Set Consultation Slot</Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Select Doctor</Text>
-              <View style={styles.dropdown}>
-                <Text style={{ color: THEME.textPrimary }}>Dr. Priya Patil</Text>
-                <Feather name="chevron-down" size={20} color={THEME.textSecondary} />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Slot Duration</Text>
-              <View style={styles.dropdown}>
-                <Text style={{ color: THEME.textPrimary }}>30 Min</Text>
-                <Feather name="chevron-down" size={20} color={THEME.textSecondary} />
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 30 }}>
-              <TouchableOpacity style={[styles.secondaryBtn, { flex: 1 }]} onPress={() => setShowSlotModal(false)}>
-                <Text style={styles.secondaryBtnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.primaryBtn, { flex: 1 }]} onPress={() => setShowSlotModal(false)}>
-                <Text style={styles.primaryBtnText}>Save Slot</Text>
-              </TouchableOpacity>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
-
+          <View style={{ height: 100 }} />
+        </ScrollView>
+      )}
     </View>
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: THEME.screenBg },
   
@@ -307,13 +342,11 @@ const styles = StyleSheet.create({
   addMiniBtnText: { fontSize: 12, fontWeight: '700', color: '#FFF', marginLeft: 4 },
 
   // Cards
-  card: { flexDirection: 'row', backgroundColor: THEME.bg, borderRadius: 16, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: THEME.border },
-  avatar: { width: 50, height: 50, borderRadius: 25, marginRight: 14 },
+  card: { flexDirection: 'row', backgroundColor: THEME.bg, borderRadius: 16, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: THEME.border, alignItems: 'center' },
   iconCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: THEME.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   cardInfo: { flex: 1, justifyContent: 'center' },
   cardTitle: { fontSize: 15, fontWeight: '700', color: THEME.textPrimary, marginBottom: 2 },
   cardSub: { fontSize: 13, color: THEME.textSecondary },
-  metaText: { fontSize: 11, color: THEME.textSecondary, marginLeft: 6 },
   actionIconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: THEME.screenBg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: THEME.border },
 
   // Vertical Cards (For Schedules)
@@ -337,20 +370,11 @@ const styles = StyleSheet.create({
   slotBadge: { backgroundColor: '#F3E8FF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: '#D8B4FE' },
   slotBadgeText: { fontSize: 13, fontWeight: '700', color: '#9333EA' },
 
-  // Bottom Sheet
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  bottomSheet: { backgroundColor: THEME.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24 },
-  dragHandle: { width: 40, height: 4, backgroundColor: '#E2E8F0', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
-  sheetTitle: { fontSize: 18, fontWeight: '800', color: THEME.textPrimary, marginBottom: 20 },
-
-  // Forms
-  inputGroup: { marginBottom: 16, flex: 1 },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: THEME.textPrimary, marginBottom: 8 },
-  dropdown: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: THEME.border, borderRadius: 12, paddingHorizontal: 14, height: 50, backgroundColor: THEME.screenBg },
-  input: { borderWidth: 1, borderColor: THEME.border, borderRadius: 12, paddingHorizontal: 14, height: 50, backgroundColor: THEME.screenBg, fontSize: 14, color: THEME.textPrimary },
-
-  primaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.primary, height: 50, borderRadius: 12 },
-  primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
-  secondaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.bg, height: 50, borderRadius: 12, borderWidth: 1.5, borderColor: THEME.border },
-  secondaryBtnText: { fontSize: 15, fontWeight: '700', color: THEME.textPrimary },
+  // Box States
+  loaderBox: { paddingVertical: 40, alignItems: 'center' },
+  errorBox: { paddingVertical: 40, alignItems: 'center', paddingHorizontal: 20 },
+  errorText: { fontSize: 14, color: '#EF4444', textAlign: 'center', marginTop: 10, marginBottom: 20 },
+  retryBtn: { backgroundColor: THEME.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
+  retryBtnText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
+  emptyText: { fontSize: 14, color: THEME.textSecondary, textAlign: 'center', marginVertical: 30 },
 });

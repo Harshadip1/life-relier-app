@@ -47,4 +47,4 @@ export const STORAGE_KEYS = {
   USER_ROLE: '@lims_user_role',
 };
 
-export const API_BASE_URL = 'https://api.liferelier.com/v1';
+export const API_BASE_URL = 'https://dn8labapi.liferelier.in';

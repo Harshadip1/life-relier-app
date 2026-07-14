@@ -1,127 +1,251 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator }     from '@react-navigation/stack';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
-import DashboardScreen from '../screens/admin/DashboardScreen';
-import AdminProfileScreen from '../screens/admin/AdminProfileScreen';
-import NewRegistrationScreen from '../screens/admin/NewRegistrationScreen';
-import PatientsScreen from '../screens/admin/PatientsScreen';
-import SamplesScreen from '../screens/admin/SamplesScreen';
-import ReportsScreen from '../screens/admin/ReportsScreen';
-import PendingReportsScreen from '../screens/admin/PendingReportsScreen'; 
+// ── Tab root screens ─────────────────────────────────────────────────────────
+import DashboardScreen        from '../screens/admin/DashboardScreen';
+import FrontDeskScreen        from '../screens/admin/FrontDeskScreen';
+import LaboratoryScreen       from '../screens/admin/LaboratoryScreen';
+import CompletedReportsScreen from '../screens/admin/CompletedReportsScreen';
+import MasterScreen           from '../screens/admin/MasterScreen';
+
+// ── Front Desk children ──────────────────────────────────────────────────────
+import NewRegistrationScreen  from '../screens/admin/NewRegistrationScreen';
+import PatientsScreen         from '../screens/admin/PatientsScreen';       // Patient Status
+import PlaceholderScreen      from '../screens/admin/PlaceholderScreen';
+
+// ── Laboratory children ──────────────────────────────────────────────────────
+import SamplesScreen          from '../screens/admin/SamplesScreen';        // Accession
+import ReportsScreen          from '../screens/admin/ReportsScreen';        // Result Entry
+import PendingReportsScreen   from '../screens/admin/PendingReportsScreen'; // Pending Reports / Report Approval
+
+// ── Master children ──────────────────────────────────────────────────────────
 import DoctorManagementScreen from '../screens/admin/DoctorManagementScreen';
-import AdminBookAppointmentScreen from '../screens/admin/AdminBookAppointmentScreen';
+import DrAppointmentScreen    from '../screens/admin/DrAppointmentScreen';
+import AddDoctorScheduleScreen from '../screens/admin/AddDoctorScheduleScreen';
+import AddDoctorSlotScreen    from '../screens/admin/AddDoctorSlotScreen';
+import AppointmentRecordsScreen   from '../screens/admin/AppointmentRecordsScreen';
+import SearchAvailableSlotsScreen from '../screens/admin/SearchAvailableSlotsScreen';
+import ShowAppointmentScreen      from '../screens/admin/ShowAppointmentScreen';
+
 import { COLORS } from '../utils/constants';
 
-const Tab = createBottomTabNavigator();
+const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+// Screens that should SHOW the tab bar
+const TAB_ROOTS = new Set([
+  'DashboardMain', 'FrontDeskMain', 'LaboratoryMain', 'ReportsMain', 'MasterMain',
+]);
+
+function getTabStyle(route: any) {
+  const name = getFocusedRouteNameFromRoute(route) ?? '';
+  if (name !== '' && !TAB_ROOTS.has(name)) return { display: 'none' as const };
+  return {
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1, borderTopColor: '#F1F5F9',
+    height: 64, paddingBottom: 8, paddingTop: 8,
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.06, shadowRadius: 10,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. DASHBOARD STACK
+// ─────────────────────────────────────────────────────────────────────────────
 function DashboardStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="DashboardMain" component={DashboardScreen} />
+      <Stack.Screen name="DashboardMain"  component={DashboardScreen} />
+      {/* shortcuts reachable from dashboard quick-actions */}
       <Stack.Screen name="NewRegistration" component={NewRegistrationScreen} />
-      <Stack.Screen name="PendingReports" component={PendingReportsScreen} />
-      <Stack.Screen name="AdminBookAppointment" component={AdminBookAppointmentScreen} />
+      <Stack.Screen name="PatientStatus"   component={PatientsScreen} />
+      <Stack.Screen name="SampleCollection"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Sample Collection', icon: 'eyedropper-variant' }}
+      />
+      <Stack.Screen name="ResultEntry"     component={ReportsScreen} />
+      <Stack.Screen name="BillPayment"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Bill Payment', icon: 'cash-register' }}
+      />
+      <Stack.Screen name="PendingReports"  component={PendingReportsScreen} />
     </Stack.Navigator>
   );
 }
 
-function PatientsStack() {
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. FRONT DESK STACK
+// ─────────────────────────────────────────────────────────────────────────────
+function FrontDeskStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="PatientsMain" component={PatientsScreen} />
+      <Stack.Screen name="FrontDeskMain"   component={FrontDeskScreen} />
       <Stack.Screen name="NewRegistration" component={NewRegistrationScreen} />
+      <Stack.Screen name="PatientStatus"   component={PatientsScreen} />
+      <Stack.Screen name="BillPayment"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Bill Payment', icon: 'cash-register' }}
+      />
+      <Stack.Screen name="AppointmentBooking"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Appointment Booking', icon: 'calendar-check-outline' }}
+      />
+      <Stack.Screen name="HomeCollection"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Home Collection Booking', icon: 'home-city-outline' }}
+      />
     </Stack.Navigator>
   );
 }
 
-// 👇 Create a new Stack for the Profile Tab!
-function ProfileStack() {
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. LABORATORY STACK
+// ─────────────────────────────────────────────────────────────────────────────
+function LaboratoryStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="ProfileMain" component={AdminProfileScreen} />
-      {/* Now the Profile Screen can open the Doctor Management Screen */}
-      <Stack.Screen name="DoctorManagement" component={DoctorManagementScreen} />
+      <Stack.Screen name="LaboratoryMain"  component={LaboratoryScreen} />
+      <Stack.Screen name="SampleCollection"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Sample Collection', icon: 'eyedropper-variant' }}
+      />
+      <Stack.Screen name="Accession"       component={SamplesScreen} />
+      <Stack.Screen name="ResultEntry"     component={ReportsScreen} />
+      <Stack.Screen name="PendingReports"  component={PendingReportsScreen} />
+      <Stack.Screen name="ReportApproval"  component={PendingReportsScreen} />
     </Stack.Navigator>
   );
 }
 
-const PlaceholderScreen = ({ route }: any) => (
-  <View style={styles.placeholder}>
-    <Ionicons name="construct-outline" size={50} color={COLORS.primary} />
-    <Text style={styles.placeholderText}>{route.name} Screen</Text>
-    <Text style={styles.placeholderSub}>Coming soon...</Text>
-  </View>
-);
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. REPORTS STACK
+// ─────────────────────────────────────────────────────────────────────────────
+function ReportsStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ReportsMain"     component={CompletedReportsScreen} />
+    </Stack.Navigator>
+  );
+}
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. MASTER STACK
+// ─────────────────────────────────────────────────────────────────────────────
+function MasterStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MasterMain"      component={MasterScreen} />
+
+      {/* Doctor Management */}
+      <Stack.Screen name="DoctorManagement"     component={DoctorManagementScreen} />
+      {/* 1. Doctor Schedule */}
+      <Stack.Screen name="DrAppointment"        component={DrAppointmentScreen} />
+      <Stack.Screen name="AddDoctorSchedule"    component={AddDoctorScheduleScreen} />
+      {/* 2. Dr Slot */}
+      <Stack.Screen name="DrSlot"               component={AddDoctorSlotScreen} />
+      <Stack.Screen name="AddDoctorSlot"        component={AddDoctorSlotScreen} />
+      {/* 3. Dr Appointment (Appointment Desk) */}
+      <Stack.Screen name="AppointmentRecords"   component={AppointmentRecordsScreen} />
+      <Stack.Screen name="SearchAvailableSlots" component={SearchAvailableSlotsScreen} />
+      {/* 4. Show Appointment */}
+      <Stack.Screen name="ShowAppointment"      component={ShowAppointmentScreen} />
+      <Stack.Screen name="ReferralDoctor"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Referral Doctors', icon: 'account-heart-outline' }}
+      />
+
+      {/* Test Management */}
+      <Stack.Screen name="TestMaster"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Test Master', icon: 'test-tube' }}
+      />
+      <Stack.Screen name="PackageMaster"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Package Master', icon: 'package-variant' }}
+      />
+      <Stack.Screen name="DepartmentMaster"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Department Master', icon: 'office-building-outline' }}
+      />
+      <Stack.Screen name="SampleTypeMaster"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Sample Type Master', icon: 'flask-outline' }}
+      />
+      <Stack.Screen name="TubeMaster"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Tube Master', icon: 'test-tube-empty' }}
+      />
+
+      {/* Laboratory masters */}
+      <Stack.Screen name="CollectionCenter"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Collection Centers', icon: 'map-marker-outline' }}
+      />
+      <Stack.Screen name="Instruments"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Instruments', icon: 'robot-industrial-outline' }}
+      />
+
+      {/* Staff */}
+      <Stack.Screen name="StaffManagement"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Staff', icon: 'account-multiple-outline' }}
+      />
+      <Stack.Screen name="Roles"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Roles', icon: 'shield-account-outline' }}
+      />
+      <Stack.Screen name="Permissions"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Permissions', icon: 'lock-outline' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROOT TAB NAVIGATOR
+// ─────────────────────────────────────────────────────────────────────────────
 export default function AdminNavigator() {
-  
-  const getTabBarStyle = (route: any) => {
-    const routeName = getFocusedRouteNameFromRoute(route) ?? '';
-
-    if (
-      routeName !== '' && 
-      routeName !== 'DashboardMain' && 
-      routeName !== 'PatientsMain' && 
-      routeName !== 'SamplesMain' && 
-      routeName !== 'ReportsMain' && 
-      routeName !== 'ProfileMain'
-    ) {
-      return { display: 'none' as const };
-    }
-
-    return {
-      backgroundColor: '#FFFFFF',
-      borderTopWidth: 1,
-      borderTopColor: '#F1F5F9',
-      height: 65,
-      paddingBottom: 8,
-      paddingTop: 8,
-      elevation: 10,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.05,
-      shadowRadius: 10,
-    };
-  };
-
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: getTabBarStyle(route),
-        tabBarActiveTintColor: COLORS.primary || '#0D9488',
+        tabBarStyle: getTabStyle(route),
+        tabBarActiveTintColor:   COLORS.primary,
         tabBarInactiveTintColor: '#94A3B8',
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 4 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 2 },
         tabBarIcon: ({ color, focused }) => {
-          let iconName: any = 'circle';
           switch (route.name) {
-            case 'Dashboard': iconName = focused ? 'home' : 'home-outline'; break;
-            case 'Patients': iconName = focused ? 'people' : 'people-outline'; break;
-            case 'Samples': iconName = focused ? 'flask' : 'flask-outline'; break;
-            case 'Reports': iconName = focused ? 'document-text' : 'document-text-outline'; break;
-            case 'Profile': iconName = focused ? 'person' : 'person-outline'; break;
+            case 'Dashboard':
+              return <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />;
+            case 'FrontDesk':
+              return <Ionicons name={focused ? 'people' : 'people-outline'} size={22} color={color} />;
+            case 'Laboratory':
+              return <MaterialCommunityIcons name={focused ? 'flask' : 'flask-outline'} size={22} color={color} />;
+            case 'Reports':
+              return <Ionicons name={focused ? 'document-text' : 'document-text-outline'} size={22} color={color} />;
+            case 'More':
+              return <MaterialCommunityIcons name={focused ? 'cog' : 'cog-outline'} size={22} color={color} />;
+            default:
+              return <Ionicons name="ellipse-outline" size={22} color={color} />;
           }
-          return <Ionicons name={iconName} size={24} color={color} />;
         },
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardStack} />
-      <Tab.Screen name="Patients" component={PatientsStack} />
-      <Tab.Screen name="Samples" component={SamplesScreen} />
-      <Tab.Screen name="Reports" component={ReportsScreen} />
-      {/* 👇 Hook up the Profile Stack here */}
-      <Tab.Screen name="Profile" component={ProfileStack} />
+      <Tab.Screen name="Dashboard"  component={DashboardStack}  options={{ title: 'Dashboard'   }} />
+      <Tab.Screen name="FrontDesk"  component={FrontDeskStack}  options={{ title: 'Front Desk'  }} />
+      <Tab.Screen name="Laboratory" component={LaboratoryStack} options={{ title: 'Laboratory'  }} />
+      <Tab.Screen name="Reports"    component={ReportsStack}    options={{ title: 'Reports'     }} />
+      <Tab.Screen name="More"       component={MasterStack}     options={{ title: 'More'        }} />
     </Tab.Navigator>
   );
 }
 
-const styles = StyleSheet.create({
-  placeholder: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' },
-  placeholderText: { fontSize: 20, fontWeight: '700', color: '#0F172A', marginTop: 12 },
-  placeholderSub: { fontSize: 14, color: '#64748B', marginTop: 4 }
-});
+const styles = StyleSheet.create({});

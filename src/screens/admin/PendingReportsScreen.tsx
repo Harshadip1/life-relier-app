@@ -86,7 +86,7 @@ export default function PendingReportsScreen({ navigation }: any) {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           <View style={styles.summaryGrid}>
             <View style={[styles.summaryCard, { borderColor: '#FEF3C7', backgroundColor: THEME.warningBg }]}>
-              <MaterialCommunityIcons name="hourglass-empty" size={24} color={THEME.warning} />
+              <MaterialCommunityIcons name="clock-outline" size={24} color={THEME.warning} />
               <Text style={[styles.summaryLabel, { color: THEME.warning }]}>Pending</Text>
               <Text style={[styles.summaryValue, { color: THEME.warning }]}>18</Text>
             </View>

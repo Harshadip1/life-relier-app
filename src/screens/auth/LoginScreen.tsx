@@ -1,26 +1,49 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator,
-  Image, ImageBackground, Dimensions, StatusBar
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  StatusBar,
+  Dimensions,
+  Image,
 } from 'react-native';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
-const BG_IMAGE = "https://th.bing.com/th/id/OIP.xl8T2seL8gQkgKz5x3xHWQHaQd?o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3";
-const LOGO_IMAGE = "https://media.licdn.com/dms/image/v2/D4D0BAQGUElF2YnVswQ/company-logo_200_200/company-logo_200_200/0/1736934578140?e=2147483647&v=beta&t=wFaY-cVe0ezRImOrxBa96UWFWU22-yaskrQZHJArLCM";
+const TEAL = '#0D9488';
+const BLUE = '#2563EB';
+const NAVY = '#1E3A8A';
+const RED  = '#DC2626';
+
+const CROSSES = [
+  { top: 55,  left: 22  },
+  { top: 45,  right: 35 },
+  { top: 170, left: 55  },
+  { top: 190, right: 18 },
+  { top: height - 210, left: 28  },
+  { top: height - 185, right: 48 },
+  { top: height - 85,  left: 95  },
+  { top: height - 105, right: 18 },
+];
+
+const companyLogo = require('../../../assets/splash.png');
 
 export default function LoginScreen() {
   const { login } = useAuth();
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
+  const [loading,  setLoading]  = useState(false);
+  const [errors,   setErrors]   = useState<{ username?: string; password?: string }>({});
 
   function validate() {
     const e: typeof errors = {};
@@ -43,260 +66,251 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <ImageBackground source={{ uri: BG_IMAGE }} style={styles.background}>
-        <LinearGradient
-          colors={['rgba(21, 101, 192, 0.4)', 'rgba(106, 27, 154, 0.6)', 'rgba(74, 20, 140, 0.7)']}
-          style={styles.gradientOverlay}
-        />
+    <View style={s.root}>
+      <StatusBar barStyle="light-content" backgroundColor={TEAL} />
+      <View style={s.bg} />
 
-        <KeyboardAvoidingView
-          style={styles.root}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      {/* Decorative crosses */}
+      {CROSSES.map((pos, i) => (
+        <Text key={i} style={[s.cross, pos]}>✛</Text>
+      ))}
+      <View style={[s.dot, { top: 125, left: 44  }]} />
+      <View style={[s.dot, { top: 255, right: 32 }]} />
+      <View style={[s.dot, { top: height - 265, left: 52  }]} />
+      <View style={[s.dot, { top: height - 155, right: 58 }]} />
+
+      <KeyboardAvoidingView
+        style={s.kav}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            contentContainerStyle={styles.scroll}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.card}>
-              {/* Logo Section */}
-              <View style={styles.logoSection}>
-                <Image source={{ uri: LOGO_IMAGE }} style={styles.logo} resizeMode="contain" />
-                <Text style={styles.cloudVersion}>Life Relier</Text>
-              </View>
+          <View style={s.card}>
 
-              {/* Username Field */}
-              <View style={styles.inputContainer}>
-                <View style={[styles.inputWrapper, errors.username ? styles.inputError : null]}>
-                  <Ionicons name="person-outline" size={20} color="#FFF" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Username"
-                    placeholderTextColor="rgba(255, 255, 255, 0.7)"
-                    value={username}
-                    onChangeText={(t) => { setUsername(t); setErrors((e) => ({ ...e, username: undefined })); }}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    editable={!loading}
-                  />
+            {/* ── Header: logo left + company name right ── */}
+            <View style={s.header}>
+              {/* Logo image */}
+              <Image
+                source={companyLogo}
+                style={s.logoImg}
+                resizeMode="contain"
+              />
+
+              {/* Company name block */}
+              <View style={s.nameBlock}>
+                <Text style={s.companyName}>Life Relier Infosoft</Text>
+                <View style={s.subRow}>
+                  <View style={s.redLine} />
+                  <Text style={s.privateLtd}>Private Limited</Text>
+                  <View style={s.redLine} />
                 </View>
-                {errors.username ? <Text style={styles.errorText}>{errors.username}</Text> : null}
-              </View>
-
-              {/* Password Field */}
-              <View style={styles.inputContainer}>
-                <View style={[styles.inputWrapper, errors.password ? styles.inputError : null]}>
-                  <Ionicons name="lock-closed-outline" size={20} color="#FFF" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Password"
-                    placeholderTextColor="rgba(255, 255, 255, 0.7)"
-                    value={password}
-                    onChangeText={(t) => { setPassword(t); setErrors((e) => ({ ...e, password: undefined })); }}
-                    secureTextEntry={!showPass}
-                    editable={!loading}
-                  />
-                  <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeBtn}>
-                    <Ionicons
-                      name={showPass ? 'eye-off-outline' : 'eye-outline'}
-                      size={20}
-                      color="#FFF"
-                    />
-                  </TouchableOpacity>
-                </View>
-                {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
-              </View>
-
-              {/* Login Button */}
-              <TouchableOpacity
-                onPress={handleLogin}
-                disabled={loading}
-                activeOpacity={0.8}
-                style={styles.loginBtnWrapper}
-              >
-                <LinearGradient
-                  colors={['rgba(138, 43, 226, 0.6)', 'rgba(106, 27, 154, 0.7)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.loginBtn}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.loginBtnText}>Login</Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-
-              {/* Remember Me & Forget Password */}
-              <View style={styles.optionsRow}>
-                <TouchableOpacity
-                  style={styles.rememberSection}
-                  onPress={() => setRememberMe(!rememberMe)}
-                  activeOpacity={0.5}
-                >
-                  <MaterialCommunityIcons
-                    name={rememberMe ? "checkbox-marked" : "checkbox-blank-outline"}
-                    size={20}
-                    color="#FFF"
-                  />
-                  <Text style={styles.optionText}>Remember me</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity activeOpacity={0.5}>
-                  <Text style={styles.optionText}>Forget password?</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Register Link */}
-              <View style={styles.registerContainer}>
-                <Text style={styles.noAccountText}>Don't have an account? </Text>
-                <TouchableOpacity>
-                  <Text style={styles.registerText}>Register</Text>
-                </TouchableOpacity>
               </View>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </ImageBackground>
+
+            {/* ── Username field ── */}
+            <View style={s.fieldWrap}>
+              <View style={[s.inputBox, errors.username && s.inputBoxError]}>
+                <TextInput
+                  style={s.input}
+                  placeholder="Username"
+                  placeholderTextColor="#9CA3AF"
+                  value={username}
+                  onChangeText={t => { setUsername(t); setErrors(e => ({ ...e, username: undefined })); }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                />
+              </View>
+              {errors.username ? <Text style={s.errorText}>{errors.username}</Text> : null}
+            </View>
+
+            {/* ── Password field ── */}
+            <View style={s.fieldWrap}>
+              <View style={[s.inputBox, errors.password && s.inputBoxError]}>
+                <TextInput
+                  style={s.input}
+                  placeholder="Password"
+                  placeholderTextColor="#9CA3AF"
+                  value={password}
+                  onChangeText={t => { setPassword(t); setErrors(e => ({ ...e, password: undefined })); }}
+                  secureTextEntry={!showPass}
+                  editable={!loading}
+                />
+              </View>
+              {errors.password ? <Text style={s.errorText}>{errors.password}</Text> : null}
+            </View>
+
+            {/* ── Forgot password ── */}
+            <TouchableOpacity style={s.forgotRow} activeOpacity={0.7}>
+              <Text style={s.forgotText}>Forgot Password?</Text>
+            </TouchableOpacity>
+
+            {/* ── Submit ── */}
+            <TouchableOpacity
+              style={[s.submitBtn, loading && { opacity: 0.7 }]}
+              onPress={handleLogin}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading
+                ? <ActivityIndicator color="#FFF" />
+                : <Text style={s.submitText}>Submit</Text>}
+            </TouchableOpacity>
+
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  background: {
-    flex: 1,
-    width: width,
-    height: height,
-  },
-  gradientOverlay: {
+const s = StyleSheet.create({
+  root: { flex: 1 },
+
+  bg: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: TEAL,
   },
-  root: {
-    flex: 1,
+
+  cross: {
+    position: 'absolute',
+    fontSize: 26,
+    color: 'rgba(255,255,255,0.20)',
+    fontWeight: '300',
   },
+  dot: {
+    position: 'absolute',
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.20)',
+  },
+
+  kav:    { flex: 1 },
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 60,
   },
+
+  // ── White card ──
   card: {
     width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 40,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     paddingHorizontal: 24,
-    paddingVertical: 40,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+    paddingTop: 28,
+    paddingBottom: 36,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
   },
-  logoSection: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logo: {
-    width: 90,
-    height: 90,
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 5,
-  },
-  cloudVersion: {
-    fontSize: 18,
-    color: '#FFF',
-    fontWeight: '700',
-    opacity: 0.9,
-    marginTop: 8,
-  },
-  inputContainer: {
-    width: '100%',
-    marginBottom: 15,
-  },
-  inputWrapper: {
+
+  // ── Header row ──
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 20,
+    marginBottom: 32,
+  },
+  logoImg: {
+    width: 100,
+    height: 87,
+    marginRight: 14,
+  },
+  nameBlock: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  companyName: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: NAVY,
+    lineHeight: 26,
+  },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+    gap: 6,
+    alignSelf: 'stretch',   // match width of nameBlock (same as companyName line)
+  },
+  redLine: {
+    flex: 1,
+    height: 1.5,
+    backgroundColor: RED,
+    maxWidth: 32,           // cap so right line doesn't overshoot the text above
+  },
+  privateLtd: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F2937',
+    letterSpacing: 0.2,
+  },
+
+  // ── Input fields ──
+  fieldWrap: {
+    marginBottom: 14,
+  },
+  inputBox: {
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    height: 58,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    height: 54,
+    justifyContent: 'center',
   },
-  inputError: {
-    borderColor: 'rgba(255, 82, 82, 0.5)',
-  },
-  inputIcon: {
-    marginRight: 12,
+  inputBoxError: {
+    borderColor: '#EF4444',
   },
   input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#FFF',
-    fontWeight: '500',
-  },
-  eyeBtn: {
-    padding: 8,
-  },
-  loginBtnWrapper: {
-    width: '100%',
-    marginTop: 10,
-  },
-  loginBtn: {
-    height: 58,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loginBtnText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  optionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 20,
-    marginBottom: 35,
-  },
-  rememberSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  optionText: {
-    color: '#FFF',
-    fontSize: 13,
-    marginLeft: 8,
-    opacity: 0.9,
-  },
-  registerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  noAccountText: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 14,
-  },
-  registerText: {
-    color: '#FFF',
     fontSize: 15,
-    fontWeight: '700',
+    color: '#111827',
   },
   errorText: {
-    color: '#FF5252',
+    color: '#EF4444',
     fontSize: 12,
     marginTop: 4,
-    marginLeft: 5,
+    marginLeft: 2,
+  },
+
+  // ── Forgot password ──
+  forgotRow: {
+    alignSelf: 'flex-end',
+    marginTop: 2,
+    marginBottom: 22,
+  },
+  forgotText: {
+    fontSize: 14,
+    color: BLUE,
+    fontWeight: '600',
+  },
+
+  // ── Submit button ──
+  submitBtn: {
+    height: 54,
+    borderRadius: 30,
+    backgroundColor: BLUE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: BLUE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+  },
+  submitText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
 });
