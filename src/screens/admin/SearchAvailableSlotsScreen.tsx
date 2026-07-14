@@ -138,7 +138,9 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
       LastName:        lastName.trim(),
       Mobile:          mobile.trim(),
       AppointmentDate: toAPIDate(apptDate),
-      Slot:            `${selectedSlot.SlotMins ?? (selectedSlot as any).slotMins ?? (selectedSlot as any).SlotMin ?? ''} Minutes`,
+      Slot:            selectedSlot.Slot
+                         ? `${selectedSlot.Slot} Minutes`
+                         : '20 Minutes',
       Address:         address.trim() || '',
       GenderId:        genderId,
       InitialId:       initialId,
@@ -253,8 +255,8 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
             ) : (
               <View style={s.slotsRow}>
                 {slots.map((sl, idx) => {
-                    const slotMins = sl.SlotMins ?? (sl as any).slotMins ?? (sl as any).SlotMin ?? (sl as any).slotMin ?? '?';
-                    const slotId   = sl.SlotId   ?? (sl as any).slotId   ?? idx;
+                    const slotVal = sl.Slot ?? '?';
+                    const slotId  = sl.SlotId ?? idx;
                     return (
                       <TouchableOpacity
                         key={slotId}
@@ -265,7 +267,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
                           color={selectedSlot?.SlotId === sl.SlotId ? '#FFF' : TEAL}
                           style={{ marginRight: 4 }} />
                         <Text style={[s.slotChipText, selectedSlot?.SlotId === sl.SlotId && { color: '#FFF' }]}>
-                          {slotMins} min
+                          {slotVal} min
                         </Text>
                       </TouchableOpacity>
                     );

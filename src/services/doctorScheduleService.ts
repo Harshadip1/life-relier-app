@@ -119,13 +119,13 @@ export async function getAllDoctorSchedules(branchId: number = 1): Promise<Docto
 
   if (list.length === 0) return [];
 
-  // Enrich with doctor names
+  // Enrich with doctor names — fall back to "Dr. #ID" if not in dropdown
   try {
     const doctors = await getDoctorDropdown(1);
     const map = new Map<number, string>(doctors.map(d => [d.Id, d.FullName]));
     return list.map(s => ({
       ...s,
-      DoctorName: map.get(s.DrId ?? s.drId) || s.DoctorName,
+      DoctorName: map.get(s.DrId ?? s.drId) || s.DoctorName || `Dr. #${s.DrId ?? s.drId}`,
     }));
   } catch {
     return list;
