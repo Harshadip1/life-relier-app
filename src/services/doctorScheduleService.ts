@@ -217,18 +217,18 @@ export async function getAllDoctorSchedules(
 }
 
 export async function saveSchedule(payload: SaveSchedulePayload): Promise<any> {
-  return post('SaveDoctorSchedule', payload);
+  return post('SaveSchedule', payload);
 }
 
 export async function updateSchedule(payload: any): Promise<any> {
-  return post('UpdateDoctorSchedule', payload);
+  return post('UpdateSchedule', payload);
 }
 
 export async function deleteSchedule(
   scheduleId: number,
   branchId: number = 4,
 ): Promise<any> {
-  return post('DeleteDoctorSchedule', { scheduleId, BranchId: branchId });
+  return post('DeleteSchedule', { scheduleId, BranchId: branchId });
 }
 
 // ─── Doctor dropdown ──────────────────────────────────────────────────────────
@@ -267,8 +267,8 @@ export interface DrSlotRecord {
 // Helper for DrSlot endpoints — same controller, different action names
 
 export async function getAllSlots(branchId: number = 1): Promise<DrSlotRecord[]> {
-  const data = await post<any>('GetAllDrSlot', { BranchId: branchId });
-  console.log('[API] GetAllDrSlot raw response:', JSON.stringify(data));
+  const data = await post<any>('GetAllSlots', { BranchId: branchId });
+  console.log('[API] GetAllSlots raw response:', JSON.stringify(data));
 
   const list: DrSlotRecord[] = Array.isArray(data)
     ? data
@@ -291,15 +291,15 @@ export async function getAllSlots(branchId: number = 1): Promise<DrSlotRecord[]>
 }
 
 export async function saveSlot(payload: object): Promise<any> {
-  return post('SaveDrSlot', payload);
+  return post('SaveSlot', payload);
 }
 
 export async function updateSlot(payload: object): Promise<any> {
-  return post('UpdateDrSlot', payload);
+  return post('UpdateSlot', payload);
 }
 
 export async function deleteSlot(slotId: number, branchId: number = 4): Promise<any> {
-  return post('DeleteDrSlot', { SlotId: slotId, BranchId: branchId });
+  return post('DeleteSlot', { SlotId: slotId, BranchId: branchId });
 }
 
 // ─── Appointments  (controller: /api/DrAppointment/) ─────────────────────────
