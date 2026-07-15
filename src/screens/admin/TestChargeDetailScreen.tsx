@@ -1,85 +1,222 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert, TextInput,
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  ActivityIndicator, Alert, Modal, ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { getTestChargeById, deleteTestCharge } from '../../services/testChargesService';
+import {
+  getAllTestCharges,
+  getAllRateTypes,
+  getAllSubDepts,
+  getAllMainTests,
+  deleteTestCharge,
+} from '../../services/testChargesService';
 import { TestCharge } from '../../utils/types';
 
-const T = {
-  primary:  '#0D9488',
-  bg:       '#F8FAFC',
-  card:     '#FFFFFF',
-  text:     '#0F172A',
-  sub:      '#64748B',
-  muted:    '#94A3B8',
-  border:   '#E2E8F0',
-  green:    '#15803D',
-  greenBg:  '#F0FDF4',
-  tealBg:   '#F0FDFA',
-  tealBorder:'#CCFBF1',
-};
+const TEAL = '#0D9488';
+const TEAL_DARK = '#0F766E';
 
-// ─── Row helper ────────────────────────────────────────────────────────────────
-function DetailRow({ label, value, highlight }: { label: string; value: string | number | null; highlight?: boolean }) {
-  const display = value === null || value === undefined || value === '' ? '—' : String(value);
+interface DropItem { id: number; label: string }
+
+// ─── Modal-based Dropdown (no clipping issues) ───────────────────────────────
+function ModalDropdown({
+  label, required, optional,
+  value, options, onSelect, loading, placeholder,
+}: {
+  label: string; required?: boolean; optional?: boolean;
+  value: string; options: DropItem[];
+  onSelect: (item: DropItem | null) => void;
+  loading?: boolean; placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
   return (
-    <View style={styles.detailRow}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={[styles.detailValue, highlight && { color: T.green, fontWeight: '800' }]}>
+    <View style={s.fieldBlock}>
+      <Text style={s.fieldLabel}>
+        {label}
+        {required && <Text style={{ color: '#EF4444' }}> *</Text>}
+        {optional && <Text style={{ color: '#94A3B8', fontWeight: '400' }}> (Optional)</Text>}
+      </Text>
+      <TouchableOpacity
+        style={s.ddTrigger}
+        onPress={() => !loading && setOpen(true)}
+        activeOpacity={0.8}
+      >
+        {loading
+          ? <ActivityIndicator size={14} color={TEAL} style={{ marginRight: 8 }} />
+          : null}
+        <Text style={[s.ddTriggerText, !value && { color: '#94A3B8' }]} numberOfLines={1}>
+          {loading ? 'Loading…' : (value || placeholder || 'Select…')}
+        </Text>
+        <Feather name="chevron-down" size={16} color="#64748B" />
+      </TouchableOpacity>
+
+      {/* Modal picker — no clipping */}
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <TouchableOpacity style={s.pickerOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
+          <View style={s.pickerBox}>
+            <View style={s.pickerHeader}>
+              <Text style={s.pickerTitle}>{label}</Text>
+              <TouchableOpacity onPress={() => setOpen(false)}>
+                <Feather name="x" size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }}>
+              {optional && (
+                <TouchableOpacity
+                  style={s.pickerItem}
+                  onPress={() => { onSelect(null); setOpen(false); }}
+                >
+                  <Text style={s.pickerItemText}>All Tests (Optional)</Text>
+                </TouchableOpacity>
+              )}
+              {options.length === 0
+                ? <View style={s.pickerEmpty}><Text style={s.pickerEmptyText}>No data found</Text></View>
+                : options.map(o => (
+                  <TouchableOpacity
+                    key={o.id}
+                    style={[s.pickerItem, value === o.label && s.pickerItemActive]}
+                    onPress={() => { onSelect(o); setOpen(false); }}
+                  >
+                    <Text style={[s.pickerItemText, value === o.label && s.pickerItemTextActive]}>
+                      {o.label}
+                    </Text>
+                    {value === o.label && <Feather name="check" size={15} color={TEAL} />}
+                  </TouchableOpacity>
+                ))
+              }
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+}
+
+// ─── Detail Row ───────────────────────────────────────────────────────────────
+function DetailRow({ label, value, highlight }: { label: string; value: any; highlight?: boolean }) {
+  const display = (value === null || value === undefined || value === '') ? '—' : String(value);
+  return (
+    <View style={s.detailRow}>
+      <Text style={s.detailLabel}>{label}</Text>
+      <Text style={[s.detailValue, highlight && { color: '#15803D', fontWeight: '800' }]}>
         {display}
       </Text>
     </View>
   );
 }
 
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function TestChargeDetailScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
 
-  const [inputId, setInputId]     = useState('');
-  const [loading, setLoading]     = useState(false);
-  const [charge, setCharge]       = useState<TestCharge | null>(null);
-  const [deleting, setDeleting]   = useState(false);
+  // Dropdown data
+  const [rateTypes,  setRateTypes]  = useState<DropItem[]>([]);
+  const [subDepts,   setSubDepts]   = useState<DropItem[]>([]);
+  const [mainTests,  setMainTests]  = useState<DropItem[]>([]);
+  const [loadingRT,  setLoadingRT]  = useState(false);
+  const [loadingSD,  setLoadingSD]  = useState(false);
+  const [loadingMT,  setLoadingMT]  = useState(false);
 
-  const fetchCharge = useCallback(async () => {
-    const id = parseInt(inputId.trim(), 10);
-    if (isNaN(id) || id <= 0) {
-      Alert.alert('Invalid ID', 'Please enter a valid numeric Test Charge ID.');
-      return;
-    }
+  // Selected values
+  const [rateTypeId,   setRateTypeId]   = useState<number | null>(null);
+  const [rateTypeName, setRateTypeName] = useState('');
+  const [subDeptId,    setSubDeptId]    = useState<number | null>(null);
+  const [subDeptName,  setSubDeptName]  = useState('');
+  const [mainTestId,   setMainTestId]   = useState<number | null>(null);
+  const [mainTestName, setMainTestName] = useState('');
+
+  // Results
+  const [results,  setResults]  = useState<TestCharge[]>([]);
+  const [searched, setSearched] = useState(false);
+  const [loading,  setLoading]  = useState(false);
+
+  // Detail modal
+  const [selected,  setSelected]  = useState<TestCharge | null>(null);
+  const [deleting,  setDeleting]  = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  // Load dropdowns on mount
+  useEffect(() => {
+    setLoadingRT(true);
+    getAllRateTypes()
+      .then(data => {
+        console.log('[RateTypes] response:', JSON.stringify(data));
+        setRateTypes(data.map(r => ({ id: r.RateTypeId, label: r.RateTypeName })));
+      })
+      .catch(err => console.log('[RateTypes] ERROR:', err?.message))
+      .finally(() => setLoadingRT(false));
+
+    setLoadingSD(true);
+    getAllSubDepts()
+      .then(data => {
+        console.log('[SubDepts] response:', JSON.stringify(data));
+        setSubDepts(data.map(d => ({ id: d.SubDeptId, label: d.SubDeptName })));
+      })
+      .catch(err => console.log('[SubDepts] ERROR:', err?.message))
+      .finally(() => setLoadingSD(false));
+
+    setLoadingMT(true);
+    getAllMainTests()
+      .then(data => {
+        console.log('[MainTests] response:', JSON.stringify(data));
+        setMainTests(data.map(t => ({ id: t.MainTestId, label: t.MainTestName })));
+      })
+      .catch(err => console.log('[MainTests] ERROR:', err?.message))
+      .finally(() => setLoadingMT(false));
+  }, []);
+
+  // Search
+  const handleSearch = useCallback(async () => {
+    if (!rateTypeId) { Alert.alert('Required', 'Please select a Rate Type.'); return; }
+    if (!subDeptId)  { Alert.alert('Required', 'Please select a Sub Department.'); return; }
     setLoading(true);
-    setCharge(null);
+    setSearched(true);
+    setResults([]);
     try {
-      const data = await getTestChargeById(id);
-      setCharge(data);
+      // API body: { MainTestId?, RateTypeId, BranchId: 1 }
+      const data = await getAllTestCharges({
+        RateTypeId: rateTypeId,
+        MainTestId: mainTestId ?? undefined,
+      });
+      // SubDeptId filter is client-side (not in API)
+      const filtered = data.filter(t => t.SubDeptId === subDeptId);
+      setResults(filtered);
     } catch (err: any) {
-      Alert.alert('Error', err?.message || 'Failed to fetch test charge. Please try again.');
+      Alert.alert('Error', err?.message || 'Failed to fetch test charges.');
     } finally {
       setLoading(false);
     }
-  }, [inputId]);
+  }, [rateTypeId, subDeptId, mainTestId]);
 
+  // Clear
+  const handleClear = useCallback(() => {
+    setRateTypeId(null);  setRateTypeName('');
+    setSubDeptId(null);   setSubDeptName('');
+    setMainTestId(null);  setMainTestName('');
+    setResults([]);
+    setSearched(false);
+  }, []);
+
+  // Delete
   const handleDelete = useCallback(() => {
-    if (!charge) return;
+    if (!selected) return;
     Alert.alert(
       'Confirm Delete',
-      `Are you sure you want to delete "${charge.TestName}" (ID: ${charge.TestChargeId})? This action cannot be undone.`,
+      `Delete "${selected.TestName}" (ID: ${selected.TestChargeId})?\nThis cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: 'Delete', style: 'destructive',
           onPress: async () => {
             setDeleting(true);
             try {
-              const msg = await deleteTestCharge(charge.TestChargeId);
-              setCharge(null);
-              setInputId('');
+              const msg = await deleteTestCharge(selected.TestChargeId);
+              setResults(prev => prev.filter(r => r.TestChargeId !== selected.TestChargeId));
+              setModalOpen(false);
               Alert.alert('Deleted', msg);
             } catch (err: any) {
-              Alert.alert('Error', err?.message || 'Failed to delete test charge. Please try again.');
+              Alert.alert('Error', err?.message || 'Delete failed.');
             } finally {
               setDeleting(false);
             }
@@ -87,100 +224,204 @@ export default function TestChargeDetailScreen({ navigation }: any) {
         },
       ]
     );
-  }, [charge]);
+  }, [selected]);
+
+  // Table row
+  const renderRow = ({ item, index }: { item: TestCharge; index: number }) => (
+    <TouchableOpacity
+      style={[s.tableRow, index % 2 === 1 && s.tableRowAlt]}
+      onPress={() => { setSelected(item); setModalOpen(true); }}
+      activeOpacity={0.75}
+    >
+      <Text style={[s.cell, s.cId]}>{item.TestChargeId}</Text>
+      <Text style={[s.cell, s.cName]} numberOfLines={2}>{item.TestName}</Text>
+      <Text style={[s.cell, s.cCode]}>{item.MTCODE}</Text>
+      <Text style={[s.cell, s.cRate]}>{item.RateTypeName}</Text>
+      <Text style={[s.cell, s.cAmt, { color: '#15803D', fontWeight: '700' }]}>
+        ₹{typeof item.Amount === 'number' ? item.Amount.toLocaleString('en-IN') : item.Amount}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 0) }]}>
+    <View style={[s.root, { paddingTop: Math.max(insets.top, 0) }]}>
 
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Feather name="arrow-left" size={22} color={T.text} />
+      {/* ── Page Header ── */}
+      <View style={s.pageHeader}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} activeOpacity={0.7}>
+          <Feather name="arrow-left" size={22} color="#FFF" />
         </TouchableOpacity>
-        <View>
-          <Text style={styles.headerTitle}>Test Charge Detail</Text>
-          <Text style={styles.headerSub}>Lookup by Test Charge ID</Text>
+        <MaterialCommunityIcons name="currency-inr" size={20} color="#FFF" />
+        <Text style={s.pageTitle}>Test Charges</Text>
+      </View>
+
+      {/* ── Filter Card — stacked vertically ── */}
+      <View style={s.filterCard}>
+
+        {/* 1. Rate Type */}
+        <ModalDropdown
+          label="RATE TYPE"
+          required
+          placeholder="SELECT RATE TYPE"
+          value={rateTypeName}
+          options={rateTypes}
+          loading={loadingRT}
+          onSelect={o => { setRateTypeId(o?.id ?? null); setRateTypeName(o?.label ?? ''); }}
+        />
+
+        {/* 2. Sub Department */}
+        <ModalDropdown
+          label="SUB DEPARTMENT"
+          required
+          placeholder="SELECT SUB DEPARTMENT"
+          value={subDeptName}
+          options={subDepts}
+          loading={loadingSD}
+          onSelect={o => { setSubDeptId(o?.id ?? null); setSubDeptName(o?.label ?? ''); }}
+        />
+
+        {/* 3. Main Test */}
+        <ModalDropdown
+          label="MAIN TEST"
+          optional
+          placeholder="ALL TESTS (OPTIONAL)"
+          value={mainTestName}
+          options={mainTests}
+          loading={loadingMT}
+          onSelect={o => { setMainTestId(o?.id ?? null); setMainTestName(o?.label ?? ''); }}
+        />
+
+        {/* Action buttons */}
+        <View style={s.btnRow}>
+          <TouchableOpacity
+            style={[s.searchBtn, loading && { opacity: 0.6 }]}
+            onPress={handleSearch}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading
+              ? <ActivityIndicator color="#FFF" size="small" />
+              : <Text style={s.searchBtnTxt}>Search</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity style={s.clearBtn} onPress={handleClear} activeOpacity={0.8}>
+            <Text style={s.clearBtnTxt}>Clear</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      {/* ── Results Section ── */}
+      <View style={s.resultsSection}>
 
-        {/* ── Search Card ── */}
-        <View style={styles.searchCard}>
-          <Text style={styles.searchLabel}>Enter Test Charge ID</Text>
-          <View style={styles.searchRow}>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g.  4"
-              placeholderTextColor={T.muted}
-              keyboardType="numeric"
-              value={inputId}
-              onChangeText={setInputId}
-              onSubmitEditing={fetchCharge}
-              returnKeyType="search"
-            />
-            <TouchableOpacity
-              style={[styles.searchBtn, loading && { opacity: 0.6 }]}
-              onPress={fetchCharge}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading
-                ? <ActivityIndicator color="#FFF" size="small" />
-                : <Feather name="search" size={18} color="#FFF" />}
-            </TouchableOpacity>
-          </View>
+        {/* Title bar */}
+        <View style={s.resultBar}>
+          <MaterialCommunityIcons name="table" size={15} color="#FFF" />
+          <Text style={s.resultBarTxt}>
+            Test Charges{'  '}
+            <Text style={{ fontWeight: '400' }}>
+              {searched
+                ? `${results.length} record${results.length !== 1 ? 's' : ''}`
+                : '0 records'}
+            </Text>
+          </Text>
         </View>
 
-        {/* ── Loading ── */}
-        {loading && (
-          <View style={styles.centerBox}>
-            <ActivityIndicator size="large" color={T.primary} />
-            <Text style={styles.loadingText}>Fetching test charge...</Text>
+        {/* Table header */}
+        {results.length > 0 && (
+          <View style={s.tableHead}>
+            <Text style={[s.headCell, s.cId]}>ID</Text>
+            <Text style={[s.headCell, s.cName]}>Test Name</Text>
+            <Text style={[s.headCell, s.cCode]}>MT Code</Text>
+            <Text style={[s.headCell, s.cRate]}>Rate Type</Text>
+            <Text style={[s.headCell, s.cAmt]}>Amount</Text>
           </View>
         )}
 
-        {/* ── Result Card ── */}
-        {!loading && charge && (
-          <View style={styles.resultCard}>
+        {/* Loading */}
+        {loading && (
+          <View style={s.centerBox}>
+            <ActivityIndicator size="large" color={TEAL} />
+            <Text style={s.centerTxt}>Searching…</Text>
+          </View>
+        )}
 
-            {/* Title row */}
-            <View style={styles.resultHeader}>
-              <View style={styles.resultIconBox}>
-                <MaterialCommunityIcons name="test-tube" size={26} color={T.primary} />
+        {/* Empty / prompt */}
+        {!loading && !searched && (
+          <View style={s.centerBox}>
+            <MaterialCommunityIcons name="filter-outline" size={46} color="#94A3B8" />
+            <Text style={s.centerTxt}>Select Rate Type and Sub Department, then click Search.</Text>
+          </View>
+        )}
+        {!loading && searched && results.length === 0 && (
+          <View style={s.centerBox}>
+            <MaterialCommunityIcons name="flask-empty-outline" size={46} color="#94A3B8" />
+            <Text style={s.centerTxt}>No data available.</Text>
+          </View>
+        )}
+
+        {/* Rows */}
+        {!loading && results.length > 0 && (
+          <FlatList
+            data={results}
+            keyExtractor={item => String(item.TestChargeId)}
+            renderItem={renderRow}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 120 }}
+            ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: '#F1F5F9' }} />}
+          />
+        )}
+      </View>
+
+      {/* ── Detail Bottom Sheet ── */}
+      <Modal visible={modalOpen} transparent animationType="slide" onRequestClose={() => setModalOpen(false)}>
+        <View style={s.overlay}>
+          <View style={s.sheet}>
+            <View style={s.handle} />
+            <View style={s.sheetHeader}>
+              <View style={s.sheetIconBox}>
+                <MaterialCommunityIcons name="test-tube" size={22} color={TEAL} />
               </View>
-              <View style={{ flex: 1, marginLeft: 14 }}>
-                <Text style={styles.testName}>{charge.TestName}</Text>
-                <View style={styles.mtcodeRow}>
-                  <MaterialCommunityIcons name="barcode" size={14} color={T.sub} />
-                  <Text style={styles.mtcode}>  {charge.MTCODE}</Text>
-                </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={s.sheetTitle} numberOfLines={2}>{selected?.TestName}</Text>
+                <Text style={s.sheetSub}>MT Code: {selected?.MTCODE}  •  ID: {selected?.TestChargeId}</Text>
               </View>
-              {/* Amount badge */}
-              <View style={styles.amountBadge}>
-                <Text style={styles.amountValue}>
-                  ₹{typeof charge.Amount === 'number' ? charge.Amount.toLocaleString('en-IN') : charge.Amount}
-                </Text>
-                <Text style={styles.amountLabel}>Amount</Text>
-              </View>
+              <TouchableOpacity onPress={() => setModalOpen(false)} style={s.closeBtn}>
+                <Feather name="x" size={20} color="#64748B" />
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.divider} />
+            <View style={s.amountHero}>
+              <Text style={s.amountVal}>
+                ₹{selected && typeof selected.Amount === 'number'
+                  ? selected.Amount.toLocaleString('en-IN')
+                  : selected?.Amount ?? '—'}
+              </Text>
+              <Text style={s.amountLbl}>Charge Amount</Text>
+            </View>
 
-            {/* Details */}
-            <DetailRow label="Test Charge ID"  value={charge.TestChargeId} />
-            <DetailRow label="Main Test ID"    value={charge.MainTestId} />
-            <DetailRow label="Sub Dept ID"     value={charge.SubDeptId} />
-            <DetailRow label="Test Type"       value={charge.TestType} />
-            <DetailRow label="Rate Type"       value={charge.RateTypeName} />
-            <DetailRow label="Rate Type ID"    value={charge.RateTypeId} />
-            <DetailRow label="Package ID"      value={charge.PackageId} />
-            <DetailRow label="Package Name"    value={charge.PackageName} />
-            <DetailRow label="Amount"          value={`₹${typeof charge.Amount === 'number' ? charge.Amount.toLocaleString('en-IN') : charge.Amount}`} highlight />
+            <ScrollView showsVerticalScrollIndicator={false} style={s.sheetScroll}>
+              <View style={s.detailCard}>
+                <DetailRow label="Test Charge ID"  value={selected?.TestChargeId} />
+                <DetailRow label="Test Name"       value={selected?.TestName} />
+                <DetailRow label="MT Code"         value={selected?.MTCODE} />
+                <DetailRow label="Test Type"       value={selected?.TestType} />
+                <DetailRow label="Rate Type"       value={selected?.RateTypeName} />
+                <DetailRow label="Rate Type ID"    value={selected?.RateTypeId} />
+                <DetailRow label="Sub Dept ID"     value={selected?.SubDeptId} />
+                <DetailRow label="Main Test ID"    value={selected?.MainTestId} />
+                <DetailRow label="Package ID"      value={selected?.PackageId} />
+                <DetailRow label="Package Name"    value={selected?.PackageName} />
+                <DetailRow
+                  label="Amount"
+                  value={selected ? `₹${typeof selected.Amount === 'number'
+                    ? selected.Amount.toLocaleString('en-IN') : selected.Amount}` : '—'}
+                  highlight
+                />
+              </View>
+              <View style={{ height: 16 }} />
+            </ScrollView>
 
-            {/* ── Delete Button ── */}
             <TouchableOpacity
-              style={[styles.deleteBtn, deleting && { opacity: 0.6 }]}
+              style={[s.deleteBtn, deleting && { opacity: 0.6 }]}
               onPress={handleDelete}
               disabled={deleting}
               activeOpacity={0.8}
@@ -189,111 +430,171 @@ export default function TestChargeDetailScreen({ navigation }: any) {
                 ? <ActivityIndicator color="#FFF" size="small" />
                 : <>
                     <MaterialCommunityIcons name="trash-can-outline" size={18} color="#FFF" />
-                    <Text style={styles.deleteBtnText}>Delete Test Charge</Text>
-                  </>
-              }
+                    <Text style={s.deleteTxt}>Delete Test Charge</Text>
+                  </>}
             </TouchableOpacity>
           </View>
-        )}
-
-        {/* ── Empty state ── */}
-        {!loading && !charge && (
-          <View style={styles.emptyBox}>
-            <MaterialCommunityIcons name="flask-empty-outline" size={56} color={T.muted} />
-            <Text style={styles.emptyText}>Enter a Test Charge ID above{'\n'}and tap Search to load details.</Text>
-          </View>
-        )}
-
-        <View style={{ height: 80 }} />
-      </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root:  { flex: 1, backgroundColor: T.bg },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#F8FAFC' },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14,
-    backgroundColor: T.card,
-    borderBottomWidth: 1, borderBottomColor: T.border,
-    gap: 14,
+  pageHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: TEAL,
+    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14,
   },
-  backBtn:     { padding: 4 },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: T.text },
-  headerSub:   { fontSize: 12, color: T.sub, marginTop: 2 },
+  backBtn:   { padding: 4 },
+  pageTitle: { fontSize: 17, fontWeight: '800', color: '#FFF', flex: 1 },
 
-  scroll: { padding: 16 },
-
-  // Search
-  searchCard: {
-    backgroundColor: T.card, borderRadius: 16,
-    borderWidth: 1, borderColor: T.tealBorder,
-    padding: 16, marginBottom: 20,
-  },
-  searchLabel: { fontSize: 13, fontWeight: '700', color: T.text, marginBottom: 10 },
-  searchRow:   { flexDirection: 'row', gap: 10 },
-  input: {
-    flex: 1, height: 48, borderRadius: 12,
-    borderWidth: 1, borderColor: T.border,
-    paddingHorizontal: 14, fontSize: 15,
-    color: T.text, backgroundColor: T.bg,
-  },
-  searchBtn: {
-    width: 48, height: 48, borderRadius: 12,
-    backgroundColor: T.primary,
-    alignItems: 'center', justifyContent: 'center',
+  // Filter card — vertical stack
+  filterCard: {
+    backgroundColor: '#FFF',
+    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14,
+    borderBottomWidth: 1, borderBottomColor: '#E2E8F0',
+    elevation: 3, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4,
   },
 
-  centerBox: { alignItems: 'center', marginTop: 40, gap: 12 },
-  loadingText: { fontSize: 14, color: T.sub, fontWeight: '500' },
-
-  // Result
-  resultCard: {
-    backgroundColor: T.card, borderRadius: 16,
-    borderWidth: 1, borderColor: T.tealBorder,
-    padding: 16,
-    elevation: 2, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
+  // Each dropdown field block
+  fieldBlock: { marginBottom: 12 },
+  fieldLabel: {
+    fontSize: 11, fontWeight: '700', color: '#64748B',
+    letterSpacing: 0.4, marginBottom: 6,
   },
-  resultHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  resultIconBox: {
-    width: 52, height: 52, borderRadius: 14,
-    backgroundColor: T.tealBg,
-    alignItems: 'center', justifyContent: 'center',
+  ddTrigger: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 13,
+    backgroundColor: '#F8FAFC',
   },
-  testName: { fontSize: 17, fontWeight: '800', color: T.text },
-  mtcodeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  mtcode:    { fontSize: 12, color: T.sub, fontWeight: '500' },
-  amountBadge: {
-    backgroundColor: T.greenBg, borderRadius: 12,
-    paddingHorizontal: 12, paddingVertical: 8,
-    alignItems: 'center',
-    borderWidth: 1, borderColor: '#BBF7D0',
+  ddTriggerText: { flex: 1, fontSize: 14, color: '#0F172A', fontWeight: '500', marginRight: 6 },
+
+  // Modal picker
+  pickerOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center', paddingHorizontal: 24,
   },
-  amountValue: { fontSize: 18, fontWeight: '900', color: T.green },
-  amountLabel: { fontSize: 10, fontWeight: '600', color: T.green, marginTop: 1 },
-
-  divider: { height: 1, backgroundColor: T.border, marginBottom: 12 },
-
-  detailRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 10,
+  pickerBox: {
+    backgroundColor: '#FFF', borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 10, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12,
+  },
+  pickerHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 18, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
+  },
+  pickerTitle:     { fontSize: 14, fontWeight: '800', color: '#0F172A' },
+  pickerItem: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 18, paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: '#F8FAFC',
   },
-  detailLabel: { fontSize: 13, color: T.sub, fontWeight: '500', flex: 1 },
-  detailValue: { fontSize: 13, color: T.text, fontWeight: '600', textAlign: 'right', flex: 1 },
+  pickerItemActive: { backgroundColor: '#F0FDFA' },
+  pickerItemText:   { fontSize: 14, color: '#0F172A' },
+  pickerItemTextActive: { color: TEAL, fontWeight: '700' },
+  pickerEmpty:      { paddingHorizontal: 18, paddingVertical: 16 },
+  pickerEmptyText:  { fontSize: 13, color: '#94A3B8' },
 
-  // Empty
-  emptyBox: { alignItems: 'center', marginTop: 60, gap: 14 },
-  emptyText: { fontSize: 14, color: T.muted, textAlign: 'center', lineHeight: 22 },
+  // Search / Clear buttons
+  btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  searchBtn: {
+    flex: 1, backgroundColor: TEAL, borderRadius: 10,
+    paddingVertical: 13, alignItems: 'center', justifyContent: 'center',
+  },
+  searchBtnTxt: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+  clearBtn: {
+    paddingHorizontal: 24, paddingVertical: 13, borderRadius: 10,
+    borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  clearBtnTxt: { fontSize: 14, fontWeight: '600', color: '#64748B' },
 
-  // Delete
+  // Results
+  resultsSection: { flex: 1 },
+  resultBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: TEAL_DARK,
+    paddingHorizontal: 16, paddingVertical: 10,
+  },
+  resultBarTxt: { fontSize: 13, fontWeight: '700', color: '#FFF' },
+
+  tableHead: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#E0F2F1',
+    paddingHorizontal: 12, paddingVertical: 9,
+    borderBottomWidth: 1, borderBottomColor: '#CCFBF1',
+  },
+  headCell: { fontSize: 11, fontWeight: '800', color: TEAL_DARK },
+  tableRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 12, paddingVertical: 12,
+    backgroundColor: '#FFF',
+  },
+  tableRowAlt: { backgroundColor: '#F8FAFC' },
+  cell: { fontSize: 12, color: '#0F172A' },
+  cId:   { width: 36 },
+  cName: { flex: 1, paddingRight: 6 },
+  cCode: { width: 68 },
+  cRate: { width: 52 },
+  cAmt:  { width: 66, textAlign: 'right' },
+
+  centerBox: {
+    alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 44, paddingHorizontal: 32, gap: 12,
+  },
+  centerTxt: { fontSize: 13, color: '#94A3B8', textAlign: 'center', lineHeight: 20 },
+
+  // Bottom sheet
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 22, borderTopRightRadius: 22,
+    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24,
+    maxHeight: '88%',
+  },
+  handle: {
+    width: 40, height: 4, backgroundColor: '#E2E8F0',
+    borderRadius: 2, alignSelf: 'center', marginBottom: 16,
+  },
+  sheetHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16 },
+  sheetIconBox: {
+    width: 46, height: 46, borderRadius: 12,
+    backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center',
+  },
+  sheetTitle:  { fontSize: 15, fontWeight: '800', color: '#0F172A', lineHeight: 20 },
+  sheetSub:    { fontSize: 11, color: '#64748B', marginTop: 3 },
+  closeBtn:    { padding: 4, marginLeft: 8 },
+  amountHero: {
+    backgroundColor: '#F0FDF4', borderRadius: 14,
+    borderWidth: 1, borderColor: '#BBF7D0',
+    alignItems: 'center', paddingVertical: 14, marginBottom: 14,
+  },
+  amountVal: { fontSize: 26, fontWeight: '900', color: '#15803D' },
+  amountLbl: { fontSize: 11, color: '#64748B', marginTop: 3, fontWeight: '500' },
+  sheetScroll: { flex: 1 },
+  detailCard: {
+    borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, overflow: 'hidden',
+  },
+  detailRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 14, paddingVertical: 11,
+    borderBottomWidth: 1, borderBottomColor: '#F1F5F9', backgroundColor: '#FFF',
+  },
+  detailLabel: { fontSize: 12, color: '#64748B', fontWeight: '500', flex: 1 },
+  detailValue: { fontSize: 13, color: '#0F172A', fontWeight: '600', textAlign: 'right', flex: 1 },
   deleteBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#EF4444', borderRadius: 12,
-    paddingVertical: 14, marginTop: 18, gap: 8,
+    paddingVertical: 14, marginTop: 12, gap: 8,
   },
-  deleteBtnText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
+  deleteTxt: { fontSize: 15, fontWeight: '700', color: '#FFF' },
 });

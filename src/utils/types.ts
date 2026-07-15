@@ -82,7 +82,16 @@ export interface TestCharge {
   MTCODE: string;
   TestName: string;
   Amount: number;
-  [key: string]: any; // allow any extra fields the API may return
+  ClientRate: number;
+  Percentage: number;
+  Emergency: number;
+  Branchid: number;
+  username: string;
+  Createdby: string;
+  Createdon: string;
+  updatedby: string;
+  updatedon: string;
+  [key: string]: any;
 }
 
 // ── Packages ──────────────────────────────────────────────────────────────────

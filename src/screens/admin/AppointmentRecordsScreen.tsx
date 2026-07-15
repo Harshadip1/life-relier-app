@@ -66,13 +66,25 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
 
   const filtered = records.filter((r: any) => {
     const q = search.toLowerCase();
+
+    // ── Date filter — match selected date against AppointmentDate ──────────
+    const selectedStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    const apptStr = r.AppointmentDate
+      ? String(r.AppointmentDate).substring(0, 10)   // "2026-07-15T00:00:00" → "2026-07-15"
+      : '';
+    const matchesDate = apptStr === selectedStr;
+
+    // ── Doctor filter ──────────────────────────────────────────────────────
+    const matchesDoctor = selectedDrId == null || r.DrId === selectedDrId;
+
+    // ── Search filter ──────────────────────────────────────────────────────
     const matchesSearch =
       String(r.DoctorName    ?? '').toLowerCase().includes(q) ||
       String(r.Mobile        ?? '').toLowerCase().includes(q) ||
       String(r.AppointmentId ?? '').toString().includes(q)    ||
       String(r.Status        ?? '').toLowerCase().includes(q);
-    const matchesDoctor = selectedDrId == null || r.DrId === selectedDrId;
-    return matchesSearch && matchesDoctor;
+
+    return matchesDate && matchesDoctor && matchesSearch;
   });
 
   return (
@@ -104,7 +116,7 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
               <MaterialCommunityIcons name="calendar-check" size={20} color="#FFF" />
               <Text style={styles.cardTitle}> Appointment Records</Text>
               <View style={styles.recordBadge}>
-                <Text style={styles.recordBadgeText}>{records.length} records</Text>
+                <Text style={styles.recordBadgeText}>{filtered.length} records</Text>
               </View>
             </View>
             <View style={styles.tabRow}>
