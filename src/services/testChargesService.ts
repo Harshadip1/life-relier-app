@@ -68,43 +68,64 @@ export async function getAllTestChargesForDropdowns(): Promise<TestCharge[]> {
 }
 
 /**
- * Derive Rate Types from the full GetAllTestCharges list.
+ * POST /api/RateTypeMaster/GetAllRateType  — correct endpoint from Swagger
  */
 export async function getAllRateTypes(): Promise<{ RateTypeId: number; RateTypeName: string }[]> {
+  try {
+    const response = await api.post<any>('/api/RateTypeMaster/GetAllRateType', {});
+    console.log('[getAllRateTypes] raw:', JSON.stringify(response.data)?.substring(0, 200));
+    const data = response.data;
+    if (Array.isArray(data) && data.length > 0) return data;
+    if (data?.data  && Array.isArray(data.data)  && data.data.length  > 0) return data.data;
+    if (data?.Data  && Array.isArray(data.Data)  && data.Data.length  > 0) return data.Data;
+  } catch (e) {
+    console.log('[getAllRateTypes] endpoint failed, deriving from GetAllTestCharges');
+  }
+  // Fallback: derive from full list
   const all = await getAllTestChargesForDropdowns();
-  console.log('[getAllRateTypes] total records:', all.length);
   const map = new Map<number, string>();
-  all.forEach(t => {
-    if (t.RateTypeId != null && t.RateTypeName) map.set(t.RateTypeId, t.RateTypeName);
-  });
+  all.forEach(t => { if (t.RateTypeId != null && t.RateTypeName) map.set(t.RateTypeId, t.RateTypeName); });
   return Array.from(map.entries()).map(([id, name]) => ({ RateTypeId: id, RateTypeName: name }));
 }
 
 /**
- * Derive Sub Departments from the full GetAllTestCharges list.
+ * POST /api/TestMaster_SubDept/GetAllSubDept  — correct endpoint from Swagger
  */
 export async function getAllSubDepts(): Promise<{ SubDeptId: number; SubDeptName: string }[]> {
+  try {
+    const response = await api.post<any>('/api/TestMaster_SubDept/GetAllSubDept', {});
+    console.log('[getAllSubDepts] raw:', JSON.stringify(response.data)?.substring(0, 200));
+    const data = response.data;
+    if (Array.isArray(data) && data.length > 0) return data;
+    if (data?.data  && Array.isArray(data.data)  && data.data.length  > 0) return data.data;
+    if (data?.Data  && Array.isArray(data.Data)  && data.Data.length  > 0) return data.Data;
+  } catch (e) {
+    console.log('[getAllSubDepts] endpoint failed, deriving from GetAllTestCharges');
+  }
+  // Fallback: derive from full list
   const all = await getAllTestChargesForDropdowns();
-  console.log('[getAllSubDepts] total records:', all.length);
   const map = new Map<number, string>();
-  all.forEach(t => {
-    if (t.SubDeptId != null) {
-      // API returns SubDeptId but no SubDeptName — use ID as label for now
-      map.set(t.SubDeptId, `Sub Dept ${t.SubDeptId}`);
-    }
-  });
+  all.forEach(t => { if (t.SubDeptId != null) map.set(t.SubDeptId, `Sub Dept ${t.SubDeptId}`); });
   return Array.from(map.entries()).map(([id, name]) => ({ SubDeptId: id, SubDeptName: name }));
 }
 
 /**
- * Derive Main Tests from the full GetAllTestCharges list.
+ * POST /api/MainTest/GetAll  — correct endpoint from Swagger
  */
 export async function getAllMainTests(): Promise<{ MainTestId: number; MainTestName: string }[]> {
+  try {
+    const response = await api.post<any>('/api/MainTest/GetAll', {});
+    console.log('[getAllMainTests] raw:', JSON.stringify(response.data)?.substring(0, 200));
+    const data = response.data;
+    if (Array.isArray(data) && data.length > 0) return data;
+    if (data?.data  && Array.isArray(data.data)  && data.data.length  > 0) return data.data;
+    if (data?.Data  && Array.isArray(data.Data)  && data.Data.length  > 0) return data.Data;
+  } catch (e) {
+    console.log('[getAllMainTests] endpoint failed, deriving from GetAllTestCharges');
+  }
+  // Fallback: derive from full list
   const all = await getAllTestChargesForDropdowns();
-  console.log('[getAllMainTests] total records:', all.length);
   const map = new Map<number, string>();
-  all.forEach(t => {
-    if (t.MainTestId != null && t.TestName) map.set(t.MainTestId, t.TestName);
-  });
+  all.forEach(t => { if (t.MainTestId != null && t.TestName) map.set(t.MainTestId, t.TestName); });
   return Array.from(map.entries()).map(([id, name]) => ({ MainTestId: id, MainTestName: name }));
 }
