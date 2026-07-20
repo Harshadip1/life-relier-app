@@ -20,6 +20,21 @@ function formatDate(d: Date) {
   return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
 
+/** Convert "HH:MM" 24h or "HH:MM AM/PM" → "HH:MM AM/PM" display */
+function formatSlot(slot: string): string {
+  if (!slot) return '—';
+  if (/AM|PM/i.test(slot)) return slot;
+  const [hStr, mStr] = slot.split(':');
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr || '0', 10);
+  if (isNaN(h)) return slot;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12  = h % 12 || 12;
+  return `${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+
+
 export default function AppointmentRecordsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
 
@@ -46,8 +61,20 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
     setLoading(true);
     setError(null);
     try {
-      const data = await getAllAppointments(1);   // BranchId: 1 confirmed from Bruno
-      setRecords(data);
+      // Fetch from both branches — website uses BranchId 1, app uses BranchId 4
+      const [b1, b4] = await Promise.all([
+        getAllAppointments(1).catch(() => []),
+        getAllAppointments(4).catch(() => []),
+      ]);
+      // Deduplicate by AppointmentId
+      const seen = new Set<number>();
+      const merged = [...b1, ...b4].filter((a: any) => {
+        const id = a.AppointmentId;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+      setRecords(merged);
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load appointments.');
     } finally {
@@ -208,10 +235,21 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
               </View>
             ) : (
               filtered.map((item: any, idx: number) => {
-                // Parse ISO date to display format
-                const apptDate = item.AppointmentDate
-                  ? (() => { try { const d = new Date(item.AppointmentDate); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; } catch { return item.AppointmentDate; } })()
-                  : '—';
+                // Robust date parser — handles ISO "2026-07-17T00:00:00" and plain "2026-07-17"
+                const apptDate = (() => {
+                  if (!item.AppointmentDate) return '—';
+                  try {
+                    const raw = String(item.AppointmentDate);
+                    // Parse the date parts directly from the string to avoid timezone shifts
+                    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                    if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+                    return raw;
+                  } catch { return item.AppointmentDate; }
+                })();
+                // Patient name: API returns "Name" for website bookings, FirstName+LastName for app bookings
+                const patientName = item.Name
+                  || (item.FirstName ? `${item.FirstName} ${item.LastName ?? ''}`.trim() : '')
+                  || '—';
                 return (
                   <View key={String(item.AppointmentId ?? idx)} style={styles.recordRow}>
                     <View style={styles.recordIconBox}>
@@ -221,8 +259,9 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
                       <Text style={styles.recordName}>
                         {item.DoctorName ?? `Dr ID: ${item.DrId}`}
                       </Text>
+                      <Text style={styles.recordSub}>👤 {patientName}</Text>
                       <Text style={styles.recordSub}>📱 {item.Mobile}  •  📅 {apptDate}</Text>
-                      <Text style={styles.recordSub}>🕐 {item.Slot}  •  #{item.AppointmentId}</Text>
+                      <Text style={styles.recordSub}>🕐 {formatSlot(item.Slot)}  •  #{item.AppointmentId}</Text>
                     </View>
                     <View style={[styles.statusBadge, {
                       backgroundColor: item.Status === 'Pending' ? '#FFFBEB' : '#F0FDFA',

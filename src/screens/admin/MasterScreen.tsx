@@ -40,10 +40,9 @@ const SECTIONS = [
     color:  '#0369A1',
     bg:     '#F0F9FF',
     items: [
-      { label: 'Test Master',        icon: 'test-tube',               color: '#0369A1', bg: '#F0F9FF', screen: 'TestMaster'        },
-      { label: 'Test Charge Detail', icon: 'currency-inr',            color: '#0D9488', bg: '#F0FDFA', screen: 'TestChargeDetail'  },
-      { label: 'Packages',           icon: 'package-variant-closed',  color: '#7C3AED', bg: '#F5F3FF', screen: 'Packages'          },
-      { label: 'Package Master',     icon: 'package-variant',         color: '#1D4ED8', bg: '#EFF6FF', screen: 'PackageMaster'     },
+      { label: 'Test Charges',    icon: 'currency-usd',            color: '#0D9488', bg: '#F0FDFA', screen: 'TestCharges'       },
+      { label: 'Test Master',     icon: 'test-tube',               color: '#0369A1', bg: '#F0F9FF', screen: 'TestMaster'        },
+      { label: 'Package Master',  icon: 'package-variant',         color: '#1D4ED8', bg: '#EFF6FF', screen: 'PackageMaster'     },
       { label: 'Department Master',icon: 'office-building-outline',color: '#92400E', bg: '#FEF3C7', screen: 'DepartmentMaster'  },
       { label: 'Sample Type',     icon: 'flask-outline',           color: '#6D28D9', bg: '#F5F3FF', screen: 'SampleTypeMaster'  },
       { label: 'Tube Master',     icon: 'test-tube-empty',         color: '#065F46', bg: '#ECFDF5', screen: 'TubeMaster'        },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  TextInput, Platform, ActivityIndicator, Alert,
+  TextInput, Platform, ActivityIndicator, Alert, Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,19 +10,22 @@ import { COLORS } from '../../utils/constants';
 import {
   getDoctorDropdown,
   getAllSlots,
+  getAllDoctorSchedules,
+  getAllAppointments,
   saveAppointment,
   DoctorDropdownItem,
-  DrSlotRecord,
+  DoctorScheduleRecord,
+  AppointmentRecord,
   SaveAppointmentPayload,
+  DrSlotRecord,
 } from '../../services/doctorScheduleService';
 import { useAuth } from '../../context/AuthContext';
 
 const TEAL = COLORS.primary;
+const INITIALS = [{ id: 1, label: 'Mr' }, { id: 2, label: 'Mrs' }, { id: 3, label: 'Ms' }, { id: 4, label: 'Dr' }];
+const GENDERS  = [{ id: 1, label: 'Male' }, { id: 2, label: 'Female' }, { id: 3, label: 'Other' }];
 
-// ── Lookup tables ─────────────────────────────────────────────────────────────
-const INITIALS  = [{ id: 1, label: 'Mr' }, { id: 2, label: 'Mrs' }, { id: 3, label: 'Ms' }, { id: 4, label: 'Dr' }];
-const GENDERS   = [{ id: 1, label: 'Male' }, { id: 2, label: 'Female' }, { id: 3, label: 'Other' }];
-
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function toAPIDate(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
@@ -30,22 +33,67 @@ function displayDate(d: Date) {
   return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
 
-// Simple dropdown used multiple times
+/** Parse "10:00:00" or "10:00 AM" → total minutes since midnight */
+function parseTimeToMins(t: string): number {
+  if (!t) return 0;
+  t = t.trim();
+  if (/AM|PM/i.test(t)) {
+    const [timePart, meridiem] = t.split(' ');
+    let [h, m] = timePart.split(':').map(Number);
+    if (/PM/i.test(meridiem) && h !== 12) h += 12;
+    if (/AM/i.test(meridiem) && h === 12) h = 0;
+    return h * 60 + m;
+  }
+  const parts = t.split(':').map(Number);
+  return parts[0] * 60 + (parts[1] || 0);
+}
+
+/** Total minutes → "HH:MM" 24-hour string (stored in API and used as slot key) */
+function minsToSlotKey(mins: number): string {
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+/** "HH:MM" 24-hour → "08:00 AM" / "05:00 PM" for display only */
+function slotKeyToDisplay(slot: string): string {
+  if (!slot) return slot;
+  // Already has AM/PM — return as-is (old records)
+  if (/AM|PM/i.test(slot)) return slot;
+  const [hStr, mStr] = slot.split(':');
+  let h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12  = h % 12 || 12;
+  return `${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+/** Generate time slot strings from startTime to endTime every slotMins minutes */
+function generateSlots(startTime: string, endTime: string, slotMins: number): string[] {
+  const start = parseTimeToMins(startTime);
+  const end   = parseTimeToMins(endTime);
+  const slots: string[] = [];
+  for (let t = start; t + slotMins <= end; t += slotMins) {
+    slots.push(minsToSlotKey(t));   // store as "HH:MM" — matches what the API expects
+  }
+  return slots;
+}
+
+// ── Small reusable dropdown ───────────────────────────────────────────────────
 function InlineDropdown({ label, required, value, options, onSelect, placeholder = 'Select...' }: any) {
   const [open, setOpen] = useState(false);
   return (
-    <View style={{ marginBottom: 16 }}>
-      <Text style={s.label}>{label}{required && <Text style={{ color: '#EF4444' }}> *</Text>}</Text>
+    <View style={{ marginBottom: 14 }}>
+      {label ? <Text style={s.label}>{label}{required && <Text style={{ color: '#EF4444' }}> *</Text>}</Text> : null}
       <TouchableOpacity style={s.dd} onPress={() => setOpen(!open)}>
         <Text style={[s.ddText, !value && { color: '#94A3B8' }]}>{value || placeholder}</Text>
-        <Feather name="chevron-down" size={18} color="#64748B" />
+        <Feather name="chevron-down" size={16} color="#64748B" />
       </TouchableOpacity>
       {open && (
         <View style={s.ddMenu}>
           {options.map((o: any) => (
-            <TouchableOpacity key={o.id} style={s.ddItem}
-              onPress={() => { onSelect(o); setOpen(false); }}>
-              <Text style={s.ddItemText}>{o.label ?? o.FullName ?? o.name}</Text>
+            <TouchableOpacity key={o.id} style={s.ddItem} onPress={() => { onSelect(o); setOpen(false); }}>
+              <Text style={s.ddItemText}>{o.label ?? o.FullName}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -54,374 +102,520 @@ function InlineDropdown({ label, required, value, options, onSelect, placeholder
   );
 }
 
+// ── Main Screen ───────────────────────────────────────────────────────────────
 export default function SearchAvailableSlotsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
-  // ── Doctors & slots ───────────────────────────────────────────────────────
-  const [doctors, setDoctors]           = useState<DoctorDropdownItem[]>([]);
-  const [selectedDr, setSelectedDr]     = useState<DoctorDropdownItem | null>(null);
-  const [loadingDr, setLoadingDr]       = useState(false);
-  const [showDrDrop, setShowDrDrop]     = useState(false);
-
-  const [slots, setSlots]               = useState<DrSlotRecord[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState<DrSlotRecord | null>(null);
-  const [loadingSlots, setLoadingSlots] = useState(false);
-
-  // ── Appointment date ───────────────────────────────────────────────────────
-  const [apptDate, setApptDate]         = useState(new Date());
+  // ── Step 1: Search state ──────────────────────────────────────────────────
+  const [doctors, setDoctors]         = useState<DoctorDropdownItem[]>([]);
+  const [selectedDr, setSelectedDr]   = useState<DoctorDropdownItem | null>(null);
+  const [showDrDrop, setShowDrDrop]   = useState(false);
+  const [loadingDr, setLoadingDr]     = useState(false);
+  const [apptDate, setApptDate]       = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [searching, setSearching]     = useState(false);
 
-  // ── Patient fields ─────────────────────────────────────────────────────────
-  const [initialId, setInitialId]       = useState<number>(1);
+  // ── Generated slot grid ───────────────────────────────────────────────────
+  const [generatedSlots, setGeneratedSlots] = useState<string[]>([]);
+  const [bookedSlots, setBookedSlots]       = useState<string[]>([]);
+  const [slotsSearched, setSlotsSearched]   = useState(false);
+
+  // ── Step 2: Booking modal ─────────────────────────────────────────────────
+  const [showBookModal, setShowBookModal]   = useState(false);
+  const [selectedSlotTime, setSelectedSlotTime] = useState('');
+  const [slotDurationMins, setSlotDurationMins] = useState(30);
+
+  // Patient fields
+  const [initialId, setInitialId]     = useState(1);
   const [initialLabel, setInitialLabel] = useState('Mr');
-  const [firstName, setFirstName]       = useState('');
-  const [lastName, setLastName]         = useState('');
-  const [mobile, setMobile]             = useState('');
-  const [address, setAddress]           = useState('');
-  const [genderId, setGenderId]         = useState<number>(1);
-  const [genderLabel, setGenderLabel]   = useState('Male');
-  const [birthDate, setBirthDate]       = useState(new Date(1990, 0, 1));
+  const [name, setName]               = useState('');
+  const [mobile, setMobile]           = useState('');
+  const [address, setAddress]         = useState('');
+  const [email, setEmail]             = useState('');
+  const [remark, setRemark]           = useState('');
+  const [genderId, setGenderId]       = useState(1);
+  const [genderLabel, setGenderLabel] = useState('Male');
+  const [birthDate, setBirthDate]     = useState(new Date(1990, 0, 1));
   const [showBirthPicker, setShowBirthPicker] = useState(false);
+  const [age, setAge]                 = useState('');
+  const [saving, setSaving]           = useState(false);
 
-  const [saving, setSaving]             = useState(false);
+  // Referring doctor state
+  const [referringDoctors, setReferringDoctors] = useState<DoctorDropdownItem[]>([]);
+  const [referringDrId, setReferringDrId]       = useState<number | null>(null);
+  const [referringDrLabel, setReferringDrLabel] = useState('');
 
-  // Load doctors on mount
   useEffect(() => {
     setLoadingDr(true);
     getDoctorDropdown(1)
-      .then(setDoctors)
+      .then(list => { setDoctors(list); setReferringDoctors(list); })
       .catch(() => {})
       .finally(() => setLoadingDr(false));
   }, []);
 
-  // Load slots when doctor is selected
-  const handleSelectDoctor = async (dr: DoctorDropdownItem) => {
-    setSelectedDr(dr);
-    setSelectedSlot(null);
-    setShowDrDrop(false);
-    setLoadingSlots(true);
+  // ── Search: fetch schedule + slot duration → generate time grid ──────────
+  const handleSearch = async () => {
+    if (!selectedDr) { Alert.alert('Validation', 'Please select a collection person.'); return; }
+    setSearching(true);
+    setSlotsSearched(false);
+    setGeneratedSlots([]);
     try {
-      const all = await getAllSlots(1);
-      console.log('[Slots] Total slots fetched:', all.length);
-      console.log('[Slots] Doctor selected Id:', dr.Id, 'FullName:', dr.FullName);
-      all.forEach(sl => console.log('[Slots] Slot:', JSON.stringify(sl)));
+      // Fetch schedules from ALL branches and merge — website uses BranchId 1, app uses BranchId 4
+      const [schedulesB1, schedulesB4] = await Promise.all([
+        getAllDoctorSchedules(1).catch(() => [] as DoctorScheduleRecord[]),
+        getAllDoctorSchedules(4).catch(() => [] as DoctorScheduleRecord[]),
+      ]);
+      // Deduplicate by ScheduleId
+      const seen = new Set<number>();
+      const schedules: DoctorScheduleRecord[] = [...schedulesB1, ...schedulesB4].filter(sc => {
+        const id = sc.ScheduleId ?? (sc as any).scheduleId;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+      const dateStr = toAPIDate(apptDate);
 
-      // Match by DrId — handle both Pascal and camel casing from API
-      const matched = all.filter(sl => {
-        const slotDrId = sl.DrId ?? (sl as any).drId ?? (sl as any).DRId;
-        const isActive = sl.IsActive ?? (sl as any).isActive ?? true;
-        return Number(slotDrId) === Number(dr.Id) && isActive;
+      // Find a schedule that covers the selected date
+      // Use regex extraction to avoid timezone shifts on date parsing
+      const match = schedules.find(sc => {
+        const drId = sc.DrId ?? (sc as any).drId;
+        if (Number(drId) !== Number(selectedDr.Id)) return false;
+        const startMatch = String(sc.StartDate).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        const endMatch   = String(sc.EndDate).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!startMatch || !endMatch) return false;
+        const start = `${startMatch[1]}-${startMatch[2]}-${startMatch[3]}`;
+        const end   = `${endMatch[1]}-${endMatch[2]}-${endMatch[3]}`;
+        return dateStr >= start && dateStr <= end;
       });
 
-      console.log('[Slots] Matched slots for doctor:', matched.length);
-      setSlots(matched);
+      if (!match) {
+        Alert.alert('No Schedule', `No schedule found for ${selectedDr.FullName} on ${displayDate(apptDate)}.`);
+        setSlotsSearched(true);
+        setGeneratedSlots([]);
+        setSearching(false);
+        return;
+      }
+
+      // Fetch slot duration for this doctor — check both BranchId 1 and 4
+      const [slotsB1, slotsB4] = await Promise.all([
+        getAllSlots(1).catch(() => []),
+        getAllSlots(4).catch(() => []),
+      ]);
+      const allSlotRecords = [...slotsB1, ...slotsB4];
+      const drSlot = allSlotRecords.find(sl => Number(sl.DrId) === Number(selectedDr.Id) && sl.IsActive)
+                  || allSlotRecords.find(sl => Number(sl.DrId) === Number(selectedDr.Id));
+      const slotMins = drSlot ? parseInt(drSlot.Slot, 10) : 30;
+      setSlotDurationMins(slotMins);
+
+      // Generate time slots
+      const slots = generateSlots(match.StartTime, match.EndTime || '20:00:00', slotMins);
+
+      // Fetch already booked slots for this doctor on this date — check both branches
+      const [apptB1, apptB4] = await Promise.all([
+        getAllAppointments(1).catch(() => []),
+        getAllAppointments(4).catch(() => []),
+      ]);
+      const allAppts = [...apptB1, ...apptB4];
+      const booked = allAppts
+        .filter(a => {
+          // Use regex to extract date portion to avoid timezone shifts
+          const dateMatch = String(a.AppointmentDate).match(/^(\d{4})-(\d{2})-(\d{2})/);
+          const aDate = dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : '';
+          return Number(a.DrId) === Number(selectedDr.Id) && aDate === dateStr;
+        })
+        .map(a => a.Slot);
+
+      setBookedSlots(booked);
+      setGeneratedSlots(slots);
+      setSlotsSearched(true);
     } catch (e: any) {
-      console.log('[Slots] Error fetching slots:', e?.message);
-      setSlots([]);
+      Alert.alert('Error', e?.message || 'Failed to load slots.');
     } finally {
-      setLoadingSlots(false);
+      setSearching(false);
     }
   };
 
-  // ── Save ───────────────────────────────────────────────────────────────────
-  const handleSave = async () => {
-    if (!selectedDr)    { Alert.alert('Validation', 'Please select a doctor.');        return; }
-    if (!selectedSlot)  { Alert.alert('Validation', 'Please select a slot.');          return; }
-    if (!firstName.trim()) { Alert.alert('Validation', 'First name is required.');    return; }
-    if (!lastName.trim())  { Alert.alert('Validation', 'Last name is required.');     return; }
-    if (!mobile.trim())    { Alert.alert('Validation', 'Mobile number is required.'); return; }
+  // ── When slot tapped → open booking modal ────────────────────────────────
+  const handleSlotTap = (slotTime: string) => {
+    setSelectedSlotTime(slotTime);
+    setName(''); setMobile(''); setAddress(''); setEmail(''); setRemark(''); setAge('');
+    setInitialId(1); setInitialLabel('Mr');
+    setGenderId(1); setGenderLabel('Male');
+    setBirthDate(new Date(1990, 0, 1));
+    setReferringDrId(null); setReferringDrLabel('');
+    setShowBookModal(true);
+  };
+
+  // ── Save appointment ──────────────────────────────────────────────────────
+  const handleBook = async () => {
+    if (!name.trim())   { Alert.alert('Validation', 'Name is required.');          return; }
+    if (!mobile.trim()) { Alert.alert('Validation', 'Mobile number is required.'); return; }
+
+    const nameParts = name.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName  = nameParts.slice(1).join(' ') || nameParts[0];
 
     const payload: SaveAppointmentPayload = {
-      DrId:            selectedDr.Id,
-      FirstName:       firstName.trim(),
-      LastName:        lastName.trim(),
+      DrId:            selectedDr!.Id,
+      Name:            name.trim(),          // full name — what GetAllAppointment returns
+      FirstName:       firstName,
+      LastName:        lastName,
       Mobile:          mobile.trim(),
       AppointmentDate: toAPIDate(apptDate),
-      Slot:            `${selectedSlot.SlotMins ?? (selectedSlot as any).slotMins ?? (selectedSlot as any).SlotMin ?? ''} Minutes`,
+      Slot:            selectedSlotTime,
       Address:         address.trim() || '',
       GenderId:        genderId,
       InitialId:       initialId,
       BirthDate:       toAPIDate(birthDate),
-      BranchId:        1,   // confirmed from Bruno
+      BranchId:        1,
       CreatedBy:       user?.name || 'Admin',
+      Email:           email.trim() || '',
+      Remark:          remark.trim() || '',
+      ReferingDoctorId: referringDrId ?? null,
     };
 
     setSaving(true);
     try {
       const res = await saveAppointment(payload);
-      Alert.alert(
-        'Appointment Booked',
-        `Appointment #${res?.AppointmentId ?? ''} created successfully.`,
-        [{ text: 'OK', onPress: () => navigation.goBack() }],
-      );
+      setShowBookModal(false);
+      setBookedSlots(prev => [...prev, selectedSlotTime]);
+      Alert.alert('Success', `Appointment #${res?.AppointmentId ?? ''} booked successfully.`);
     } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Could not book appointment. Please try again.');
+      Alert.alert('Error', err?.message ?? 'Could not book appointment.');
     } finally {
       setSaving(false);
     }
   };
 
-  // ── UI ────────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
+  const isPast = (slotTime: string) => {
+    const today = toAPIDate(new Date());
+    if (toAPIDate(apptDate) > today) return false;
+    if (toAPIDate(apptDate) < today) return true;
+    return parseTimeToMins(slotTime) < parseTimeToMins(
+      `${new Date().getHours()}:${new Date().getMinutes()}`
+    );
+  };
+
   return (
     <View style={[s.root, { paddingTop: Math.max(insets.top, 10) }]}>
-
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Feather name="arrow-left" size={22} color="#0F172A" />
+          <Feather name="arrow-left" size={22} color={TEAL} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>New Appointment</Text>
-        <TouchableOpacity>
-          <Feather name="filter" size={22} color="#0F172A" />
-        </TouchableOpacity>
+        <Text style={s.headerTitle}>Appointment Desk</Text>
+        <View style={{ width: 28 }} />
       </View>
 
       {/* Breadcrumb */}
       <View style={s.breadcrumb}>
-        <Feather name="home" size={13} color={TEAL} />
+        <MaterialCommunityIcons name="calendar-clock" size={13} color={TEAL} />
         <Text style={s.bcText}> Dr Appointment</Text>
-        <Feather name="chevron-right" size={13} color="#94A3B8" style={{ marginHorizontal: 2 }} />
+        <Feather name="chevron-right" size={12} color="#94A3B8" style={{ marginHorizontal: 2 }} />
         <Text style={s.bcText}>Appointment Desk</Text>
-        <Feather name="chevron-right" size={13} color="#94A3B8" style={{ marginHorizontal: 2 }} />
-        <View style={s.bcActive}><Text style={s.bcActiveText}>Book</Text></View>
+        <Feather name="chevron-right" size={12} color="#94A3B8" style={{ marginHorizontal: 2 }} />
+        <View style={s.bcBadge}><Text style={s.bcBadgeText}>Select Slot</Text></View>
       </View>
 
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <View style={s.card}>
 
-          {/* Card header */}
+        {/* ── Search card ── */}
+        <View style={s.card}>
           <View style={s.cardHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <MaterialCommunityIcons name="calendar-plus" size={18} color="#FFF" />
-              <Text style={s.cardTitle}> Book Appointment</Text>
-            </View>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                style={[s.saveBtn, saving && { opacity: 0.6 }]}
-                onPress={handleSave} disabled={saving}
-              >
-                {saving
-                  ? <ActivityIndicator size={14} color="#FFF" />
-                  : <Feather name="check" size={14} color="#FFF" />}
-                <Text style={s.btnTxt}>{saving ? ' Booking…' : ' Book'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={s.cancelBtn} onPress={() => navigation.goBack()} disabled={saving}>
-                <Feather name="x" size={14} color="#FFF" />
-                <Text style={s.btnTxt}> Cancel</Text>
-              </TouchableOpacity>
-            </View>
+            <MaterialCommunityIcons name="calendar-clock" size={16} color="#FFF" />
+            <Text style={s.cardTitle}> Search Available Slots</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={s.backSmall}>
+              <Feather name="arrow-left" size={14} color="#FFF" />
+              <Text style={s.backSmallTxt}> Back</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={s.form}>
-
-            {/* ── Section: Doctor & Slot ── */}
-            <SectionLabel title="Doctor & Slot" icon="stethoscope" />
-
             {/* Doctor dropdown */}
-            <Text style={s.label}>Doctor <Text style={s.req}>*</Text></Text>
+            <Text style={s.label}>Collection Person <Text style={s.req}>*</Text></Text>
             <TouchableOpacity style={s.dd} onPress={() => setShowDrDrop(!showDrDrop)} disabled={loadingDr}>
-              {loadingDr
-                ? <ActivityIndicator size={14} color={TEAL} style={{ marginRight: 8 }} />
-                : null}
+              {loadingDr ? <ActivityIndicator size={14} color={TEAL} style={{ marginRight: 8 }} /> : null}
               <Text style={[s.ddText, !selectedDr && { color: '#94A3B8' }]}>
-                {loadingDr ? 'Loading doctors…' : (selectedDr?.FullName || 'Select...')}
+                {loadingDr ? 'Loading…' : (selectedDr?.FullName || 'Select...')}
               </Text>
-              <Feather name="chevron-down" size={18} color="#64748B" />
+              <Feather name="chevron-down" size={16} color="#64748B" />
             </TouchableOpacity>
             {showDrDrop && (
               <View style={s.ddMenu}>
-                {doctors.length === 0
-                  ? <View style={s.ddItem}><Text style={{ color: '#94A3B8' }}>No doctors found</Text></View>
-                  : doctors.map(d => (
-                    <TouchableOpacity key={d.Id} style={s.ddItem} onPress={() => handleSelectDoctor(d)}>
-                      <Text style={s.ddItemText}>{d.FullName}</Text>
-                    </TouchableOpacity>
-                  ))}
+                {doctors.map(d => (
+                  <TouchableOpacity key={d.Id} style={s.ddItem} onPress={() => { setSelectedDr(d); setShowDrDrop(false); setSlotsSearched(false); setGeneratedSlots([]); }}>
+                    <Text style={s.ddItemText}>{d.FullName}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             )}
 
-            {/* Slot selection */}
-            <Text style={[s.label, { marginTop: 16 }]}>Slot <Text style={s.req}>*</Text></Text>
-            {loadingSlots ? (
-              <View style={s.slotsLoading}>
-                <ActivityIndicator size={16} color={TEAL} />
-                <Text style={s.slotsLoadingText}> Loading slots…</Text>
-              </View>
-            ) : slots.length === 0 && selectedDr ? (
-              <Text style={s.noSlots}>No slots available for this doctor.</Text>
-            ) : (
-              <View style={s.slotsRow}>
-                {slots.map((sl, idx) => {
-                    const slotMins = sl.SlotMins ?? (sl as any).slotMins ?? (sl as any).SlotMin ?? (sl as any).slotMin ?? '?';
-                    const slotId   = sl.SlotId   ?? (sl as any).slotId   ?? idx;
-                    return (
-                      <TouchableOpacity
-                        key={slotId}
-                        style={[s.slotChip, selectedSlot?.SlotId === sl.SlotId && s.slotChipActive]}
-                        onPress={() => setSelectedSlot(sl)}
-                      >
-                        <Feather name="clock" size={12}
-                          color={selectedSlot?.SlotId === sl.SlotId ? '#FFF' : TEAL}
-                          style={{ marginRight: 4 }} />
-                        <Text style={[s.slotChipText, selectedSlot?.SlotId === sl.SlotId && { color: '#FFF' }]}>
-                          {slotMins} min
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-              </View>
-            )}
-
-            {/* Appointment Date */}
-            <Text style={[s.label, { marginTop: 16 }]}>Appointment Date <Text style={s.req}>*</Text></Text>
+            {/* Date picker */}
+            <Text style={[s.label, { marginTop: 14 }]}>Appointment Date <Text style={s.req}>*</Text></Text>
             <TouchableOpacity style={s.dateRow} onPress={() => setShowDatePicker(true)}>
               <MaterialCommunityIcons name="calendar" size={16} color="#64748B" style={{ marginRight: 8 }} />
               <Text style={s.dateText}>{displayDate(apptDate)}</Text>
-              <MaterialCommunityIcons name="calendar-blank-outline" size={16} color="#64748B" />
+              <Feather name="calendar" size={14} color="#94A3B8" />
             </TouchableOpacity>
             {showDatePicker && (
               <DateTimePicker value={apptDate} mode="date"
                 display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                onChange={(_, d) => { setShowDatePicker(false); if (d) setApptDate(d); }} />
+                onChange={(_, d) => { setShowDatePicker(false); if (d) { setApptDate(d); setSlotsSearched(false); setGeneratedSlots([]); } }} />
             )}
 
-            {/* ── Section: Patient Details ── */}
-            <SectionLabel title="Patient Details" icon="account-outline" style={{ marginTop: 24 }} />
-
-            {/* Initial + First Name row */}
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <View style={{ width: 90 }}>
-                <InlineDropdown
-                  label="Initial" required
-                  value={initialLabel}
-                  options={INITIALS.map(i => ({ id: i.id, label: i.label }))}
-                  onSelect={(o: any) => { setInitialId(o.id); setInitialLabel(o.label); }}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.label}>First Name <Text style={s.req}>*</Text></Text>
-                <View style={s.inputWrap}>
-                  <TextInput style={s.input} placeholder="First name"
-                    placeholderTextColor="#94A3B8" value={firstName} onChangeText={setFirstName} />
-                </View>
-              </View>
-            </View>
-
-            {/* Last Name */}
-            <Text style={s.label}>Last Name <Text style={s.req}>*</Text></Text>
-            <View style={[s.inputWrap, { marginBottom: 16 }]}>
-              <TextInput style={s.input} placeholder="Last name"
-                placeholderTextColor="#94A3B8" value={lastName} onChangeText={setLastName} />
-            </View>
-
-            {/* Mobile */}
-            <Text style={s.label}>Mobile <Text style={s.req}>*</Text></Text>
-            <View style={[s.inputWrap, { marginBottom: 16 }]}>
-              <TextInput style={s.input} placeholder="10-digit mobile number"
-                placeholderTextColor="#94A3B8" value={mobile} onChangeText={setMobile}
-                keyboardType="phone-pad" maxLength={10} />
-            </View>
-
-            {/* Gender */}
-            <InlineDropdown
-              label="Gender" required
-              value={genderLabel}
-              options={GENDERS.map(g => ({ id: g.id, label: g.label }))}
-              onSelect={(o: any) => { setGenderId(o.id); setGenderLabel(o.label); }}
-            />
-
-            {/* Birth Date */}
-            <Text style={s.label}>Birth Date <Text style={s.req}>*</Text></Text>
-            <TouchableOpacity style={[s.dateRow, { marginBottom: 16 }]} onPress={() => setShowBirthPicker(true)}>
-              <MaterialCommunityIcons name="calendar-account" size={16} color="#64748B" style={{ marginRight: 8 }} />
-              <Text style={s.dateText}>{displayDate(birthDate)}</Text>
-              <MaterialCommunityIcons name="calendar-blank-outline" size={16} color="#64748B" />
+            {/* Search button */}
+            <TouchableOpacity style={[s.searchBtn, searching && { opacity: 0.7 }]} onPress={handleSearch} disabled={searching}>
+              {searching
+                ? <ActivityIndicator size={16} color="#FFF" />
+                : <Feather name="search" size={16} color="#FFF" />}
+              <Text style={s.searchBtnTxt}>{searching ? '  Searching…' : '  Search Slots'}</Text>
             </TouchableOpacity>
-            {showBirthPicker && (
-              <DateTimePicker value={birthDate} mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                maximumDate={new Date()}
-                onChange={(_, d) => { setShowBirthPicker(false); if (d) setBirthDate(d); }} />
-            )}
-
-            {/* Address */}
-            <Text style={s.label}>Address</Text>
-            <View style={[s.inputWrap, { height: 70, alignItems: 'flex-start', paddingTop: 10 }]}>
-              <TextInput style={[s.input, { height: 50 }]} placeholder="Address (optional)"
-                placeholderTextColor="#94A3B8" value={address} onChangeText={setAddress}
-                multiline numberOfLines={2} textAlignVertical="top" />
-            </View>
-
           </View>
         </View>
 
-        <View style={{ height: 100 }} />
-      </ScrollView>
+        {/* ── Slot grid ── */}
+        {slotsSearched && (
+          <View style={[s.card, { marginTop: 16 }]}>
+            {/* Legend */}
+            <View style={s.legend}>
+              <View style={s.legendItem}><View style={[s.dot, { backgroundColor: TEAL }]} /><Text style={s.legendTxt}>Available</Text></View>
+              <View style={s.legendItem}><View style={[s.dot, { backgroundColor: '#EF4444' }]} /><Text style={s.legendTxt}>Booked</Text></View>
+              <View style={s.legendItem}><View style={[s.dot, { backgroundColor: '#94A3B8' }]} /><Text style={s.legendTxt}>Past</Text></View>
+            </View>
 
-      {/* SCAN FAB */}
-      <TouchableOpacity style={s.scanFab}>
-        <MaterialCommunityIcons name="barcode-scan" size={28} color="#FFF" />
-        <Text style={s.scanLabel}>SCAN</Text>
-      </TouchableOpacity>
+            {generatedSlots.length === 0 ? (
+              <Text style={s.noSlots}>No slots available for the selected date.</Text>
+            ) : (
+              <>
+                <Text style={s.slotsHeading}>
+                  AVAILABLE SLOTS FOR {toAPIDate(apptDate)}
+                </Text>
+                <View style={s.slotsGrid}>
+                  {generatedSlots.map((slotTime, i) => {
+                    const isBooked = bookedSlots.includes(slotTime);
+                    const past     = isPast(slotTime);
+                    return (
+                      <TouchableOpacity
+                        key={i}
+                        style={[s.slotBtn, isBooked && s.slotBooked, past && s.slotPast]}
+                        onPress={() => !isBooked && !past && handleSlotTap(slotTime)}
+                        disabled={isBooked || past}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[s.slotBtnTxt, isBooked && s.slotBookedTxt, past && s.slotPastTxt]}>
+                          {slotKeyToDisplay(slotTime)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+          </View>
+        )}
+
+        <View style={{ height: 80 }} />
+      </ScrollView>
 
       {/* Footer */}
       <View style={s.footer}>
-        <Text style={s.footerText}>© 2026 - Life Relier Infosoft Pvt Ltd</Text>
+        <Text style={s.footerTxt}>© 2026 - Life Relier Infosoft Pvt Ltd</Text>
       </View>
+
+      {/* ── Book Appointment Modal ── */}
+      <Modal visible={showBookModal} animationType="slide" transparent onRequestClose={() => setShowBookModal(false)}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            {/* Modal header */}
+            <View style={s.modalHeader}>
+              <MaterialCommunityIcons name="calendar-check" size={16} color="#FFF" />
+              <Text style={s.modalTitle}> Book Appointment</Text>
+            </View>
+            <View style={s.modalActions}>
+              <TouchableOpacity style={[s.bookBtn, saving && { opacity: 0.6 }]} onPress={handleBook} disabled={saving}>
+                {saving ? <ActivityIndicator size={14} color="#FFF" /> : <MaterialCommunityIcons name="calendar-check" size={14} color="#FFF" />}
+                <Text style={s.btnTxt}>{saving ? ' Booking…' : ' Book Appointment'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.cancelBtn} onPress={() => setShowBookModal(false)} disabled={saving}>
+                <Feather name="x" size={14} color="#FFF" />
+                <Text style={s.btnTxt}> Cancel</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={s.modalScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              {/* Pre-filled read-only fields */}
+              <Field label="Collection Person"><Text style={s.readOnly}>{selectedDr?.FullName}</Text></Field>
+              <Field label="Appointment Date"><Text style={s.readOnly}>{displayDate(apptDate)}</Text></Field>
+              <Field label="Slot"><Text style={s.readOnly}>{slotKeyToDisplay(selectedSlotTime)}</Text></Field>
+
+              {/* Initial */}
+              <InlineDropdown label="Initial" required value={initialLabel}
+                options={INITIALS.map(i => ({ id: i.id, label: i.label }))}
+                onSelect={(o: any) => { setInitialId(o.id); setInitialLabel(o.label); }} />
+
+              {/* Name */}
+              <Field label="Name" required>
+                <View style={s.inputWrap}>
+                  <TextInput style={s.input} placeholder="Enter Name" placeholderTextColor="#94A3B8"
+                    value={name} onChangeText={setName} />
+                </View>
+              </Field>
+
+              {/* Birth Date */}
+              <Field label="Birth Date" required>
+                <TouchableOpacity style={s.dateRow} onPress={() => setShowBirthPicker(true)}>
+                  <MaterialCommunityIcons name="calendar-account" size={16} color="#64748B" style={{ marginRight: 8 }} />
+                  <Text style={s.dateText}>{displayDate(birthDate)}</Text>
+                </TouchableOpacity>
+                {showBirthPicker && (
+                  <DateTimePicker value={birthDate} mode="date"
+                    display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                    maximumDate={new Date()}
+                    onChange={(_, d) => { setShowBirthPicker(false); if (d) { setBirthDate(d); const a = new Date().getFullYear() - d.getFullYear(); setAge(String(a)); } }} />
+                )}
+              </Field>
+
+              {/* Age */}
+              <Field label="Age">
+                <View style={s.inputWrap}>
+                  <TextInput style={s.input} placeholder="Age" placeholderTextColor="#94A3B8"
+                    value={age} onChangeText={setAge} keyboardType="numeric" />
+                </View>
+              </Field>
+
+              {/* Gender */}
+              <InlineDropdown label="Gender" required value={genderLabel}
+                options={GENDERS.map(g => ({ id: g.id, label: g.label }))}
+                onSelect={(o: any) => { setGenderId(o.id); setGenderLabel(o.label); }} />
+
+              {/* Mobile */}
+              <Field label="Mobile No" required>
+                <View style={s.inputWrap}>
+                  <TextInput style={s.input} placeholder="Enter Mobile No" placeholderTextColor="#94A3B8"
+                    value={mobile} onChangeText={setMobile} keyboardType="phone-pad" maxLength={10} />
+                </View>
+              </Field>
+
+              {/* Referring Doctor */}
+              <InlineDropdown
+                label="Referring Doctor"
+                value={referringDrLabel}
+                placeholder="Select..."
+                options={[
+                  { id: 0, label: 'None' },
+                  ...referringDoctors.map(d => ({ id: d.Id, label: d.FullName })),
+                ]}
+                onSelect={(o: any) => {
+                  if (o.id === 0) { setReferringDrId(null); setReferringDrLabel(''); }
+                  else { setReferringDrId(o.id); setReferringDrLabel(o.label); }
+                }}
+              />
+
+              {/* Email */}
+              <Field label="Email">
+                <View style={s.inputWrap}>
+                  <TextInput style={s.input} placeholder="Enter Email" placeholderTextColor="#94A3B8"
+                    value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+                </View>
+              </Field>
+
+              {/* Address */}
+              <Field label="Address">
+                <View style={[s.inputWrap, { height: 60, alignItems: 'flex-start', paddingTop: 8 }]}>
+                  <TextInput style={[s.input, { height: 44 }]} placeholder="Enter Address" placeholderTextColor="#94A3B8"
+                    value={address} onChangeText={setAddress} multiline />
+                </View>
+              </Field>
+
+              {/* Remark */}
+              <Field label="Remark">
+                <View style={[s.inputWrap, { height: 60, alignItems: 'flex-start', paddingTop: 8 }]}>
+                  <TextInput style={[s.input, { height: 44 }]} placeholder="Enter Remark" placeholderTextColor="#94A3B8"
+                    value={remark} onChangeText={setRemark} multiline />
+                </View>
+              </Field>
+
+              <View style={{ height: 20 }} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-// ── Small section label ────────────────────────────────────────────────────────
-function SectionLabel({ title, icon, style }: any) {
+function Field({ label, required, children }: any) {
   return (
-    <View style={[{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }, style]}>
-      <View style={{ width: 3, height: 16, backgroundColor: TEAL, borderRadius: 2, marginRight: 8 }} />
-      <MaterialCommunityIcons name={icon} size={15} color={TEAL} style={{ marginRight: 6 }} />
-      <Text style={{ fontSize: 13, fontWeight: '800', color: TEAL, letterSpacing: 0.3 }}>{title}</Text>
+    <View style={{ marginBottom: 14 }}>
+      <Text style={s.label}>{label}{required && <Text style={{ color: '#EF4444' }}> *</Text>}</Text>
+      {children}
     </View>
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F1F5F9' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 12 },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
-  breadcrumb: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', backgroundColor: '#E8F5F4', paddingHorizontal: 16, paddingVertical: 8 },
-  bcText: { fontSize: 12, color: '#64748B' },
-  bcActive: { backgroundColor: TEAL, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
-  bcActiveText: { fontSize: 11, color: '#FFF', fontWeight: '700' },
-  scroll: { padding: 16, paddingBottom: 40 },
-  card: { backgroundColor: '#FFF', borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
-  cardHeader: { backgroundColor: TEAL, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: '#FFF' },
-  saveBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#15803D', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
-  cancelBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#64748B', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
-  btnTxt: { color: '#FFF', fontSize: 13, fontWeight: '600' },
-  form: { padding: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 8 },
-  req: { color: '#EF4444' },
-  dd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 50, marginBottom: 4 },
-  ddText: { fontSize: 14, color: '#0F172A', flex: 1 },
-  ddMenu: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#FFF', marginBottom: 8, overflow: 'hidden' },
-  ddItem: { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  ddItemText: { fontSize: 14, color: '#0F172A' },
-  slotsLoading: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
-  slotsLoadingText: { fontSize: 13, color: '#64748B' },
-  noSlots: { fontSize: 13, color: '#94A3B8', paddingVertical: 10, marginBottom: 8 },
-  slotsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 8 },
-  slotChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5, borderColor: TEAL, backgroundColor: '#F0FDFA' },
-  slotChipActive: { backgroundColor: TEAL },
-  slotChipText: { fontSize: 13, fontWeight: '700', color: TEAL },
-  dateRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 50, marginBottom: 8 },
-  dateText: { flex: 1, fontSize: 14, color: '#0F172A' },
-  inputWrap: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 50, justifyContent: 'center', marginBottom: 8 },
-  input: { fontSize: 14, color: '#0F172A', flex: 1 },
-  scanFab: { position: 'absolute', bottom: 50, right: 20, backgroundColor: TEAL, width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
-  scanLabel: { fontSize: 9, color: '#FFF', fontWeight: '700', marginTop: 2 },
-  footer: { backgroundColor: TEAL, paddingVertical: 12, alignItems: 'center' },
-  footerText: { fontSize: 12, color: '#FFF', fontWeight: '500' },
+  // ── Root / layout
+  root:           { flex: 1, backgroundColor: '#F1F5F9' },
+  header:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 12 },
+  backBtn:        { padding: 4 },
+  headerTitle:    { fontSize: 18, fontWeight: '700', color: '#0F172A' },
+  breadcrumb:     { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5F4', paddingHorizontal: 16, paddingVertical: 8 },
+  bcText:         { fontSize: 12, color: '#64748B' },
+  bcBadge:        { backgroundColor: TEAL, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  bcBadgeText:    { fontSize: 11, color: '#FFF', fontWeight: '600' },
+  scroll:         { padding: 16, paddingBottom: 20 },
+  footer:         { backgroundColor: TEAL, paddingVertical: 12, alignItems: 'center' },
+  footerTxt:      { fontSize: 12, color: '#FFF', fontWeight: '500' },
+
+  // ── Search card
+  card:           { backgroundColor: '#FFF', borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+  cardHeader:     { backgroundColor: TEAL, padding: 14, flexDirection: 'row', alignItems: 'center' },
+  cardTitle:      { flex: 1, fontSize: 15, fontWeight: '700', color: '#FFF' },
+  backSmall:      { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5 },
+  backSmallTxt:   { fontSize: 12, color: '#FFF', fontWeight: '600' },
+  form:           { padding: 16 },
+
+  // ── Form elements
+  label:          { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 6 },
+  req:            { color: '#EF4444' },
+  dd:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 48 },
+  ddText:         { flex: 1, fontSize: 14, color: '#0F172A' },
+  ddMenu:         { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#FFF', marginTop: 4, overflow: 'hidden', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
+  ddItem:         { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  ddItemText:     { fontSize: 14, color: '#0F172A' },
+  dateRow:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 48 },
+  dateText:       { flex: 1, fontSize: 14, color: '#0F172A' },
+  searchBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: TEAL, borderRadius: 10, paddingVertical: 13, marginTop: 16 },
+  searchBtnTxt:   { fontSize: 15, fontWeight: '700', color: '#FFF', marginLeft: 6 },
+  inputWrap:      { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 48 },
+  input:          { flex: 1, fontSize: 14, color: '#0F172A' },
+  readOnly:       { fontSize: 14, color: '#0F172A', fontWeight: '600' },
+
+  // ── Slot grid
+  legend:         { flexDirection: 'row', gap: 16, padding: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  legendItem:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dot:            { width: 10, height: 10, borderRadius: 5 },
+  legendTxt:      { fontSize: 12, color: '#64748B' },
+  noSlots:        { textAlign: 'center', color: '#94A3B8', fontSize: 14, paddingVertical: 24 },
+  slotsHeading:   { fontSize: 11, fontWeight: '700', color: '#64748B', letterSpacing: 0.8, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 8 },
+  slotsGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10, padding: 14 },
+  slotBtn:        { width: '30%', backgroundColor: '#F0FDFA', borderWidth: 1.5, borderColor: TEAL, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  slotBooked:     { backgroundColor: '#FEF2F2', borderColor: '#EF4444' },
+  slotPast:       { backgroundColor: '#F8FAFC', borderColor: '#CBD5E1' },
+  slotBtnTxt:     { fontSize: 13, fontWeight: '700', color: TEAL },
+  slotBookedTxt:  { color: '#EF4444' },
+  slotPastTxt:    { color: '#94A3B8' },
+
+  // ── Modal
+  modalOverlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  modalCard:      { backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '92%' },
+  modalHeader:    { flexDirection: 'row', alignItems: 'center', backgroundColor: TEAL, paddingHorizontal: 16, paddingVertical: 14, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  modalTitle:     { fontSize: 15, fontWeight: '700', color: '#FFF' },
+  modalActions:   { flexDirection: 'row', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  modalScroll:    { padding: 16 },
+  bookBtn:        { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: TEAL, borderRadius: 10, paddingVertical: 11 },
+  cancelBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#64748B', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 11 },
+  btnTxt:         { fontSize: 13, fontWeight: '700', color: '#FFF' },
 });

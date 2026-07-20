@@ -14,13 +14,12 @@ import {
 
 const TEAL = COLORS.primary;
 
-/** Convert ISO date string → "DD-MM-YYYY" for display */
+/** Convert ISO date string → "DD-MM-YYYY" for display — regex avoids timezone shifts */
 function fmtDate(iso: string): string {
   if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
-  } catch { return iso; }
+  const match = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+  return iso;
 }
 
 /** Convert "HH:MM:SS" → "HH:MM AM/PM" */
@@ -46,8 +45,20 @@ export default function DrAppointmentScreen({ navigation }: any) {
     setLoading(true);
     setError(null);
     try {
-      const data = await getAllDoctorSchedules(4);
-      setSchedules(data);
+      // Fetch from all branches — website saves BranchId 1, app saves BranchId 4
+      const [b1, b4] = await Promise.all([
+        getAllDoctorSchedules(1).catch(() => [] as DoctorScheduleRecord[]),
+        getAllDoctorSchedules(4).catch(() => [] as DoctorScheduleRecord[]),
+      ]);
+      // Deduplicate by ScheduleId
+      const seen = new Set<number>();
+      const merged = [...b1, ...b4].filter(sc => {
+        const id = sc.ScheduleId ?? (sc as any).scheduleId;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+      setSchedules(merged);
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load schedules.');
     } finally {
