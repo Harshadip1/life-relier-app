@@ -52,11 +52,11 @@ export default function AddDoctorSlotScreen({ navigation }: any) {
     setSaving(true);
     try {
       const payload = {
-        DrId:      selectedDrId,
-        Slot:      slotMins.trim(),   // string e.g. "15" — field name verified from live API
-        BranchId:  1,
+        DrId: selectedDrId,
+        SlotMins: Number(slotMins),
+        BranchId: 1,   // confirmed from Bruno — BranchId: 1
         CreatedBy: user?.name || 'admin',
-        IsActive:  true,
+        IsActive: true,
       };
 
       await saveSlot(payload);

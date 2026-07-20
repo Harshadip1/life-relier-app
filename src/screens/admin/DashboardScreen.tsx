@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
 
 const T = {
   primary:   '#0D9488',
@@ -27,8 +28,20 @@ const QUICK = [
   { label: 'Pending\nReports',  icon: 'file-alert-outline',   fam: 'material',  color: '#DC2626', bg: '#FEF2F2', screen: 'PendingReports'    },
 ];
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'Good Morning 🌅';
+  if (hour >= 12 && hour < 17) return 'Good Afternoon ☀️';
+  if (hour >= 17 && hour < 21) return 'Good Evening 🌆';
+  return 'Good Night 🌙';
+}
+
 export default function DashboardScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+
+  const displayName = user?.name || 'Admin';
+  const greeting = getGreeting();
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 0) }]}>
@@ -36,8 +49,8 @@ export default function DashboardScreen({ navigation }: any) {
       {/* ── Teal Header Band ── */}
       <View style={styles.headerBand}>
         <View style={styles.headerLeft}>
-          <Text style={styles.greeting}>Good Morning 👋</Text>
-          <Text style={styles.adminName}>Admin</Text>
+          <Text style={styles.greeting}>{greeting}</Text>
+          <Text style={styles.adminName}>{displayName}</Text>
           <View style={styles.labRow}>
             <MaterialCommunityIcons name="check-decagram" size={14} color="rgba(255,255,255,0.8)" />
             <Text style={styles.labName}>  CityCare Diagnostics Laboratory</Text>

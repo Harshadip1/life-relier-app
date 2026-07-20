@@ -98,6 +98,16 @@ export default function HomeScreen() {
   const greetingName = user?.name || 'Ubaid';
   const displayDateStr = 'Tuesday, 20 May 2025';
 
+  function getGreeting(): string {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Good Morning 🌅';
+    if (hour >= 12 && hour < 17) return 'Good Afternoon ☀️';
+    if (hour >= 17 && hour < 21) return 'Good Evening 🌆';
+    return 'Good Night 🌙';
+  }
+
+  const greeting = getGreeting();
+
   function handleQuickAction(actionId: string) {
     if (actionId === 'reports') {
       navigation.navigate('Reports');
@@ -166,7 +176,7 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.topBar}>
           <View>
-            <Text style={styles.greeting}>Good Morning, {greetingName} 👋</Text>
+            <Text style={styles.greeting}>{greeting}, {greetingName} 👋</Text>
             <Text style={styles.date}>{displayDateStr}</Text>
           </View>
           <TouchableOpacity style={styles.notifBtn} activeOpacity={0.8} onPress={() => Alert.alert('Notifications', 'You have no new notifications.')}>

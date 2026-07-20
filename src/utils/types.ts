@@ -68,3 +68,34 @@ export interface ServiceCard {
   bgColor: string;
   screen: string;
 }
+
+// ── Test Charges ──────────────────────────────────────────────────────────────
+export interface TestCharge {
+  TestChargeId: number;
+  SubDeptId: number;
+  MainTestId: number;
+  PackageId: number | null;
+  PackageName: string | null;
+  RateTypeName: string;
+  RateTypeId: number;
+  TestType: string;
+  MTCODE: string;
+  TestName: string;
+  Amount: number;
+  ClientRate: number;
+  Percentage: number;
+  Emergency: number;
+  Branchid: number;
+  username: string;
+  Createdby: string;
+  Createdon: string;
+  updatedby: string;
+  updatedon: string;
+  [key: string]: any;
+}
+
+// ── Packages ──────────────────────────────────────────────────────────────────
+export interface Package {
+  PackageId: number;
+  PackageName: string;
+}
