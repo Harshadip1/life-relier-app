@@ -30,6 +30,7 @@ import AddDoctorSlotScreen    from '../screens/admin/AddDoctorSlotScreen';
 import AppointmentRecordsScreen   from '../screens/admin/AppointmentRecordsScreen';
 import SearchAvailableSlotsScreen from '../screens/admin/SearchAvailableSlotsScreen';
 import ShowAppointmentScreen      from '../screens/admin/ShowAppointmentScreen';
+import TestChargesScreen          from '../screens/admin/TestChargesScreen';
 
 import { COLORS } from '../utils/constants';
 
@@ -161,6 +162,7 @@ function MasterStack() {
       />
 
       {/* Test Management */}
+      <Stack.Screen name="TestCharges"      component={TestChargesScreen} />
       <Stack.Screen name="TestMaster"
         component={PlaceholderScreen}
         initialParams={{ title: 'Test Master', icon: 'test-tube' }}

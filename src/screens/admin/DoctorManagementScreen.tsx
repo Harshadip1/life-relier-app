@@ -72,17 +72,37 @@ export default function DoctorManagementScreen({ navigation }: any) {
       const doctorMap = new Map<number, string>();
       drList.forEach(d => doctorMap.set(d.Id, d.FullName));
 
-      // 2. Fetch schedules
-      const schedList = await getAllDoctorSchedules(4);
-      setSchedules(schedList);
+      // 2. Fetch schedules from both branches (website=1, app=4) and merge
+      const [schedB1, schedB4] = await Promise.all([
+        getAllDoctorSchedules(1).catch(() => []),
+        getAllDoctorSchedules(4).catch(() => []),
+      ]);
+      const seenSched = new Set<number>();
+      const mergedSched = [...schedB1, ...schedB4].filter(sc => {
+        const id = sc.ScheduleId ?? (sc as any).scheduleId;
+        if (seenSched.has(id)) return false;
+        seenSched.add(id);
+        return true;
+      });
+      setSchedules(mergedSched);
 
-      // 3. Fetch slots and map doctor names
-      const slotList = await getAllSlots(4);
-      const enrichedSlots = slotList.map(slot => ({
-        ...slot,
-        DoctorName: doctorMap.get(slot.DrId) || `Doctor ID: ${slot.DrId}`
-      }));
-      setSlots(enrichedSlots);
+      // 3. Fetch slots from both branches and merge
+      const [slotB1, slotB4] = await Promise.all([
+        getAllSlots(1).catch(() => []),
+        getAllSlots(4).catch(() => []),
+      ]);
+      const seenSlot = new Set<number>();
+      const mergedSlots = [...slotB1, ...slotB4]
+        .filter(sl => {
+          if (seenSlot.has(sl.SlotId)) return false;
+          seenSlot.add(sl.SlotId);
+          return true;
+        })
+        .map(slot => ({
+          ...slot,
+          DoctorName: doctorMap.get(slot.DrId) || `Doctor ID: ${slot.DrId}`,
+        }));
+      setSlots(mergedSlots);
 
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load registry data.');

@@ -23,7 +23,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0D9488"
-      }
+      },
+      "package": "com.ubaid_0406.limsapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -38,6 +39,11 @@
           "backgroundColor": "#0D9488"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4ba42234-0e93-461b-b03e-9b6d094811e7"
+      }
+    }
   }
 }

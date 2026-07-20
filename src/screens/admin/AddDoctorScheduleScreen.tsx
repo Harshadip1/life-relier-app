@@ -135,7 +135,7 @@ export default function AddDoctorScheduleScreen({ navigation, route }: any) {
           EndDate:   toISODate(endDate),
           StartTime: toTimeStr(startTime),
           EndTime:   toTimeStr(endTime),
-          BranchId:  editSchedule.BranchId ?? 4,
+          BranchId:  editSchedule.BranchId ?? 1,
           UpdatedBy: user?.name || 'Admin',
           IsActive:  isActive,
         };
@@ -150,7 +150,7 @@ export default function AddDoctorScheduleScreen({ navigation, route }: any) {
           EndDate:   toISODate(endDate),
           StartTime: toTimeStr(startTime),
           EndTime:   toTimeStr(endTime),
-          BranchId:  4,
+          BranchId:  1,
           CreatedBy: user?.name || 'admin',
           IsActive:  isActive,
         };

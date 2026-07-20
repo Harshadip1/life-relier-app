@@ -22,6 +22,19 @@ function formatDate(d: Date) {
   return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
 
+/** Convert "HH:MM" 24h or "HH:MM AM/PM" → "HH:MM AM/PM" display */
+function formatSlot(slot: string): string {
+  if (!slot) return '—';
+  if (/AM|PM/i.test(slot)) return slot;
+  const [hStr, mStr] = slot.split(':');
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr || '0', 10);
+  if (isNaN(h)) return slot;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12  = h % 12 || 12;
+  return `${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
 export default function ShowAppointmentScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
 
@@ -44,8 +57,20 @@ export default function ShowAppointmentScreen({ navigation }: any) {
     setLoading(true);
     setError(null);
     try {
-      const data = await getAllAppointments(1);
-      setAppointments(data);
+      // Fetch from both branches — website uses BranchId 1, app uses BranchId 4
+      const [b1, b4] = await Promise.all([
+        getAllAppointments(1).catch(() => []),
+        getAllAppointments(4).catch(() => []),
+      ]);
+      // Deduplicate by AppointmentId
+      const seen = new Set<number>();
+      const merged = [...b1, ...b4].filter(a => {
+        const id = a.AppointmentId;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+      setAppointments(merged);
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load appointments.');
     } finally {
@@ -66,12 +91,13 @@ export default function ShowAppointmentScreen({ navigation }: any) {
     return matchesSearch && matchesDoctor;
   });
 
-  /** ISO date → "DD-MM-YYYY" */
+  /** Robust date formatter — parses "YYYY-MM-DDT..." or "YYYY-MM-DD" without timezone shift */
   function fmtDate(iso: string): string {
     if (!iso) return '—';
     try {
-      const d = new Date(iso);
-      return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+      const match = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+      return iso;
     } catch { return iso; }
   }
 
@@ -207,7 +233,11 @@ export default function ShowAppointmentScreen({ navigation }: any) {
                 <Text style={styles.emptyText}>No data available</Text>
               </View>
             ) : (
-              filtered.map((item, idx) => (
+              filtered.map((item, idx) => {
+                const patientName = item.Name
+                  || (item.FirstName ? `${item.FirstName} ${item.LastName ?? ''}`.trim() : '')
+                  || '—';
+                return (
                 <View key={String(item.AppointmentId ?? idx)} style={styles.apptRow}>
                   <View style={styles.apptIcon}>
                     <MaterialCommunityIcons name="calendar-account" size={18} color={TEAL} />
@@ -217,10 +247,13 @@ export default function ShowAppointmentScreen({ navigation }: any) {
                       {item.DoctorName ?? `Dr ID: ${item.DrId}`}
                     </Text>
                     <Text style={styles.apptSub}>
+                      👤 {patientName}
+                    </Text>
+                    <Text style={styles.apptSub}>
                       📱 {item.Mobile}  •  {fmtDate(item.AppointmentDate)}
                     </Text>
                     <Text style={styles.apptTime}>
-                      🕐 {item.Slot}  •  {item.Status}
+                      🕐 {formatSlot(item.Slot)}  •  {item.Status}
                     </Text>
                   </View>
                   {/* Status badge */}
@@ -248,7 +281,7 @@ export default function ShowAppointmentScreen({ navigation }: any) {
                     </TouchableOpacity>
                   </View>
                 </View>
-              ))
+              ); })
             )}
           </View>
         </View>
@@ -317,4 +350,5 @@ const styles = StyleSheet.create({
   scanLabel: { fontSize: 9, color: '#FFF', fontWeight: '700', marginTop: 2 },
   footer: { backgroundColor: TEAL, paddingVertical: 12, alignItems: 'center' },
   footerText: { fontSize: 12, color: '#FFF', fontWeight: '500' },
+  deleteBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA' },
 });

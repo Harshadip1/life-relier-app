@@ -217,18 +217,22 @@ export async function deleteSlot(slotId: number, branchId: number = 1): Promise<
 // ─── Appointments  (/api/DrAppointment/) ─────────────────────────────────────
 
 export interface SaveAppointmentPayload {
-  DrId:            number;
-  FirstName:       string;
-  LastName:        string;
-  Mobile:          string;
-  AppointmentDate: string;
-  Slot:            string;
-  Address:         string;
-  GenderId:        number;
-  InitialId:       number;
-  BirthDate:       string;
-  BranchId:        number;
-  CreatedBy:       string;
+  DrId:              number;
+  Name:              string;   // Combined full name — what GetAllAppointment returns
+  FirstName:         string;
+  LastName:          string;
+  Mobile:            string;
+  AppointmentDate:   string;
+  Slot:              string;
+  Address:           string;
+  GenderId:          number;
+  InitialId:         number;
+  BirthDate:         string;
+  BranchId:          number;
+  CreatedBy:         string;
+  Email?:            string;
+  Remark?:           string;
+  ReferingDoctorId?: number | null;
 }
 
 export interface UpdateAppointmentPayload extends Omit<SaveAppointmentPayload, 'CreatedBy'> {
@@ -240,6 +244,8 @@ export interface AppointmentRecord {
   AppointmentId:      number;
   DrId:               number;
   Name:               string | null;
+  FirstName:          string | null;
+  LastName:           string | null;
   Email:              string | null;
   Mobile:             string;
   AppointmentDate:    string;
@@ -275,9 +281,23 @@ export async function updateAppointment(payload: UpdateAppointmentPayload): Prom
 
 export async function getAllAppointments(branchId: number = 1): Promise<AppointmentRecord[]> {
   const data = await post<any>(APPT_BASE, 'GetAllAppointment', { BranchId: branchId });
-  if (Array.isArray(data)) return data;
-  if (data?.data && Array.isArray(data.data)) return data.data;
-  return [];
+  let list: any[] = [];
+  if (Array.isArray(data)) list = data;
+  else if (data?.data && Array.isArray(data.data)) list = data.data;
+  else if (data?.message || data?.Message) return [];   // "No data found"
+
+  return list.map(a => ({
+    ...a,
+    // Name is stored directly now; keep FirstName+LastName fallback for old records
+    Name: a.Name
+      || [a.FirstName, a.LastName].filter(Boolean).join(' ').trim()
+      || null,
+    // Strip time portion from AppointmentDate to avoid timezone issues
+    AppointmentDate: (() => {
+      const m = String(a.AppointmentDate ?? '').match(/^(\d{4}-\d{2}-\d{2})/);
+      return m ? m[1] : a.AppointmentDate;
+    })(),
+  }));
 }
 
 export async function getAppointmentById(appointmentId: number, branchId: number = 1): Promise<AppointmentRecord[]> {

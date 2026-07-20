@@ -40,6 +40,7 @@ const SECTIONS = [
     color:  '#0369A1',
     bg:     '#F0F9FF',
     items: [
+      { label: 'Test Charges',    icon: 'currency-usd',            color: '#0D9488', bg: '#F0FDFA', screen: 'TestCharges'       },
       { label: 'Test Master',     icon: 'test-tube',               color: '#0369A1', bg: '#F0F9FF', screen: 'TestMaster'        },
       { label: 'Package Master',  icon: 'package-variant',         color: '#1D4ED8', bg: '#EFF6FF', screen: 'PackageMaster'     },
       { label: 'Department Master',icon: 'office-building-outline',color: '#92400E', bg: '#FEF3C7', screen: 'DepartmentMaster'  },
