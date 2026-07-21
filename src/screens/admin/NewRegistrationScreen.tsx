@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, KeyboardAvoidingView, Platform
+  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { API_BASE_URL } from '../../utils/constants';
+import { getTestNames, TestNameItem } from '../../services/testChargesService';
 
 // ─── Theme Colors ────────────────────────────────────────────────────────────
 const THEME = {
-  primary: '#0F766E',      // Deep Teal
-  primaryLight: '#F0FDFA', // Ultra-light Teal
+  primary: '#0F766E',
+  primaryLight: '#F0FDFA',
   textPrimary: '#0F172A',
   textSecondary: '#64748B',
   border: '#E2E8F0',
@@ -19,24 +21,83 @@ const THEME = {
   screenBg: '#FAFAFA'
 };
 
-const AVAILABLE_TESTS = ['CBC', 'Lipid Profile', 'HbA1c', 'Vitamin D', 'LFT', 'KFT'];
+const GENDERS = ['Male', 'Female', 'Other'];
 
 export default function NewRegistrationScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
 
   // ─── Form States ───
-  const [name, setName] = useState('Rahul Sharma');
-  const [mobile, setMobile] = useState('98765 43210');
-  const [age, setAge] = useState('32');
-  const [gender, setGender] = useState('Male');
-  const [dob, setDob] = useState('15/08/1992');
-  const [city, setCity] = useState('Mumbai');
-  const [area, setArea] = useState('Andheri West');
-  const [searchTest, setSearchTest] = useState('');
-  const [notes, setNotes] = useState('');
+  const [name, setName]               = useState('');
+  const [mobile, setMobile]           = useState('');
+  const [age, setAge]                 = useState('');
+  const [gender, setGender]           = useState('Male');
+  const [genderOpen, setGenderOpen]   = useState(false);
+  const [dob, setDob]                 = useState('');
+  const [city, setCity]               = useState('');
+  const [area, setArea]               = useState('');
+  const [searchTest, setSearchTest]   = useState('');
+  const [notes, setNotes]             = useState('');
   const [paymentMethod, setPaymentMethod] = useState('UPI');
 
-  const [selectedTests, setSelectedTests] = useState(['CBC', 'HbA1c', 'Vitamin D']);
+  const [availableTests, setAvailableTests] = useState<TestNameItem[]>([]);
+  const [selectedTests, setSelectedTests]   = useState<string[]>([]);
+  const [loading, setLoading]               = useState(false);
+
+  // ─── Load test names from API ───
+  useEffect(() => {
+    getTestNames(1).then(setAvailableTests).catch(() => {});
+  }, []);
+
+  const filteredTests = availableTests.filter(t =>
+    t.MainTestName.toLowerCase().includes(searchTest.toLowerCase())
+  );
+
+  // ─── Register Patient API ───
+  const handleRegister = async () => {
+    if (!name.trim() || !mobile.trim() || !age.trim() || !gender.trim()) {
+      Alert.alert('Validation Error', 'Please fill in all required fields (Name, Mobile, Age, Gender).');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const payload = {
+        PatientName: name.trim(),
+        MobileNo: mobile.replace(/\s/g, ''),
+        Age: age.trim(),
+        Gender: gender,
+        DOB: dob,
+        City: city.trim(),
+        Area: area.trim(),
+        Notes: notes.trim(),
+        PaymentMethod: paymentMethod,
+        BranchId: 1,
+        CreatedBy: 'admin',
+      };
+
+      const res = await fetch(`${API_BASE_URL}/api/NewRegistration/RegisterPatient`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.Message || data?.message || `Server error (${res.status})`);
+      }
+
+      Alert.alert(
+        'Registration Successful',
+        `${data.Message}\nPatient ID: ${data.PID}\nReceipt No: ${data.ReceiptNo}`,
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    } catch (err: any) {
+      Alert.alert('Registration Failed', err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ─── Handlers ───
   const toggleTest = (test: string) => {
@@ -111,21 +172,44 @@ export default function NewRegistrationScreen({ navigation }: any) {
 
           <View style={[styles.inputGroup, { flex: 1.2 }]}>
             <InputLabel title="Gender" required />
-            <TouchableOpacity style={styles.inputWrapper} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.inputWrapper}
+              activeOpacity={0.7}
+              onPress={() => setGenderOpen(o => !o)}
+            >
               <Feather name="users" size={18} color={THEME.textSecondary} style={styles.inputIcon} />
               <Text style={[styles.input, { marginTop: 2 }]}>{gender}</Text>
               <Feather name="chevron-down" size={18} color={THEME.textSecondary} />
             </TouchableOpacity>
+            {genderOpen && (
+              <View style={styles.ddMenu}>
+                {GENDERS.map(g => (
+                  <TouchableOpacity
+                    key={g}
+                    style={styles.ddItem}
+                    onPress={() => { setGender(g); setGenderOpen(false); }}
+                  >
+                    <Text style={styles.ddItemText}>{g}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
         </View>
 
         <View style={styles.inputGroup}>
           <InputLabel title="Date of Birth" />
-          <TouchableOpacity style={styles.inputWrapper} activeOpacity={0.7}>
+          <View style={styles.inputWrapper}>
             <Feather name="calendar" size={18} color={THEME.textSecondary} style={styles.inputIcon} />
-            <Text style={[styles.input, { marginTop: 2 }]}>{dob}</Text>
-            <Feather name="chevron-down" size={18} color={THEME.textSecondary} />
-          </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              value={dob}
+              onChangeText={setDob}
+              placeholder="DD/MM/YYYY"
+              placeholderTextColor="#94A3B8"
+              keyboardType="numeric"
+            />
+          </View>
         </View>
 
         {/* ── Section 2: Address ── */}
@@ -133,11 +217,16 @@ export default function NewRegistrationScreen({ navigation }: any) {
         <View style={styles.row}>
           <View style={[styles.inputGroup, { flex: 1, marginRight: 12 }]}>
             <InputLabel title="City" />
-            <TouchableOpacity style={styles.inputWrapper} activeOpacity={0.7}>
+            <View style={styles.inputWrapper}>
               <Feather name="map-pin" size={18} color={THEME.textSecondary} style={styles.inputIcon} />
-              <Text style={[styles.input, { marginTop: 2 }]}>{city}</Text>
-              <Feather name="chevron-down" size={18} color={THEME.textSecondary} />
-            </TouchableOpacity>
+              <TextInput
+                style={styles.input}
+                value={city}
+                onChangeText={setCity}
+                placeholder="City"
+                placeholderTextColor="#94A3B8"
+              />
+            </View>
           </View>
           <View style={[styles.inputGroup, { flex: 1 }]}>
             <InputLabel title="Area / Locality" />
@@ -156,15 +245,21 @@ export default function NewRegistrationScreen({ navigation }: any) {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-          {AVAILABLE_TESTS.map(test => (
-            <TouchableOpacity 
-              key={test} 
-              style={styles.availableChip}
-              onPress={() => toggleTest(test)}
+          {filteredTests.slice(0, 20).map(test => (
+            <TouchableOpacity
+              key={test.MainTestName}
+              style={[
+                styles.availableChip,
+                selectedTests.includes(test.MainTestName) && { backgroundColor: THEME.primaryLight, borderColor: THEME.primary },
+              ]}
+              onPress={() => toggleTest(test.MainTestName)}
             >
-              <Text style={styles.availableChipText}>{test}</Text>
+              <Text style={styles.availableChipText}>{test.MainTestName}</Text>
             </TouchableOpacity>
           ))}
+          {availableTests.length === 0 && (
+            <ActivityIndicator size="small" color={THEME.primary} style={{ marginLeft: 8 }} />
+          )}
         </ScrollView>
 
         <Text style={styles.selectedTestsLabel}>Selected Tests: <Text style={{ color: THEME.primary }}>{selectedTests.length}</Text></Text>
@@ -239,9 +334,13 @@ export default function NewRegistrationScreen({ navigation }: any) {
         <View style={{ height: 20 }} />
 
         {/* ── Footer Buttons ── */}
-        <TouchableOpacity style={styles.primaryBtn} activeOpacity={0.8}>
-          <Feather name="user-plus" size={18} color="#FFF" style={{ marginRight: 8 }} />
-          <Text style={styles.primaryBtnText}>Register Patient</Text>
+        <TouchableOpacity style={[styles.primaryBtn, loading && { opacity: 0.7 }]} activeOpacity={0.8} onPress={handleRegister} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#FFF" style={{ marginRight: 8 }} />
+          ) : (
+            <Feather name="user-plus" size={18} color="#FFF" style={{ marginRight: 8 }} />
+          )}
+          <Text style={styles.primaryBtnText}>{loading ? 'Registering...' : 'Register Patient'}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.secondaryBtn} activeOpacity={0.8}>
@@ -338,6 +437,11 @@ const styles = StyleSheet.create({
   },
   notesInput: { flex: 1, fontSize: 13, color: THEME.textPrimary },
   charCount: { fontSize: 10, color: THEME.textSecondary, textAlign: 'right', marginTop: 4 },
+
+  // Gender dropdown
+  ddMenu:     { borderWidth: 1, borderColor: THEME.border, borderRadius: 10, backgroundColor: THEME.bg, marginTop: 2, overflow: 'hidden', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
+  ddItem:     { paddingHorizontal: 12, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  ddItemText: { fontSize: 14, color: THEME.textPrimary },
 
   // Buttons
   primaryBtn: {

@@ -10,15 +10,15 @@
  *                                        PackageName, CreatedBy }
  *   POST DeleteTestCharges    — body: { Action: "DELETE", TestChargeId }
  *
- * Sub Department — /api/SubDept/GetAllSubDept  — body: { BranchId }
- * Rate Type      — /api/RateType/GetAllRateType — body: { BranchId }
+ * Sub Department — /api/TestStatus/GetSubDepartment  — body: { BranchId }
+ * Rate Type      — /api/TestStatus/GetRateType        — body: { BranchId }
  */
 
 import { API_BASE_URL } from '../utils/constants';
 
-const BASE       = `${API_BASE_URL}/api/TestCharges`;
-const SUBDEPT_BASE = `${API_BASE_URL}/api/SubDept`;
-const RATETYPE_BASE = `${API_BASE_URL}/api/RateType`;
+const BASE          = `${API_BASE_URL}/api/TestCharges`;
+const SUBDEPT_BASE  = `${API_BASE_URL}/api/TestStatus`;
+const RATETYPE_BASE = `${API_BASE_URL}/api/TestStatus`;
 
 // ─── Generic POST helper ──────────────────────────────────────────────────────
 
@@ -144,22 +144,63 @@ export async function getPackages(branchId: number = 1): Promise<PackageItem[]> 
   } catch { return []; }
 }
 
-/** Sub Departments dropdown */
-export async function getAllSubDepts(branchId: number = 1): Promise<SubDeptItem[]> {
+// ─── Centers ──────────────────────────────────────────────────────────────────
+
+export interface CenterItem {
+  CenterCode: string;
+  CenterName: string;
+}
+
+/** Fetch collection centers — POST /api/TestStatus/GetCenter */
+export async function getCenters(branchId: number = 1): Promise<CenterItem[]> {
   try {
-    const data = await post<any>(`${SUBDEPT_BASE}/GetAllSubDept`, { BranchId: branchId });
+    const data = await post<any>(`${API_BASE_URL}/api/TestStatus/GetCenter`, { BranchId: branchId });
     if (Array.isArray(data)) return data;
     if (data?.data && Array.isArray(data.data)) return data.data;
     return [];
   } catch { return []; }
 }
 
-/** Rate Types dropdown */
-export async function getAllRateTypes(branchId: number = 1): Promise<RateTypeItem[]> {
+// ─── Test Names ───────────────────────────────────────────────────────────────
+
+export interface TestNameItem {
+  MainTestName: string;
+}
+
+/** Fetch test names — POST /api/TestStatus/GetTestName */
+export async function getTestNames(branchId: number = 1): Promise<TestNameItem[]> {
   try {
-    const data = await post<any>(`${RATETYPE_BASE}/GetAllRateType`, { BranchId: branchId });
+    const data = await post<any>(`${API_BASE_URL}/api/TestStatus/GetTestName`, { BranchId: branchId });
     if (Array.isArray(data)) return data;
     if (data?.data && Array.isArray(data.data)) return data.data;
     return [];
+  } catch { return []; }
+}
+
+/** Sub Departments dropdown */
+export async function getAllSubDepts(branchId: number = 1): Promise<SubDeptItem[]> {
+  try {
+    const data = await post<any>(`${SUBDEPT_BASE}/GetSubDepartment`, { BranchId: branchId });
+    const list: any[] = Array.isArray(data) ? data
+      : data?.data && Array.isArray(data.data) ? data.data : [];
+    // Normalise both field name conventions the API may return
+    return list.map(d => ({
+      SubDeptId:   d.SubDeptId   ?? d.ID   ?? d.Id   ?? 0,
+      SubDeptName: d.SubDeptName ?? d.SubDepartmentName ?? '',
+    }));
+  } catch { return []; }
+}
+
+/** Rate Types dropdown */
+export async function getAllRateTypes(branchId: number = 1): Promise<RateTypeItem[]> {
+  try {
+    const data = await post<any>(`${RATETYPE_BASE}/GetRateType`, { BranchId: branchId });
+    const list: any[] = Array.isArray(data) ? data
+      : data?.data && Array.isArray(data.data) ? data.data : [];
+    // Normalise both field name conventions the API may return
+    return list.map(d => ({
+      RateTypeId:   d.RateTypeId   ?? d.ID  ?? d.Id  ?? 0,
+      RateTypeName: d.RateTypeName ?? d.Name ?? '',
+    }));
   } catch { return []; }
 }

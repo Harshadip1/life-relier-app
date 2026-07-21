@@ -250,7 +250,7 @@ export async function updateAppointment(payload: UpdateAppointmentPayload): Prom
 }
 
 export async function getAllAppointments(branchId: number = 1): Promise<AppointmentRecord[]> {
-  const data = await post<any>(APPT_BASE, 'GetAllAppointment', { BranchId: branchId });
+  const data = await postAppt<any>('GetAllAppointment', { BranchId: branchId });
   let list: any[] = [];
   if (Array.isArray(data)) list = data;
   else if (data?.data && Array.isArray(data.data)) list = data.data;

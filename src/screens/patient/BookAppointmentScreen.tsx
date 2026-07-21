@@ -1,61 +1,92 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Image, Modal, SafeAreaView, Platform
+  Modal, Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import {
+  getDoctorDropdown,
+  getAllSlots,
+  saveAppointment,
+  DoctorDropdownItem,
+  DrSlotRecord,
+} from '../../services/doctorScheduleService';
+import { useAuth } from '../../context/AuthContext';
 
-// ─── Theme ───
 const THEME = {
-  primary: '#0F766E', // Deep Teal
+  primary:      '#0F766E',
   primaryLight: '#F0FDFA',
-  bg: '#FFFFFF',
-  screenBg: '#F8FAFC',
-  textPrimary: '#0F172A',
-  textSecondary: '#64748B',
-  border: '#E2E8F0',
-  success: '#10B981',
+  bg:           '#FFFFFF',
+  screenBg:     '#F8FAFC',
+  textPrimary:  '#0F172A',
+  textSecondary:'#64748B',
+  border:       '#E2E8F0',
+  success:      '#10B981',
 };
 
-// ─── Dummy Data (From your /GetDoctorDropdown & /GetAllDrSlot APIs) ───
-const DOCTORS = [
-  { id: 1, name: 'Dr. Rahul Sharma', spec: 'Cardiologist', exp: '12 Yrs Exp', rating: 4.8, fee: 800, avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=150&auto=format&fit=crop' },
-  { id: 2, name: 'Dr. Priya Patil', spec: 'General Physician', exp: '8 Yrs Exp', rating: 4.9, fee: 500, avatar: 'https://images.unsplash.com/photo-1594824416928-8ae8acae7446?q=80&w=150&auto=format&fit=crop' },
-  { id: 3, name: 'Dr. Arjun Verma', spec: 'Orthopedic', exp: '15 Yrs Exp', rating: 4.7, fee: 1000, avatar: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=150&auto=format&fit=crop' },
-];
-
-const DATES = [
-  { id: 1, day: 'Mon', date: '15', full: '15 May 2026' },
-  { id: 2, day: 'Tue', date: '16', full: '16 May 2026' },
-  { id: 3, day: 'Wed', date: '17', full: '17 May 2026' },
-  { id: 4, day: 'Thu', date: '18', full: '18 May 2026' },
-  { id: 5, day: 'Fri', date: '19', full: '19 May 2026' },
-];
-
-const SLOTS = [
-  { time: '09:00 AM', available: true },
-  { time: '09:30 AM', available: true },
-  { time: '10:00 AM', available: false },
-  { time: '10:30 AM', available: true },
-  { time: '11:00 AM', available: true },
-  { time: '11:30 AM', available: false },
-  { time: '04:00 PM', available: true },
-  { time: '04:30 PM', available: true },
-  { time: '05:00 PM', available: true },
-];
+function getNextDates(count = 5) {
+  const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const base   = new Date(); base.setHours(0,0,0,0);
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    return {
+      id:   i + 1,
+      day:  days[d.getDay()],
+      date: String(d.getDate()),
+      full: `${String(d.getDate()).padStart(2,'0')} ${months[d.getMonth()]} ${d.getFullYear()}`,
+      iso:  `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`,
+    };
+  });
+}
 
 export default function BookAppointmentScreen({ navigation }: any) {
-  const insets = useSafeAreaInsets();
-  
-  // ─── Multi-Step Form State ───
-  const [step, setStep] = useState(1);
-  const [selectedDoc, setSelectedDoc] = useState<any>(null);
-  const [selectedDate, setSelectedDate] = useState<any>(DATES[0]);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const insets   = useSafeAreaInsets();
+  const { user } = useAuth();
+  const DATES    = getNextDates(5);
 
-  // ─── Handlers ───
+  const [step, setStep]                   = useState(1);
+  const [selectedDoc, setSelectedDoc]     = useState<DoctorDropdownItem | null>(null);
+  const [selectedDate, setSelectedDate]   = useState(DATES[0]);
+  const [selectedSlot, setSelectedSlot]   = useState<string | null>(null);
+  const [showSuccess, setShowSuccess]     = useState(false);
+  const [booking, setBooking]             = useState(false);
+
+  const [doctors, setDoctors]     = useState<DoctorDropdownItem[]>([]);
+  const [slots, setSlots]         = useState<DrSlotRecord[]>([]);
+  const [loadingDr, setLoadingDr] = useState(false);
+  const [loadingSl, setLoadingSl] = useState(false);
+
+  useEffect(() => {
+    setLoadingDr(true);
+    getDoctorDropdown(1)
+      .then(setDoctors)
+      .catch(() => {})
+      .finally(() => setLoadingDr(false));
+  }, []);
+
+  useEffect(() => {
+    if (step !== 2 || !selectedDoc) return;
+    setLoadingSl(true);
+    getAllSlots(1)
+      .then(all => setSlots(all.filter(s => s.DrId === selectedDoc.Id)))
+      .catch(() => {})
+      .finally(() => setLoadingSl(false));
+  }, [step, selectedDoc]);
+
+  // Generate time grid from slot duration
+  const slotMins = slots[0]?.SlotMins ?? 30;
+  const timeSlots: string[] = [];
+  for (let h = 8; h < 20; h++) {
+    for (let m = 0; m < 60; m += slotMins) {
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12  = h % 12 || 12;
+      timeSlots.push(`${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ampm}`);
+    }
+  }
+
   const handleBack = () => {
     if (step > 1) setStep(step - 1);
     else navigation.goBack();
@@ -66,151 +97,177 @@ export default function BookAppointmentScreen({ navigation }: any) {
     else if (step === 2 && selectedSlot) setStep(3);
   };
 
-  const handleConfirmBooking = () => {
-    // This is where you will call /api/DrAppointment/SaveAppointment
-    setShowSuccess(true);
+  const handleConfirmBooking = async () => {
+    if (!selectedDoc || !selectedSlot) return;
+    setBooking(true);
+    try {
+      await saveAppointment({
+        DrId:            selectedDoc.Id,
+        Name:            user?.name ?? '',
+        FirstName:       (user?.name ?? '').split(' ')[0],
+        LastName:        (user?.name ?? '').split(' ').slice(1).join(' '),
+        Mobile:          user?.phone ?? '',
+        AppointmentDate: selectedDate.iso,
+        Slot:            selectedSlot,
+        Address:         '',
+        GenderId:        1,
+        InitialId:       1,
+        BirthDate:       '1990-01-01',
+        BranchId:        1,
+        CreatedBy:       user?.name ?? 'patient',
+      });
+      setShowSuccess(true);
+    } catch (err: any) {
+      Alert.alert('Booking Failed', err?.message ?? 'Could not book appointment.');
+    } finally {
+      setBooking(false);
+    }
   };
 
   const finishBooking = () => {
     setShowSuccess(false);
-    navigation.navigate('MyBookings'); // Navigate to the Bookings Tab
+    navigation.goBack();
   };
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
-      
-      {/* ── Header ── */}
+
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+        <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
           <Feather name="arrow-left" size={24} color={THEME.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {step === 1 ? 'Select Doctor' : step === 2 ? 'Select Slot' : 'Confirm Booking'}
+          {step === 1 ? 'Select Doctor' : step === 2 ? 'Pick a Slot' : 'Confirm Booking'}
         </Text>
-        <View style={{ width: 32 }} /> {/* Spacer for alignment */}
+        <View style={{ width: 28 }} />
       </View>
 
-      {/* ── Progress Bar ── */}
+      {/* Progress bar */}
       <View style={styles.progressContainer}>
         <View style={[styles.progressBar, { width: `${(step / 3) * 100}%` }]} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* ====================================================
-            STEP 1: SELECT DOCTOR
-        ==================================================== */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+
+        {/* ── STEP 1: SELECT DOCTOR ── */}
         {step === 1 && (
           <View>
-            <Text style={styles.sectionTitle}>Available Specialists</Text>
-            {DOCTORS.map(doc => (
-              <TouchableOpacity 
-                key={doc.id} 
-                style={[styles.docCard, selectedDoc?.id === doc.id && styles.docCardActive]}
-                activeOpacity={0.8}
-                onPress={() => setSelectedDoc(doc)}
-              >
-                <Image source={{ uri: doc.avatar }} style={styles.docAvatar} />
-                <View style={styles.docInfo}>
-                  <Text style={styles.docName}>{doc.name}</Text>
-                  <Text style={styles.docSpec}>{doc.spec}</Text>
-                  
-                  <View style={styles.docMetaRow}>
-                    <View style={styles.docMetaItem}>
-                      <Feather name="briefcase" size={12} color={THEME.primary} />
-                      <Text style={styles.docMetaText}>{doc.exp}</Text>
-                    </View>
-                    <View style={styles.docMetaItem}>
-                      <Ionicons name="star" size={12} color="#F59E0B" />
-                      <Text style={styles.docMetaText}>{doc.rating}</Text>
-                    </View>
-                  </View>
-                </View>
+            <Text style={styles.sectionTitle}>Available Doctors</Text>
 
-                <View style={styles.feeContainer}>
-                  <Text style={styles.feeLabel}>Fees</Text>
-                  <Text style={styles.feeAmount}>₹{doc.fee}</Text>
-                  <View style={[styles.radioOuter, selectedDoc?.id === doc.id && styles.radioOuterActive]}>
-                    {selectedDoc?.id === doc.id && <View style={styles.radioInner} />}
+            {loadingDr ? (
+              <View style={styles.centre}>
+                <ActivityIndicator size="large" color={THEME.primary} />
+                <Text style={styles.centreText}>Loading doctors…</Text>
+              </View>
+            ) : doctors.length === 0 ? (
+              <View style={styles.centre}>
+                <Feather name="alert-circle" size={40} color="#CBD5E1" />
+                <Text style={styles.centreText}>No doctors available right now.</Text>
+              </View>
+            ) : (
+              doctors.map(doc => (
+                <TouchableOpacity
+                  key={doc.Id}
+                  style={[styles.docCard, selectedDoc?.Id === doc.Id && styles.docCardActive]}
+                  onPress={() => setSelectedDoc(doc)}
+                  activeOpacity={0.8}
+                >
+                  {/* Avatar placeholder */}
+                  <View style={styles.docAvatarBox}>
+                    <Feather name="user" size={28} color={THEME.primary} />
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))}
+
+                  <View style={styles.docInfo}>
+                    <Text style={styles.docName}>{doc.FullName}</Text>
+                    <Text style={styles.docSpec}>Consultation Doctor</Text>
+                    <View style={styles.docMetaRow}>
+                      <View style={styles.docMetaItem}>
+                        <Feather name="briefcase" size={12} color={THEME.primary} />
+                        <Text style={styles.docMetaText}>Dr. ID {doc.Id}</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.radioOuter}>
+                    {selectedDoc?.Id === doc.Id && <View style={styles.radioInner} />}
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
           </View>
         )}
 
-        {/* ====================================================
-            STEP 2: SELECT DATE & TIME SLOT
-        ==================================================== */}
+        {/* ── STEP 2: DATE & TIME ── */}
         {step === 2 && selectedDoc && (
           <View>
-            {/* Selected Doctor Summary */}
+            {/* Selected doctor chip */}
             <View style={styles.selectedDocHeader}>
-              <Image source={{ uri: selectedDoc.avatar }} style={styles.smallAvatar} />
+              <View style={styles.smallAvatarBox}>
+                <Feather name="user" size={20} color={THEME.primary} />
+              </View>
               <View>
-                <Text style={styles.docName}>{selectedDoc.name}</Text>
-                <Text style={styles.docSpec}>{selectedDoc.spec}</Text>
+                <Text style={styles.docName}>{selectedDoc.FullName}</Text>
+                <Text style={styles.docSpec}>Consultation Doctor</Text>
               </View>
             </View>
 
             <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Select Date</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
               {DATES.map(item => (
-                <TouchableOpacity 
-                  key={item.id} 
+                <TouchableOpacity
+                  key={item.id}
                   style={[styles.dateCard, selectedDate.id === item.id && styles.dateCardActive]}
                   onPress={() => setSelectedDate(item)}
                 >
-                  <Text style={[styles.dateDay, selectedDate.id === item.id && styles.textWhite]}>{item.day}</Text>
-                  <Text style={[styles.dateNum, selectedDate.id === item.id && styles.textWhite]}>{item.date}</Text>
+                  <Text style={[styles.dateDay, selectedDate.id === item.id && styles.textWhite]}>
+                    {item.day}
+                  </Text>
+                  <Text style={[styles.dateNum, selectedDate.id === item.id && styles.textWhite]}>
+                    {item.date}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
             <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Available Slots</Text>
-            <View style={styles.slotGrid}>
-              {SLOTS.map((slot, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.slotBtn,
-                    !slot.available && styles.slotBtnDisabled,
-                    selectedSlot === slot.time && styles.slotBtnActive
-                  ]}
-                  disabled={!slot.available}
-                  onPress={() => setSelectedSlot(slot.time)}
-                >
-                  <Text style={[
-                    styles.slotText,
-                    !slot.available && styles.slotTextDisabled,
-                    selectedSlot === slot.time && styles.textWhite
-                  ]}>
-                    {slot.time}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {loadingSl ? (
+              <ActivityIndicator color={THEME.primary} style={{ marginTop: 16 }} />
+            ) : (
+              <View style={styles.slotGrid}>
+                {timeSlots.map((slot, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={[styles.slotBtn, selectedSlot === slot && styles.slotBtnActive]}
+                    onPress={() => setSelectedSlot(slot)}
+                  >
+                    <Text style={[styles.slotText, selectedSlot === slot && styles.textWhite]}>
+                      {slot}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
-        {/* ====================================================
-            STEP 3: CONFIRM BOOKING SUMMARY
-        ==================================================== */}
+        {/* ── STEP 3: CONFIRM ── */}
         {step === 3 && selectedDoc && (
           <View>
             <Text style={styles.sectionTitle}>Booking Summary</Text>
-            
             <View style={styles.summaryCard}>
               <View style={styles.summaryRow}>
                 <Feather name="user" size={18} color={THEME.textSecondary} />
                 <View style={styles.summaryInfo}>
                   <Text style={styles.summaryLabel}>Doctor</Text>
-                  <Text style={styles.summaryValue}>{selectedDoc.name} ({selectedDoc.spec})</Text>
+                  <Text style={styles.summaryValue}>{selectedDoc.FullName}</Text>
                 </View>
               </View>
-              
               <View style={styles.divider} />
-              
               <View style={styles.summaryRow}>
                 <Feather name="calendar" size={18} color={THEME.textSecondary} />
                 <View style={styles.summaryInfo}>
@@ -218,31 +275,13 @@ export default function BookAppointmentScreen({ navigation }: any) {
                   <Text style={styles.summaryValue}>{selectedDate.full} at {selectedSlot}</Text>
                 </View>
               </View>
-
               <View style={styles.divider} />
-              
               <View style={styles.summaryRow}>
                 <Feather name="map-pin" size={18} color={THEME.textSecondary} />
                 <View style={styles.summaryInfo}>
-                  <Text style={styles.summaryLabel}>Clinic Address</Text>
-                  <Text style={styles.summaryValue}>CityCare Polyclinic, Andheri West, Mumbai</Text>
+                  <Text style={styles.summaryLabel}>Location</Text>
+                  <Text style={styles.summaryValue}>Life Relier Diagnostics</Text>
                 </View>
-              </View>
-            </View>
-
-            <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Payment Details</Text>
-            <View style={styles.paymentCard}>
-              <View style={styles.payRow}>
-                <Text style={styles.payLabel}>Consultation Fee</Text>
-                <Text style={styles.payValue}>₹{selectedDoc.fee}</Text>
-              </View>
-              <View style={styles.payRow}>
-                <Text style={styles.payLabel}>Booking Charges</Text>
-                <Text style={styles.payValue}>₹50</Text>
-              </View>
-              <View style={[styles.payRow, { borderTopWidth: 1, borderTopColor: THEME.border, paddingTop: 12, marginTop: 12 }]}>
-                <Text style={styles.payTotalLabel}>Total Payable</Text>
-                <Text style={styles.payTotalValue}>₹{selectedDoc.fee + 50}</Text>
               </View>
             </View>
           </View>
@@ -251,20 +290,26 @@ export default function BookAppointmentScreen({ navigation }: any) {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* ── Bottom Action Bar ── */}
+      {/* Bottom action bar */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity 
-          style={[styles.primaryBtn, (step === 1 && !selectedDoc) || (step === 2 && !selectedSlot) ? styles.btnDisabled : null]} 
-          disabled={(step === 1 && !selectedDoc) || (step === 2 && !selectedSlot)}
+        <TouchableOpacity
+          style={[
+            styles.primaryBtn,
+            ((step === 1 && !selectedDoc) || (step === 2 && !selectedSlot) || booking)
+              && styles.btnDisabled,
+          ]}
+          disabled={(step === 1 && !selectedDoc) || (step === 2 && !selectedSlot) || booking}
           onPress={step === 3 ? handleConfirmBooking : handleNext}
         >
-          <Text style={styles.primaryBtnText}>
-            {step === 1 ? 'Continue to Slots' : step === 2 ? 'Review Booking' : 'Confirm & Book Appointment'}
-          </Text>
+          {booking
+            ? <ActivityIndicator color="#FFF" />
+            : <Text style={styles.primaryBtnText}>
+                {step === 1 ? 'Continue' : step === 2 ? 'Review Booking' : 'Confirm & Book'}
+              </Text>}
         </TouchableOpacity>
       </View>
 
-      {/* ── SUCCESS MODAL ── */}
+      {/* Success modal */}
       <Modal visible={showSuccess} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.successSheet}>
@@ -273,97 +318,82 @@ export default function BookAppointmentScreen({ navigation }: any) {
             </View>
             <Text style={styles.successTitle}>Booking Confirmed!</Text>
             <Text style={styles.successSubtitle}>
-              Your appointment with {selectedDoc?.name} has been successfully scheduled for {selectedDate?.full} at {selectedSlot}.
+              Your appointment with {selectedDoc?.FullName} is scheduled for{' '}
+              {selectedDate?.full} at {selectedSlot}.
             </Text>
-
-            <TouchableOpacity style={[styles.primaryBtn, { width: '100%', marginTop: 24 }]} onPress={finishBooking}>
-              <Text style={styles.primaryBtnText}>View My Bookings</Text>
+            <TouchableOpacity
+              style={[styles.primaryBtn, { width: '100%', marginTop: 24 }]}
+              onPress={finishBooking}
+            >
+              <Text style={styles.primaryBtnText}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-
     </View>
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: THEME.screenBg },
-  
-  // Header
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 },
-  backBtn: { padding: 4, marginLeft: -4 },
+  root:        { flex: 1, backgroundColor: THEME.screenBg },
+  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 },
+  backBtn:     { padding: 4, marginLeft: -4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: THEME.textPrimary },
-  
-  // Progress Bar
-  progressContainer: { height: 4, backgroundColor: '#E2E8F0', width: '100%' },
-  progressBar: { height: '100%', backgroundColor: THEME.primary },
+
+  progressContainer: { height: 4, backgroundColor: '#E2E8F0' },
+  progressBar:       { height: '100%', backgroundColor: THEME.primary },
 
   scrollContent: { paddingHorizontal: 20, paddingTop: 24 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: THEME.textPrimary, marginBottom: 16 },
+  sectionTitle:  { fontSize: 16, fontWeight: '700', color: THEME.textPrimary, marginBottom: 16 },
 
-  // Doctor Cards
-  docCard: { flexDirection: 'row', backgroundColor: THEME.bg, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: THEME.border, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
-  docCardActive: { borderColor: THEME.primary, borderWidth: 1.5, backgroundColor: THEME.primaryLight },
-  docAvatar: { width: 64, height: 64, borderRadius: 32, marginRight: 16 },
-  docInfo: { flex: 1 },
-  docName: { fontSize: 16, fontWeight: '700', color: THEME.textPrimary, marginBottom: 4 },
-  docSpec: { fontSize: 13, color: THEME.textSecondary, marginBottom: 8 },
-  docMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  docMetaItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  docMetaText: { fontSize: 11, fontWeight: '600', color: THEME.textPrimary, marginLeft: 4 },
-  
-  feeContainer: { alignItems: 'flex-end', justifyContent: 'space-between' },
-  feeLabel: { fontSize: 11, color: THEME.textSecondary },
-  feeAmount: { fontSize: 16, fontWeight: '800', color: THEME.primary, marginBottom: 12 },
-  radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: THEME.border, alignItems: 'center', justifyContent: 'center' },
-  radioOuterActive: { borderColor: THEME.primary },
-  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: THEME.primary },
+  centre:     { alignItems: 'center', paddingVertical: 40 },
+  centreText: { fontSize: 14, color: THEME.textSecondary, marginTop: 12 },
 
-  // Step 2 Styles
-  selectedDocHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.bg, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: THEME.border },
-  smallAvatar: { width: 48, height: 48, borderRadius: 24, marginRight: 12 },
-  
-  dateScroll: { overflow: 'visible' },
-  dateCard: { width: 64, height: 80, backgroundColor: THEME.bg, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 12, borderWidth: 1, borderColor: THEME.border },
-  dateCardActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
-  dateDay: { fontSize: 13, color: THEME.textSecondary, marginBottom: 4, fontWeight: '500' },
-  dateNum: { fontSize: 20, fontWeight: '700', color: THEME.textPrimary },
-  textWhite: { color: '#FFF' },
+  // Doctor card
+  docCard:      { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.bg, borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: THEME.border, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  docCardActive:{ borderColor: THEME.primary, borderWidth: 1.5, backgroundColor: THEME.primaryLight },
+  docAvatarBox: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+  docInfo:      { flex: 1 },
+  docName:      { fontSize: 15, fontWeight: '700', color: THEME.textPrimary, marginBottom: 2 },
+  docSpec:      { fontSize: 12, color: THEME.textSecondary, marginBottom: 6 },
+  docMetaRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  docMetaItem:  { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  docMetaText:  { fontSize: 11, fontWeight: '600', color: THEME.textPrimary, marginLeft: 4 },
+  radioOuter:   { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: THEME.border, alignItems: 'center', justifyContent: 'center' },
+  radioInner:   { width: 10, height: 10, borderRadius: 5, backgroundColor: THEME.primary },
 
-  slotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  slotBtn: { width: '30%', backgroundColor: THEME.bg, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: THEME.border, alignItems: 'center' },
-  slotBtnActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
-  slotBtnDisabled: { backgroundColor: '#F1F5F9', borderColor: '#F1F5F9' },
-  slotText: { fontSize: 13, fontWeight: '600', color: THEME.textPrimary },
-  slotTextDisabled: { color: '#94A3B8' },
+  // Step 2
+  selectedDocHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.bg, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: THEME.border },
+  smallAvatarBox:    { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  dateScroll:        { overflow: 'visible' },
+  dateCard:          { width: 64, height: 78, backgroundColor: THEME.bg, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 10, borderWidth: 1, borderColor: THEME.border },
+  dateCardActive:    { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  dateDay:           { fontSize: 12, color: THEME.textSecondary, marginBottom: 4, fontWeight: '500' },
+  dateNum:           { fontSize: 20, fontWeight: '700', color: THEME.textPrimary },
+  textWhite:         { color: '#FFF' },
+  slotGrid:          { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  slotBtn:           { width: '30%', backgroundColor: THEME.bg, paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: THEME.border, alignItems: 'center' },
+  slotBtnActive:     { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  slotText:          { fontSize: 12, fontWeight: '600', color: THEME.textPrimary },
 
-  // Step 3 Styles
-  summaryCard: { backgroundColor: THEME.bg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: THEME.border },
-  summaryRow: { flexDirection: 'row', alignItems: 'center' },
-  summaryInfo: { marginLeft: 16, flex: 1 },
+  // Step 3
+  summaryCard:  { backgroundColor: THEME.bg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: THEME.border },
+  summaryRow:   { flexDirection: 'row', alignItems: 'center' },
+  summaryInfo:  { marginLeft: 14, flex: 1 },
   summaryLabel: { fontSize: 12, color: THEME.textSecondary, marginBottom: 2 },
   summaryValue: { fontSize: 14, fontWeight: '600', color: THEME.textPrimary },
-  divider: { height: 1, backgroundColor: THEME.border, marginVertical: 16 },
+  divider:      { height: 1, backgroundColor: THEME.border, marginVertical: 14 },
 
-  paymentCard: { backgroundColor: THEME.bg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: THEME.border },
-  payRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  payLabel: { fontSize: 14, color: THEME.textSecondary },
-  payValue: { fontSize: 14, fontWeight: '600', color: THEME.textPrimary },
-  payTotalLabel: { fontSize: 16, fontWeight: '800', color: THEME.textPrimary },
-  payTotalValue: { fontSize: 20, fontWeight: '800', color: THEME.primary },
+  // Bottom bar
+  bottomBar:      { backgroundColor: THEME.bg, paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: THEME.border, paddingBottom: Platform.OS === 'ios' ? 30 : 14 },
+  primaryBtn:     { backgroundColor: THEME.primary, height: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  primaryBtnText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+  btnDisabled:    { backgroundColor: '#94A3B8' },
 
-  // Bottom Bar
-  bottomBar: { backgroundColor: THEME.bg, paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1, borderTopColor: THEME.border, paddingBottom: Platform.OS === 'ios' ? 30 : 16 },
-  primaryBtn: { backgroundColor: THEME.primary, height: 54, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  primaryBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  btnDisabled: { backgroundColor: '#94A3B8' },
-
-  // Success Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  successSheet: { backgroundColor: THEME.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, alignItems: 'center', paddingBottom: Platform.OS === 'ios' ? 40 : 24 },
-  successIconBox: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
-  successTitle: { fontSize: 22, fontWeight: '800', color: THEME.textPrimary, marginBottom: 8 },
-  successSubtitle: { fontSize: 14, color: THEME.textSecondary, textAlign: 'center', lineHeight: 20 },
+  // Modal
+  modalOverlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  successSheet:  { backgroundColor: THEME.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, alignItems: 'center', paddingBottom: Platform.OS === 'ios' ? 40 : 24 },
+  successIconBox:{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  successTitle:  { fontSize: 22, fontWeight: '800', color: THEME.textPrimary, marginBottom: 8 },
+  successSubtitle:{ fontSize: 14, color: THEME.textSecondary, textAlign: 'center', lineHeight: 22 },
 });

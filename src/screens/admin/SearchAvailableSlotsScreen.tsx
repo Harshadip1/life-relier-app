@@ -19,6 +19,7 @@ import {
   SaveAppointmentPayload,
   DrSlotRecord,
 } from '../../services/doctorScheduleService';
+import { getReferingDoctorPro, ReferingDoctorProItem } from '../../services/referingDoctorService';
 import { useAuth } from '../../context/AuthContext';
 
 const TEAL = COLORS.primary;
@@ -142,16 +143,18 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
   const [saving, setSaving]           = useState(false);
 
   // Referring doctor state
-  const [referringDoctors, setReferringDoctors] = useState<DoctorDropdownItem[]>([]);
+  const [referringDoctors, setReferringDoctors] = useState<ReferingDoctorProItem[]>([]);
   const [referringDrId, setReferringDrId]       = useState<number | null>(null);
   const [referringDrLabel, setReferringDrLabel] = useState('');
 
   useEffect(() => {
     setLoadingDr(true);
     getDoctorDropdown(1)
-      .then(list => { setDoctors(list); setReferringDoctors(list); })
+      .then(list => setDoctors(list))
       .catch(() => {})
       .finally(() => setLoadingDr(false));
+    // Load referring doctors from the dedicated endpoint
+    getReferingDoctorPro(1).then(setReferringDoctors).catch(() => {});
   }, []);
 
   // ── Search: fetch schedule + slot duration → generate time grid ──────────
@@ -515,7 +518,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
                 placeholder="Select..."
                 options={[
                   { id: 0, label: 'None' },
-                  ...referringDoctors.map(d => ({ id: d.Id, label: d.FullName })),
+                  ...referringDoctors.map(d => ({ id: d.ReferingDoctorId, label: d.DoctorName })),
                 ]}
                 onSelect={(o: any) => {
                   if (o.id === 0) { setReferringDrId(null); setReferringDrLabel(''); }
