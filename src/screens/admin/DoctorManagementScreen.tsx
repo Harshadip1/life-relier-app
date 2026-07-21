@@ -316,7 +316,7 @@ export default function DoctorManagementScreen({ navigation }: any) {
                     <Text style={styles.cardSub}>Consultation Slot</Text>
                   </View>
                   <View style={styles.slotBadge}>
-                    <Text style={styles.slotBadgeText}>{slot.SlotMins || slot.slot} Min</Text>
+                    <Text style={styles.slotBadgeText}>{slot.Slot} Min</Text>
                   </View>
                   <TouchableOpacity
                     style={[styles.actionIconBtn, { marginLeft: 10 }]}

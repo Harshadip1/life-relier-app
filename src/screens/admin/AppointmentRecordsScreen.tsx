@@ -39,7 +39,7 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
 
   // ── Filters ────────────────────────────────────────────────────────────────
-  const [date, setDate]               = useState(new Date());
+  const [date, setDate]               = useState<Date | null>(null);  // null = show all
   const [showPicker, setShowPicker]   = useState(false);
   const [doctors, setDoctors]         = useState<DoctorDropdownItem[]>([]);
   const [selectedDrId, setSelectedDrId]   = useState<number | null>(null);
@@ -85,7 +85,7 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
   useFocusEffect(useCallback(() => { fetchRecords(); }, [fetchRecords]));
 
   const handleClear = () => {
-    setDate(new Date());
+    setDate(null);
     setSelectedDrId(null);
     setSelectedDrName('');
     setSearch('');
@@ -94,12 +94,13 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
   const filtered = records.filter((r: any) => {
     const q = search.toLowerCase();
 
-    // ── Date filter — match selected date against AppointmentDate ──────────
-    const selectedStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-    const apptStr = r.AppointmentDate
-      ? String(r.AppointmentDate).substring(0, 10)   // "2026-07-15T00:00:00" → "2026-07-15"
-      : '';
-    const matchesDate = apptStr === selectedStr;
+    // ── Date filter — only apply if a date is selected ────────────────────
+    let matchesDate = true;
+    if (date) {
+      const selectedStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+      const apptStr = r.AppointmentDate ? String(r.AppointmentDate).substring(0, 10) : '';
+      matchesDate = apptStr === selectedStr;
+    }
 
     // ── Doctor filter ──────────────────────────────────────────────────────
     const matchesDoctor = selectedDrId == null || r.DrId === selectedDrId;
@@ -169,11 +170,11 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
             <Text style={styles.label}>Appointment Date</Text>
             <TouchableOpacity style={styles.dateRow} onPress={() => setShowPicker(true)}>
               <MaterialCommunityIcons name="calendar" size={18} color="#64748B" style={{ marginRight: 10 }} />
-              <Text style={styles.dateText}>{formatDate(date)}</Text>
+              <Text style={styles.dateText}>{date ? formatDate(date) : 'All Dates'}</Text>
               <MaterialCommunityIcons name="calendar-blank-outline" size={18} color="#64748B" />
             </TouchableOpacity>
             {showPicker && (
-              <DateTimePicker value={date} mode="date"
+              <DateTimePicker value={date ?? new Date()} mode="date"
                 display={Platform.OS === 'ios' ? 'inline' : 'default'}
                 onChange={(_, s) => { setShowPicker(false); if (s) setDate(s); }} />
             )}
