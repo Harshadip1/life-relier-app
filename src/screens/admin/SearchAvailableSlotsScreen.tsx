@@ -219,12 +219,22 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
       const allAppts = [...apptB1, ...apptB4];
       const booked = allAppts
         .filter(a => {
-          // Use regex to extract date portion to avoid timezone shifts
           const dateMatch = String(a.AppointmentDate).match(/^(\d{4})-(\d{2})-(\d{2})/);
           const aDate = dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : '';
           return Number(a.DrId) === Number(selectedDr.Id) && aDate === dateStr;
         })
-        .map(a => a.Slot);
+        .map(a => {
+          // Normalise to "HH:MM" 24h so comparison always works regardless of source
+          const slot = a.Slot ?? '';
+          if (/AM|PM/i.test(slot)) {
+            const [timePart, meridiem] = slot.trim().split(' ');
+            let [h, m] = timePart.split(':').map(Number);
+            if (/PM/i.test(meridiem) && h !== 12) h += 12;
+            if (/AM/i.test(meridiem) && h === 12) h = 0;
+            return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+          }
+          return slot.trim().substring(0, 5); // already "HH:MM"
+        });
 
       setBookedSlots(booked);
       setGeneratedSlots(slots);

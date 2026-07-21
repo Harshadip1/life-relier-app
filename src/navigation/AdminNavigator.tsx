@@ -33,6 +33,7 @@ import ShowAppointmentScreen      from '../screens/admin/ShowAppointmentScreen';
 import TestChargesScreen          from '../screens/admin/TestChargesScreen';
 import TestChargeDetailScreen     from '../screens/admin/TestChargeDetailScreen';
 import PackagesScreen             from '../screens/admin/PackagesScreen';
+import ReferralDoctorScreen       from '../screens/admin/ReferralDoctorScreen';
 
 import { COLORS } from '../utils/constants';
 
@@ -158,10 +159,7 @@ function MasterStack() {
       <Stack.Screen name="SearchAvailableSlots" component={SearchAvailableSlotsScreen} />
       {/* 4. Show Appointment */}
       <Stack.Screen name="ShowAppointment"      component={ShowAppointmentScreen} />
-      <Stack.Screen name="ReferralDoctor"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Referral Doctors', icon: 'account-heart-outline' }}
-      />
+      <Stack.Screen name="ReferralDoctor"       component={ReferralDoctorScreen} />
 
       {/* Test Management */}
       <Stack.Screen name="TestCharges"      component={TestChargesScreen} />

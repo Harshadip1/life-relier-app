@@ -38,7 +38,7 @@ function formatSlot(slot: string): string {
 export default function ShowAppointmentScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
 
-  const [date, setDate]               = useState(new Date());
+  const [date, setDate]               = useState<Date | null>(null); // null = show all
   const [showPicker, setShowPicker]   = useState(false);
   const [doctors, setDoctors]         = useState<DoctorDropdownItem[]>([]);
   const [selectedDrId, setSelectedDrId]   = useState<number | null>(null);
@@ -172,11 +172,11 @@ export default function ShowAppointmentScreen({ navigation }: any) {
             <Text style={styles.label}>Appointment Date</Text>
             <TouchableOpacity style={styles.dateRow} onPress={() => setShowPicker(true)}>
               <MaterialCommunityIcons name="calendar" size={18} color="#64748B" style={{ marginRight: 10 }} />
-              <Text style={styles.dateText}>{formatDate(date)}</Text>
+              <Text style={styles.dateText}>{date ? formatDate(date) : 'All Dates'}</Text>
               <MaterialCommunityIcons name="calendar-blank-outline" size={18} color="#64748B" />
             </TouchableOpacity>
             {showPicker && (
-              <DateTimePicker value={date} mode="date"
+              <DateTimePicker value={date ?? new Date()} mode="date"
                 display={Platform.OS === 'ios' ? 'inline' : 'default'}
                 onChange={(_, s) => { setShowPicker(false); if (s) setDate(s); }} />
             )}
