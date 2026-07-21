@@ -7,13 +7,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../../utils/constants';
-import {
-  getAllReferingDoctors, saveReferingDoctor, updateReferingDoctor, deleteReferingDoctor,
-  ReferingDoctorRecord, SaveReferingDoctorPayload, UpdateReferingDoctorPayload,
-} from '../../services/doctorScheduleService';
 import { useAuth } from '../../context/AuthContext';
+import {
+  getAllReferingDoctors,
+  saveReferingDoctor,
+  updateReferingDoctor,
+  deleteReferingDoctor,
+  ReferingDoctorRecord,
+  SaveReferingDoctorPayload,
+  UpdateReferingDoctorPayload,
+} from '../../services/referingDoctorService';
 
 const TEAL = COLORS.primary;
+const DR_TYPES = ['DR', 'MR', 'TPA', 'OTHER'];
 
 function Field({ label, required, children }: any) {
   return (
@@ -28,18 +34,28 @@ export default function ReferralDoctorScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
-  const [records, setRecords]   = useState<ReferingDoctorRecord[]>([]);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState<string | null>(null);
-  const [search, setSearch]     = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [editItem, setEditItem]   = useState<ReferingDoctorRecord | null>(null);
-  const [saving, setSaving]       = useState(false);
-  const [name, setName]       = useState('');
-  const [mobile, setMobile]   = useState('');
-  const [address, setAddress] = useState('');
-  const [isActive, setIsActive] = useState(true);
+  const [records,    setRecords]    = useState<ReferingDoctorRecord[]>([]);
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState<string | null>(null);
+  const [search,     setSearch]     = useState('');
+  const [showModal,  setShowModal]  = useState(false);
+  const [editItem,   setEditItem]   = useState<ReferingDoctorRecord | null>(null);
+  const [saving,     setSaving]     = useState(false);
 
+  // form fields — exact Bruno field names
+  const [doctorCode,    setDoctorCode]    = useState('');
+  const [doctorName,    setDoctorName]    = useState('');
+  const [doctorPhoneno, setDoctorPhoneno] = useState('');
+  const [doctoremail,   setDoctoremail]   = useState('');
+  const [address1,      setAddress1]      = useState('');
+  const [city,          setCity]          = useState('');
+  const [drType,        setDrType]        = useState('DR');
+  const [drTypeOpen,    setDrTypeOpen]    = useState(false);
+  const [contactperson, setContactperson] = useState('');
+  const [ratetypeid,    setRatetypeid]    = useState('');
+  const [pro,           setPro]           = useState('');
+
+  // ── fetch ─────────────────────────────────────────────────────────────────
   const fetchRecords = useCallback(async () => {
     setLoading(true); setError(null);
     try { setRecords(await getAllReferingDoctors(1)); }
@@ -51,56 +67,101 @@ export default function ReferralDoctorScreen({ navigation }: any) {
 
   const filtered = records.filter(r => {
     const q = search.toLowerCase();
-    return String(r.Name ?? '').toLowerCase().includes(q) ||
-           String(r.Mobile ?? '').toLowerCase().includes(q);
+    return (r.DoctorName ?? '').toLowerCase().includes(q) ||
+           (r.DoctorCode ?? '').toString().toLowerCase().includes(q) ||
+           (r.city ?? '').toLowerCase().includes(q);
   });
 
+  // ── open add / edit ───────────────────────────────────────────────────────
   const openAdd = () => {
-    setEditItem(null); setName(''); setMobile(''); setAddress(''); setIsActive(true);
+    setEditItem(null);
+    setDoctorCode(''); setDoctorName(''); setDoctorPhoneno('');
+    setDoctoremail(''); setAddress1(''); setCity('');
+    setDrType('DR'); setContactperson(''); setRatetypeid(''); setPro('');
     setShowModal(true);
   };
 
   const openEdit = (item: ReferingDoctorRecord) => {
-    setEditItem(item); setName(item.Name); setMobile(item.Mobile ?? '');
-    setAddress(item.Address ?? ''); setIsActive(item.IsActive);
+    setEditItem(item);
+    setDoctorCode(String(item.DoctorCode ?? ''));
+    setDoctorName(item.DoctorName ?? '');
+    setDoctorPhoneno(item.DoctorPhoneno ?? '');
+    setDoctoremail(item.Doctoremail ?? '');
+    setAddress1(item.address1 ?? '');
+    setCity(item.city ?? '');
+    setDrType(item.DrType ?? 'DR');
+    setContactperson(String(item.contactperson ?? ''));
+    setRatetypeid(String(item.ratetypeid ?? ''));
+    setPro(String(item.PRO ?? ''));
     setShowModal(true);
   };
 
+  // ── save / update ─────────────────────────────────────────────────────────
   const handleSave = async () => {
-    if (!name.trim()) { Alert.alert('Validation', 'Name is required.'); return; }
+    if (!doctorName.trim()) { Alert.alert('Validation', 'Doctor name is required.'); return; }
+    const now = new Date().toISOString();
     setSaving(true);
     try {
       if (editItem) {
-        const p: UpdateReferingDoctorPayload = {
-          Id: editItem.Id, Name: name.trim(), Mobile: mobile.trim(),
-          Address: address.trim(), BranchId: 1, UpdatedBy: user?.name || 'Admin', IsActive: isActive,
+        const payload: UpdateReferingDoctorPayload = {
+          dr_codeid:     editItem.dr_codeid ?? 0,
+          DoctorCode:    parseInt(doctorCode) || doctorCode.trim(),
+          DoctorName:    doctorName.trim(),
+          DoctorPhoneno: doctorPhoneno.trim() || undefined,
+          Doctoremail:   doctoremail.trim()   || undefined,
+          address1:      address1.trim()      || undefined,
+          city:          city.trim()          || undefined,
+          DrType:        drType,
+          contactperson: contactperson.trim() || undefined,
+          ratetypeid:    parseInt(ratetypeid) || 1,
+          PRO:           parseInt(pro)        || 0,
+          Branchid:      1,
+          Updatedby:     user?.name ?? 'admin',
+          Updatedon:     now,
         };
-        await updateReferingDoctor(p);
+        await updateReferingDoctor(payload);
+        Alert.alert('Success', 'Updated successfully.');
       } else {
-        const p: SaveReferingDoctorPayload = {
-          Name: name.trim(), Mobile: mobile.trim(), Address: address.trim(),
-          BranchId: 1, CreatedBy: user?.name || 'Admin', IsActive: true,
+        const payload: SaveReferingDoctorPayload = {
+          DoctorCode:    doctorCode.trim(),
+          DoctorName:    doctorName.trim(),
+          DoctorPhoneno: doctorPhoneno.trim() || undefined,
+          Doctoremail:   doctoremail.trim()   || undefined,
+          address1:      address1.trim()      || undefined,
+          city:          city.trim()          || undefined,
+          DrType:        drType,
+          contactperson: contactperson.trim() || undefined,
+          ratetypeid:    parseInt(ratetypeid) || 1,
+          PRO:           parseInt(pro)        || 0,
+          Branchid:      1,
+          Createdon:     now,
         };
-        await saveReferingDoctor(p);
+        await saveReferingDoctor(payload);
+        Alert.alert('Success', 'Saved successfully.');
       }
-      Alert.alert('Success', editItem ? 'Updated successfully.' : 'Saved successfully.');
-      setShowModal(false); fetchRecords();
-    } catch (err: any) { Alert.alert('Error', err?.message ?? 'Could not save.');
+      setShowModal(false);
+      fetchRecords();
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Could not save.');
     } finally { setSaving(false); }
   };
 
+  // ── delete ────────────────────────────────────────────────────────────────
   const handleDelete = (item: ReferingDoctorRecord) => {
-    Alert.alert('Delete', `Delete "${item.Name}"?`, [
+    Alert.alert('Delete', `Delete "${item.DoctorName}"?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        try { await deleteReferingDoctor(item.Id, 1); setRecords(p => p.filter(r => r.Id !== item.Id)); }
-        catch (err: any) { Alert.alert('Error', err?.message ?? 'Could not delete.'); }
+        try {
+          await deleteReferingDoctor(item.dr_codeid ?? 0, 1);
+          setRecords(p => p.filter(r => r.dr_codeid !== item.dr_codeid));
+        } catch (err: any) { Alert.alert('Error', err?.message ?? 'Could not delete.'); }
       }},
     ]);
   };
 
   return (
     <View style={[st.root, { paddingTop: Math.max(insets.top, 10) }]}>
+      {/* Header */}
       <View style={st.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={st.backBtn}>
           <Feather name="arrow-left" size={22} color="#0F172A" />
@@ -108,15 +169,18 @@ export default function ReferralDoctorScreen({ navigation }: any) {
         <Text style={st.headerTitle}>Referral Doctors</Text>
         <View style={{ width: 28 }} />
       </View>
+
+      {/* Breadcrumb */}
       <View style={st.breadcrumb}>
         <MaterialCommunityIcons name="account-heart-outline" size={13} color={TEAL} />
-        <Text style={st.bcText}> Dr Appointment</Text>
+        <Text style={st.bcText}> Master</Text>
         <Feather name="chevron-right" size={12} color="#94A3B8" style={{ marginHorizontal: 2 }} />
         <Text style={[st.bcText, { color: TEAL, fontWeight: '700' }]}>Referral Doctors</Text>
       </View>
 
       <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={st.card}>
+          {/* Card header */}
           <View style={st.cardHeader}>
             <View style={st.cardTitleRow}>
               <MaterialCommunityIcons name="account-heart-outline" size={20} color="#FFF" />
@@ -126,22 +190,24 @@ export default function ReferralDoctorScreen({ navigation }: any) {
             <View style={st.tabRow}>
               <TouchableOpacity style={st.tabBtn} onPress={fetchRecords} disabled={loading}>
                 {loading ? <ActivityIndicator size={12} color="#FFF" /> : <Feather name="refresh-cw" size={13} color="#CBD5E1" />}
-                <Text style={st.tabTxt}> List</Text>
+                <Text style={st.tabTxt}> Refresh</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[st.tabBtn, { backgroundColor: '#15803D' }]} onPress={openAdd}>
                 <Feather name="plus" size={14} color="#FFF" />
-                <Text style={[st.tabTxt, { color: '#FFF' }]}> Add Doctor</Text>
+                <Text style={[st.tabTxt, { color: '#FFF' }]}> Add</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={st.body}>
+            {/* Search */}
             <View style={st.searchBar}>
               <Feather name="search" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
-              <TextInput style={st.searchInput} placeholder="Search by name or mobile..."
+              <TextInput style={st.searchInput} placeholder="Search by name, code, city..."
                 placeholderTextColor="#94A3B8" value={search} onChangeText={setSearch} />
             </View>
 
+            {/* States */}
             {loading && records.length === 0 ? (
               <View style={st.centre}><ActivityIndicator size="large" color={TEAL} /><Text style={st.centreTxt}>Loading…</Text></View>
             ) : error ? (
@@ -157,25 +223,21 @@ export default function ReferralDoctorScreen({ navigation }: any) {
               <View style={st.centre}>
                 <MaterialCommunityIcons name="account-heart-outline" size={44} color="#CBD5E1" />
                 <Text style={st.emptyTitle}>No referring doctors found</Text>
-                <Text style={st.emptySub}>Tap "+ Add Doctor" to create one.</Text>
+                <Text style={st.emptySub}>Tap "+ Add" to create one.</Text>
               </View>
             ) : (
               filtered.map((item, idx) => (
-                <View key={String(item.Id ?? idx)} style={st.row}>
+                <View key={String(item.dr_codeid ?? idx)} style={st.row}>
                   <View style={st.rowIcon}>
-                    <MaterialCommunityIcons name="account-heart-outline" size={18} color={TEAL} />
+                    <MaterialCommunityIcons name="doctor" size={18} color={TEAL} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={st.rowName}>{item.Name}</Text>
-                    {item.Mobile  ? <Text style={st.rowSub}>📱 {item.Mobile}</Text>  : null}
-                    {item.Address ? <Text style={st.rowSub}>📍 {item.Address}</Text> : null}
+                    <Text style={st.rowName}>{item.DoctorName}</Text>
+                    <Text style={st.rowSub}>🏷 {item.DoctorCode}  •  {item.DrType ?? '—'}</Text>
+                    {item.city         ? <Text style={st.rowSub}>📍 {item.city}</Text>         : null}
+                    {item.DoctorPhoneno ? <Text style={st.rowSub}>📱 {item.DoctorPhoneno}</Text> : null}
                   </View>
                   <View style={st.rowActions}>
-                    <View style={[st.statusPill, { backgroundColor: item.IsActive ? '#F0FDFA' : '#F1F5F9' }]}>
-                      <Text style={[st.statusTxt, { color: item.IsActive ? TEAL : '#94A3B8' }]}>
-                        {item.IsActive ? 'Active' : 'Inactive'}
-                      </Text>
-                    </View>
                     <TouchableOpacity style={st.editBtn} onPress={() => openEdit(item)}>
                       <Feather name="edit-2" size={13} color="#3B82F6" />
                     </TouchableOpacity>
@@ -193,6 +255,7 @@ export default function ReferralDoctorScreen({ navigation }: any) {
 
       <View style={st.footer}><Text style={st.footerTxt}>© 2026 - Life Relier Infosoft Pvt Ltd</Text></View>
 
+      {/* Add / Edit Modal */}
       <Modal visible={showModal} animationType="slide" transparent onRequestClose={() => setShowModal(false)}>
         <View style={st.modalOverlay}>
           <View style={st.modalCard}>
@@ -210,30 +273,87 @@ export default function ReferralDoctorScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
             <ScrollView style={st.modalScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-              <Field label="Name" required>
-                <View style={st.inputWrap}><TextInput style={st.input} placeholder="Enter full name"
-                  placeholderTextColor="#94A3B8" value={name} onChangeText={setName} /></View>
+
+              <Field label="Doctor Code">
+                <View style={st.inputWrap}>
+                  <TextInput style={st.input} placeholder="e.g. 1755" placeholderTextColor="#94A3B8"
+                    value={doctorCode} onChangeText={setDoctorCode} autoCapitalize="characters" />
+                </View>
               </Field>
-              <Field label="Mobile No">
-                <View style={st.inputWrap}><TextInput style={st.input} placeholder="Enter mobile number"
-                  placeholderTextColor="#94A3B8" value={mobile} onChangeText={setMobile}
-                  keyboardType="phone-pad" maxLength={10} /></View>
+
+              <Field label="Doctor Name" required>
+                <View style={st.inputWrap}>
+                  <TextInput style={st.input} placeholder="e.g. Aditya Manmdale" placeholderTextColor="#94A3B8"
+                    value={doctorName} onChangeText={setDoctorName} />
+                </View>
               </Field>
+
+              <Field label="Phone No.">
+                <View style={st.inputWrap}>
+                  <TextInput style={st.input} placeholder="e.g. 9876553210" placeholderTextColor="#94A3B8"
+                    value={doctorPhoneno} onChangeText={setDoctorPhoneno} keyboardType="phone-pad" />
+                </View>
+              </Field>
+
+              <Field label="Email">
+                <View style={st.inputWrap}>
+                  <TextInput style={st.input} placeholder="e.g. doctor@gmail.com" placeholderTextColor="#94A3B8"
+                    value={doctoremail} onChangeText={setDoctoremail} keyboardType="email-address" autoCapitalize="none" />
+                </View>
+              </Field>
+
               <Field label="Address">
-                <View style={[st.inputWrap, { height: 72, alignItems: 'flex-start', paddingTop: 10 }]}>
-                  <TextInput style={[st.input, { height: 52 }]} placeholder="Enter address"
-                    placeholderTextColor="#94A3B8" value={address} onChangeText={setAddress} multiline /></View>
+                <View style={st.inputWrap}>
+                  <TextInput style={st.input} placeholder="e.g. Pune" placeholderTextColor="#94A3B8"
+                    value={address1} onChangeText={setAddress1} />
+                </View>
               </Field>
-              {editItem && (
-                <Field label="Status">
-                  <TouchableOpacity
-                    style={[st.toggleBtn, { backgroundColor: isActive ? '#F0FDFA' : '#F1F5F9', borderColor: isActive ? TEAL : '#CBD5E1' }]}
-                    onPress={() => setIsActive(!isActive)}>
-                    <View style={[st.toggleDot, { backgroundColor: isActive ? TEAL : '#94A3B8' }]} />
-                    <Text style={[st.toggleTxt, { color: isActive ? TEAL : '#94A3B8' }]}>{isActive ? 'Active' : 'Inactive'}</Text>
-                  </TouchableOpacity>
-                </Field>
-              )}
+
+              <Field label="City">
+                <View style={st.inputWrap}>
+                  <TextInput style={st.input} placeholder="e.g. Pune" placeholderTextColor="#94A3B8"
+                    value={city} onChangeText={setCity} />
+                </View>
+              </Field>
+
+              <Field label="Dr Type" required>
+                <TouchableOpacity style={st.dd} onPress={() => setDrTypeOpen(!drTypeOpen)}>
+                  <Text style={st.ddText}>{drType}</Text>
+                  <Feather name="chevron-down" size={16} color="#64748B" />
+                </TouchableOpacity>
+                {drTypeOpen && (
+                  <View style={st.ddMenu}>
+                    {DR_TYPES.map(t => (
+                      <TouchableOpacity key={t} style={st.ddItem}
+                        onPress={() => { setDrType(t); setDrTypeOpen(false); }}>
+                        <Text style={st.ddItemText}>{t}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </Field>
+
+              <Field label="Contact Person">
+                <View style={st.inputWrap}>
+                  <TextInput style={st.input} placeholder="e.g. 1" placeholderTextColor="#94A3B8"
+                    value={contactperson} onChangeText={setContactperson} keyboardType="numeric" />
+                </View>
+              </Field>
+
+              <Field label="Rate Type ID">
+                <View style={st.inputWrap}>
+                  <TextInput style={st.input} placeholder="e.g. 2" placeholderTextColor="#94A3B8"
+                    value={ratetypeid} onChangeText={setRatetypeid} keyboardType="numeric" />
+                </View>
+              </Field>
+
+              <Field label="PRO">
+                <View style={st.inputWrap}>
+                  <TextInput style={st.input} placeholder="e.g. 5" placeholderTextColor="#94A3B8"
+                    value={pro} onChangeText={setPro} keyboardType="numeric" />
+                </View>
+              </Field>
+
               <View style={{ height: 24 }} />
             </ScrollView>
           </View>
@@ -244,55 +364,55 @@ export default function ReferralDoctorScreen({ navigation }: any) {
 }
 
 const st = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F1F5F9' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 12 },
-  backBtn: { padding: 4 },
+  root:        { flex: 1, backgroundColor: '#F1F5F9' },
+  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 12 },
+  backBtn:     { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
-  breadcrumb: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5F4', paddingHorizontal: 16, paddingVertical: 8 },
-  bcText: { fontSize: 12, color: '#64748B' },
-  scroll: { padding: 16, paddingBottom: 20 },
-  footer: { backgroundColor: TEAL, paddingVertical: 12, alignItems: 'center' },
-  footerTxt: { fontSize: 12, color: '#FFF', fontWeight: '500' },
-  card: { backgroundColor: '#FFF', borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
-  cardHeader: { backgroundColor: TEAL, padding: 14 },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: '#FFF', marginRight: 8 },
-  badge: { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeTxt: { fontSize: 11, color: '#FFF', fontWeight: '600' },
-  tabRow: { flexDirection: 'row', gap: 10 },
-  tabBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
-  tabTxt: { fontSize: 13, fontWeight: '600', color: '#CBD5E1' },
-  body: { padding: 16 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 12, height: 44, marginBottom: 12 },
+  breadcrumb:  { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5F4', paddingHorizontal: 16, paddingVertical: 8 },
+  bcText:      { fontSize: 12, color: '#64748B' },
+  scroll:      { padding: 16, paddingBottom: 20 },
+  footer:      { backgroundColor: TEAL, paddingVertical: 12, alignItems: 'center' },
+  footerTxt:   { fontSize: 12, color: '#FFF', fontWeight: '500' },
+  card:        { backgroundColor: '#FFF', borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+  cardHeader:  { backgroundColor: TEAL, padding: 14 },
+  cardTitleRow:{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  cardTitle:   { fontSize: 15, fontWeight: '700', color: '#FFF', marginRight: 8 },
+  badge:       { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
+  badgeTxt:    { fontSize: 11, color: '#FFF', fontWeight: '600' },
+  tabRow:      { flexDirection: 'row', gap: 10 },
+  tabBtn:      { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+  tabTxt:      { fontSize: 13, fontWeight: '600', color: '#CBD5E1' },
+  body:        { padding: 16 },
+  searchBar:   { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 12, height: 44, marginBottom: 12 },
   searchInput: { flex: 1, fontSize: 14, color: '#0F172A' },
-  centre: { alignItems: 'center', paddingVertical: 36 },
-  centreTxt: { marginTop: 10, fontSize: 13, color: '#64748B' },
-  emptyTitle: { fontSize: 14, fontWeight: '700', color: '#334155', marginTop: 10 },
-  emptySub: { fontSize: 12, color: '#94A3B8', marginTop: 4, textAlign: 'center' },
-  retryBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 14, borderWidth: 1.5, borderColor: TEAL, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 7 },
-  retryTxt: { fontSize: 13, fontWeight: '700', color: TEAL },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  rowIcon: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  rowName: { fontSize: 13, fontWeight: '700', color: '#0F172A', marginBottom: 2 },
-  rowSub: { fontSize: 11, color: '#64748B', marginTop: 1 },
-  rowActions: { alignItems: 'flex-end', gap: 5 },
-  statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
-  statusTxt: { fontSize: 11, fontWeight: '700' },
-  editBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#BFDBFE' },
-  delBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA' },
-  label: { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 6 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 48 },
-  input: { flex: 1, fontSize: 14, color: '#0F172A' },
-  toggleBtn: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, gap: 8 },
-  toggleDot: { width: 8, height: 8, borderRadius: 4 },
-  toggleTxt: { fontSize: 14, fontWeight: '600' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%' },
+  centre:      { alignItems: 'center', paddingVertical: 36 },
+  centreTxt:   { marginTop: 10, fontSize: 13, color: '#64748B' },
+  emptyTitle:  { fontSize: 14, fontWeight: '700', color: '#334155', marginTop: 10 },
+  emptySub:    { fontSize: 12, color: '#94A3B8', marginTop: 4, textAlign: 'center' },
+  retryBtn:    { flexDirection: 'row', alignItems: 'center', marginTop: 14, borderWidth: 1.5, borderColor: TEAL, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 7 },
+  retryTxt:    { fontSize: 13, fontWeight: '700', color: TEAL },
+  row:         { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  rowIcon:     { width: 36, height: 36, borderRadius: 8, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  rowName:     { fontSize: 13, fontWeight: '700', color: '#0F172A', marginBottom: 2 },
+  rowSub:      { fontSize: 11, color: '#64748B', marginTop: 1 },
+  rowActions:  { gap: 6 },
+  editBtn:     { width: 28, height: 28, borderRadius: 8, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#BFDBFE' },
+  delBtn:      { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA' },
+  label:       { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 6 },
+  inputWrap:   { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 48 },
+  input:       { flex: 1, fontSize: 14, color: '#0F172A' },
+  dd:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 48 },
+  ddText:      { fontSize: 14, color: '#0F172A' },
+  ddMenu:      { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#FFF', marginTop: 4, overflow: 'hidden', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
+  ddItem:      { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  ddItemText:  { fontSize: 14, color: '#0F172A' },
+  modalOverlay:{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  modalCard:   { backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '92%' },
   modalHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: TEAL, paddingHorizontal: 16, paddingVertical: 14, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
-  modalTitle: { fontSize: 15, fontWeight: '700', color: '#FFF' },
-  modalActions: { flexDirection: 'row', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  modalTitle:  { fontSize: 15, fontWeight: '700', color: '#FFF' },
+  modalActions:{ flexDirection: 'row', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   modalScroll: { padding: 16 },
-  saveBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#15803D', borderRadius: 10, paddingVertical: 11 },
-  cancelBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#64748B', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 11 },
-  btnTxt: { fontSize: 13, fontWeight: '700', color: '#FFF' },
+  saveBtn:     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#15803D', borderRadius: 10, paddingVertical: 11 },
+  cancelBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#64748B', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 11 },
+  btnTxt:      { fontSize: 13, fontWeight: '700', color: '#FFF' },
 });

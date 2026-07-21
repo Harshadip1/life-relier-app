@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,8 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import SectionHeader from '../../components/SectionHeader';
 import ReportCard from '../../components/ReportCard';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
-import { DUMMY_REPORTS } from '../../utils/dummy_data';
+import { COLORS, SPACING, BORDER_RADIUS, API_BASE_URL } from '../../utils/constants';
 import { ReportItem } from '../../utils/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -59,17 +58,73 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const [refreshing, setRefreshing] = useState(false);
 
-  const [outstandingBalance, setOutstandingBalance] = useState(1250);
-  const [upcomingTests, setUpcomingTests] = useState<AppointmentItem[]>([
-    {
-      id: 'appt_1',
-      testName: 'Full Body Checkup',
-      date: '22 May 2025 • 09:00 AM',
-      collectionType: 'home',
-      phlebotomist: 'Rizwan Ahmed',
-    },
-  ]);
-  const [totalReportsCount, setTotalReportsCount] = useState(12);
+  const [outstandingBalance, setOutstandingBalance] = useState(0);
+  const [upcomingTests, setUpcomingTests] = useState<AppointmentItem[]>([]);
+  const [totalReportsCount, setTotalReportsCount] = useState(0);
+  const [recentReports, setRecentReports] = useState<ReportItem[]>([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+
+  // ── Fetch patient records from API ──
+  const fetchPatientData = async () => {
+    if (!user) return;
+    setLoadingReports(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const res = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          BranchId: 1, FromDate: '2024-01-01', ToDate: today,
+          PatRegID: '', PatientName: user.name ?? '',
+          DoctorName: '', TestName: '', MobileNo: user.phone ?? '',
+          Barcode: '', CenterCode: '', SubDepartment: '', Status: 'All',
+        }),
+      });
+      const data = await res.json();
+      const rows: any[] = Array.isArray(data) ? data
+        : Array.isArray(data?.value) ? data.value : [];
+
+      // De-duplicate by PID for counts
+      const uniquePIDs = new Set(rows.map((r: any) => r.PID));
+      setTotalReportsCount(uniquePIDs.size);
+
+      // Outstanding balance (max across records)
+      const outstanding = rows.reduce((max: number, r: any) =>
+        Math.max(max, r.OutstandingAmount ?? 0), 0);
+      setOutstandingBalance(outstanding);
+
+      // Recent reports — latest 3 unique test names
+      const seen = new Set<string>();
+      const mapped: ReportItem[] = [];
+      for (const r of rows) {
+        if (!seen.has(r.MainTestName)) {
+          seen.add(r.MainTestName);
+          mapped.push({
+            id:          String(r.PatRegID) + '-' + r.BarcodeID,
+            reportName:  r.MainTestName,
+            date:        new Date(r.Patregdate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+            status:      r.Status === 'Report Ready' ? 'ready' : r.Status === 'Processing' ? 'processing' : 'pending',
+            patientName: r.PatientName,
+          });
+          if (mapped.length >= 3) break;
+        }
+      }
+      setRecentReports(mapped);
+
+      // Upcoming test appointments
+      const upcoming: AppointmentItem[] = uniquePIDs.size > 0 ? [{
+        id:             'from-api',
+        testName:       rows[0]?.MainTestName ?? 'Lab Test',
+        date:           new Date(rows[0]?.Patregdate).toLocaleDateString('en-IN'),
+        collectionType: 'lab',
+        phlebotomist:   'Lab Front Desk',
+      }] : [];
+      setUpcomingTests(upcoming);
+    } catch { /* silent — keep defaults */ }
+    finally { setLoadingReports(false); }
+  };
+
+  useEffect(() => { fetchPatientData(); }, [user]);
 
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [bookModalVisible, setBookModalVisible] = useState(false);
@@ -92,7 +147,7 @@ export default function HomeScreen() {
 
   function onRefresh() {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+    fetchPatientData().finally(() => setRefreshing(false));
   }
 
   const greetingName = user?.name || 'Ubaid';
@@ -273,16 +328,25 @@ export default function HomeScreen() {
 
         {/* Recent Reports */}
         <SectionHeader title="Recent Reports" onViewAll={() => navigation.navigate('Reports')} />
-        {DUMMY_REPORTS.filter((r) => r.status === 'ready').map((r) => (
-          <ReportCard
-            key={r.id}
-            report={r}
-            onView={() => {
-              setSelectedReport(r);
-              setReportModalVisible(true);
-            }}
-          />
-        ))}
+        {loadingReports ? (
+          <ActivityIndicator color={COLORS.primary} style={{ marginVertical: 16 }} />
+        ) : recentReports.length === 0 ? (
+          <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+            <MaterialCommunityIcons name="file-document-outline" size={36} color="#CBD5E1" />
+            <Text style={{ fontSize: 13, color: '#94A3B8', marginTop: 8 }}>No recent reports</Text>
+          </View>
+        ) : (
+          recentReports.map((r) => (
+            <ReportCard
+              key={r.id}
+              report={r}
+              onView={() => {
+                setSelectedReport(r);
+                setReportModalVisible(true);
+              }}
+            />
+          ))
+        )}
 
         {/* Booking Status */}
         <SectionHeader title="Booking Status" />

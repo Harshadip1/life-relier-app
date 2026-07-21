@@ -102,7 +102,8 @@ async function post<T = any>(path: string, body: object): Promise<T> {
 export async function getAllReferingDoctors(branchId: number = 1): Promise<ReferingDoctorRecord[]> {
   const data = await post<any>('GetAll', { Branchid: branchId });
   if (Array.isArray(data)) return data;
-  if (data?.data && Array.isArray(data.data)) return data.data;
+  if (data?.value && Array.isArray(data.value)) return data.value;
+  if (data?.data  && Array.isArray(data.data))  return data.data;
   return [];
 }
 

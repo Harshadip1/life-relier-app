@@ -34,6 +34,8 @@ import TestChargesScreen          from '../screens/admin/TestChargesScreen';
 import TestChargeDetailScreen     from '../screens/admin/TestChargeDetailScreen';
 import PackagesScreen             from '../screens/admin/PackagesScreen';
 import ReferralDoctorScreen       from '../screens/admin/ReferralDoctorScreen';
+import CollectionCenterScreen     from '../screens/admin/CollectionCenterScreen';
+import EditPatientScreen          from '../screens/admin/EditPatientScreen';
 
 import { COLORS } from '../utils/constants';
 
@@ -65,20 +67,14 @@ function getTabStyle(route: any) {
 function DashboardStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="DashboardMain"  component={DashboardScreen} />
-      {/* shortcuts reachable from dashboard quick-actions */}
-      <Stack.Screen name="NewRegistration" component={NewRegistrationScreen} />
-      <Stack.Screen name="PatientStatus"   component={PatientsScreen} />
-      <Stack.Screen name="SampleCollection"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Sample Collection', icon: 'eyedropper-variant' }}
-      />
-      <Stack.Screen name="ResultEntry"     component={ReportsScreen} />
-      <Stack.Screen name="BillPayment"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Bill Payment', icon: 'cash-register' }}
-      />
-      <Stack.Screen name="PendingReports"  component={PendingReportsScreen} />
+      <Stack.Screen name="DashboardMain"    component={DashboardScreen} />
+      <Stack.Screen name="NewRegistration"  component={NewRegistrationScreen} />
+      <Stack.Screen name="PatientStatus"    component={PatientsScreen} />
+      <Stack.Screen name="EditPatient"      component={EditPatientScreen} />
+      <Stack.Screen name="SampleCollection" component={SamplesScreen} />
+      <Stack.Screen name="ResultEntry"      component={ReportsScreen} />
+      <Stack.Screen name="BillPayment"      component={PlaceholderScreen} initialParams={{ title: 'Bill Payment', icon: 'cash-register' }} />
+      <Stack.Screen name="PendingReports"   component={PendingReportsScreen} />
     </Stack.Navigator>
   );
 }
@@ -89,21 +85,13 @@ function DashboardStack() {
 function FrontDeskStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="FrontDeskMain"   component={FrontDeskScreen} />
-      <Stack.Screen name="NewRegistration" component={NewRegistrationScreen} />
-      <Stack.Screen name="PatientStatus"   component={PatientsScreen} />
-      <Stack.Screen name="BillPayment"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Bill Payment', icon: 'cash-register' }}
-      />
-      <Stack.Screen name="AppointmentBooking"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Appointment Booking', icon: 'calendar-check-outline' }}
-      />
-      <Stack.Screen name="HomeCollection"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Home Collection Booking', icon: 'home-city-outline' }}
-      />
+      <Stack.Screen name="FrontDeskMain"       component={FrontDeskScreen} />
+      <Stack.Screen name="NewRegistration"     component={NewRegistrationScreen} />
+      <Stack.Screen name="PatientStatus"       component={PatientsScreen} />
+      <Stack.Screen name="EditPatient"         component={EditPatientScreen} />
+      <Stack.Screen name="BillPayment"         component={PlaceholderScreen} initialParams={{ title: 'Bill Payment', icon: 'cash-register' }} />
+      <Stack.Screen name="AppointmentBooking"  component={SearchAvailableSlotsScreen} />
+      <Stack.Screen name="HomeCollection"      component={PlaceholderScreen} initialParams={{ title: 'Home Collection Booking', icon: 'home-city-outline' }} />
     </Stack.Navigator>
   );
 }
@@ -115,10 +103,7 @@ function LaboratoryStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="LaboratoryMain"  component={LaboratoryScreen} />
-      <Stack.Screen name="SampleCollection"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Sample Collection', icon: 'eyedropper-variant' }}
-      />
+      <Stack.Screen name="SampleCollection" component={SamplesScreen} />
       <Stack.Screen name="Accession"       component={SamplesScreen} />
       <Stack.Screen name="ResultEntry"     component={ReportsScreen} />
       <Stack.Screen name="PendingReports"  component={PendingReportsScreen} />
@@ -163,52 +148,22 @@ function MasterStack() {
 
       {/* Test Management */}
       <Stack.Screen name="TestCharges"      component={TestChargesScreen} />
-      <Stack.Screen name="TestMaster"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Test Master', icon: 'test-tube' }}
-      />
+      <Stack.Screen name="TestMaster"       component={PlaceholderScreen} initialParams={{ title: 'Test Master', icon: 'test-tube' }} />
       <Stack.Screen name="TestChargeDetail" component={TestChargeDetailScreen} />
       <Stack.Screen name="Packages"         component={PackagesScreen} />
-      <Stack.Screen name="PackageMaster"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Package Master', icon: 'package-variant' }}
-      />
-      <Stack.Screen name="DepartmentMaster"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Department Master', icon: 'office-building-outline' }}
-      />
-      <Stack.Screen name="SampleTypeMaster"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Sample Type Master', icon: 'flask-outline' }}
-      />
-      <Stack.Screen name="TubeMaster"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Tube Master', icon: 'test-tube-empty' }}
-      />
+      <Stack.Screen name="PackageMaster"    component={PlaceholderScreen} initialParams={{ title: 'Package Master', icon: 'package-variant' }} />
+      <Stack.Screen name="DepartmentMaster" component={PlaceholderScreen} initialParams={{ title: 'Department Master', icon: 'office-building-outline' }} />
+      <Stack.Screen name="SampleTypeMaster" component={PlaceholderScreen} initialParams={{ title: 'Sample Type Master', icon: 'flask-outline' }} />
+      <Stack.Screen name="TubeMaster"       component={PlaceholderScreen} initialParams={{ title: 'Tube Master', icon: 'test-tube-empty' }} />
 
       {/* Laboratory masters */}
-      <Stack.Screen name="CollectionCenter"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Collection Centers', icon: 'map-marker-outline' }}
-      />
-      <Stack.Screen name="Instruments"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Instruments', icon: 'robot-industrial-outline' }}
-      />
+      <Stack.Screen name="CollectionCenter" component={CollectionCenterScreen} />
+      <Stack.Screen name="Instruments"      component={PlaceholderScreen} initialParams={{ title: 'Instruments', icon: 'robot-industrial-outline' }} />
 
       {/* Staff */}
-      <Stack.Screen name="StaffManagement"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Staff', icon: 'account-multiple-outline' }}
-      />
-      <Stack.Screen name="Roles"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Roles', icon: 'shield-account-outline' }}
-      />
-      <Stack.Screen name="Permissions"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Permissions', icon: 'lock-outline' }}
-      />
+      <Stack.Screen name="StaffManagement"  component={PlaceholderScreen} initialParams={{ title: 'Staff', icon: 'account-multiple-outline' }} />
+      <Stack.Screen name="Roles"            component={PlaceholderScreen} initialParams={{ title: 'Roles', icon: 'shield-account-outline' }} />
+      <Stack.Screen name="Permissions"      component={PlaceholderScreen} initialParams={{ title: 'Permissions', icon: 'lock-outline' }} />
     </Stack.Navigator>
   );
 }
