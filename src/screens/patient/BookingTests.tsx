@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
+import { getCenters, CenterItem } from '../../services/testChargesService';
 
 // Using exact colors from your design
 const THEME = {
@@ -60,34 +61,22 @@ export default function MyBookingsScreen({ navigation }: any) {
   ]);
   
   // ─── Dynamic Center State ───
-  const [centers, setCenters] = useState<any[]>([]); 
+  const [centers, setCenters] = useState<CenterItem[]>([]);
   const [selectedCenter, setSelectedCenter] = useState('Loading centers...');
+  const [selectedCenterCode, setSelectedCenterCode] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // ─── Fetch Centers from Database ───
+  // ─── Fetch Centers from API ───
   useEffect(() => {
-    const fetchCenters = async () => {
-      try {
-        // ⚠️ REPLACE THIS URL WITH YOUR ACTUAL API ENDPOINT
-        const response = await fetch('https://your-api-domain.com/api/centers');
-        const data = await response.json();
-
-        setCenters(data);
-        
-        // Automatically select the first center in the list once it loads
-        if (data && data.length > 0) {
-          // ⚠️ Change '.name' to whatever your database column is called
-          setSelectedCenter(data[0].name); 
-        } else {
-          setSelectedCenter('No centers available');
-        }
-      } catch (error) {
-        console.error('Error fetching centers:', error);
-        setSelectedCenter('Error loading centers');
+    getCenters(1).then(data => {
+      setCenters(data);
+      if (data.length > 0) {
+        setSelectedCenter(data[0].CenterName);
+        setSelectedCenterCode(data[0].CenterCode);
+      } else {
+        setSelectedCenter('No centers available');
       }
-    };
-
-    fetchCenters();
+    }).catch(() => setSelectedCenter('Error loading centers'));
   }, []);
 
   function toggleTest(test: any) {
@@ -313,24 +302,22 @@ export default function MyBookingsScreen({ navigation }: any) {
           {isDropdownOpen && (
             <View style={styles.dropdownList}>
               {centers.map((centerObj, index) => {
-                // ⚠️ Update 'centerObj.name' to match your database column!
-                const centerName = centerObj.name; 
-                const isSelected = selectedCenter === centerName;
-                
+                const isSelected = selectedCenter === centerObj.CenterName;
                 return (
                   <TouchableOpacity
-                    key={centerObj.id || index}
+                    key={centerObj.CenterCode || index}
                     style={[
                       styles.dropdownItem,
                       index === centers.length - 1 && { borderBottomWidth: 0 }
                     ]}
                     onPress={() => {
-                      setSelectedCenter(centerName);
+                      setSelectedCenter(centerObj.CenterName);
+                      setSelectedCenterCode(centerObj.CenterCode);
                       setIsDropdownOpen(false);
                     }}
                   >
                     <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
-                      {centerName}
+                      {centerObj.CenterName}
                     </Text>
                     {isSelected && <Feather name="check" size={18} color={THEME.primary} />}
                   </TouchableOpacity>
@@ -352,7 +339,8 @@ export default function MyBookingsScreen({ navigation }: any) {
           onPress={() => navigation.navigate('ScheduleCollection', {
             tests: selectedTests,
             total: totalAmount,
-            centerName: selectedCenter
+            centerName: selectedCenter,
+            centerCode: selectedCenterCode,
           })}
         >
           <Text style={styles.continueBtnText}>Continue</Text>

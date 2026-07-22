@@ -246,7 +246,7 @@ export default function DoctorManagementScreen({ navigation }: any) {
               {schedules.length === 0 ? (
                 <Text style={styles.emptyText}>No schedules found.</Text>
               ) : schedules.map(sched => (
-                <View key={sched.ScheduleId} style={styles.cardVertical}>
+                <View key={sched.ScheduleId ?? (sched as any).scheduleId} style={styles.cardVertical}>
                   <View style={styles.cardHeaderFlex}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <View style={styles.iconCircle}>
@@ -281,7 +281,7 @@ export default function DoctorManagementScreen({ navigation }: any) {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.actionTextBtn}
-                      onPress={() => handleDeleteSchedule(sched.ScheduleId)}
+                      onPress={() => handleDeleteSchedule(sched.ScheduleId ?? (sched as any).scheduleId)}
                     >
                       <Text style={styles.actionTextRed}>Delete</Text>
                     </TouchableOpacity>

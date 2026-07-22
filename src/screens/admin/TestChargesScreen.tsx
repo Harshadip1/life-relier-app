@@ -9,9 +9,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../../utils/constants';
 import {
   getAllTestCharges, saveTestCharge, updateTestCharge, deleteTestCharge,
-  getAllSubDepts, getAllRateTypes, getPackages,
+  getAllSubDepts, getAllRateTypes, getPackages, getTestNames,
   TestChargeRecord, SaveTestChargePayload, UpdateTestChargePayload,
-  SubDeptItem, RateTypeItem, PackageItem,
+  SubDeptItem, RateTypeItem, PackageItem, TestNameItem,
 } from '../../services/testChargesService';
 import { useAuth } from '../../context/AuthContext';
 
@@ -60,6 +60,7 @@ export default function TestChargesScreen({ navigation }: any) {
   const [rateTypes, setRateTypes]   = useState<RateTypeItem[]>([]);
   const [subDepts, setSubDepts]     = useState<SubDeptItem[]>([]);
   const [packages, setPackages]     = useState<PackageItem[]>([]);
+  const [testNames, setTestNames]   = useState<TestNameItem[]>([]);
 
   // ── Filter state (mirrors website) ──
   const [filterRateTypeId, setFilterRateTypeId]     = useState<number | null>(null);
@@ -87,6 +88,8 @@ export default function TestChargesScreen({ navigation }: any) {
   const [mainTestId, setMainTestId]       = useState('');
   const [mtCode, setMtCode]               = useState('');
   const [testName, setTestName]           = useState('');
+  const [testNameSearch, setTestNameSearch] = useState('');
+  const [testNameOpen, setTestNameOpen]   = useState(false);
   const [rateTypeId, setRateTypeId]       = useState<number | null>(null);
   const [rateTypeName, setRateTypeName]   = useState('');
   const [packageId, setPackageId]         = useState<number | null>(null);
@@ -97,11 +100,12 @@ export default function TestChargesScreen({ navigation }: any) {
 
   // ── Load dropdowns once ──
   useEffect(() => {
-    Promise.all([getAllRateTypes(1), getAllSubDepts(1), getPackages(1)])
-      .then(([rt, sd, pkg]) => {
+    Promise.all([getAllRateTypes(1), getAllSubDepts(1), getPackages(1), getTestNames(1)])
+      .then(([rt, sd, pkg, tn]) => {
         setRateTypes(rt.map(r => ({ id: r.RateTypeId, label: r.RateTypeName, ...r } as any)));
         setSubDepts(sd.map(s => ({ id: s.SubDeptId, label: s.SubDeptName, ...s } as any)));
         setPackages(pkg);
+        setTestNames(tn);
       })
       .catch(() => {});
   }, []);
@@ -142,6 +146,7 @@ export default function TestChargesScreen({ navigation }: any) {
     setTestType('T'); setTestTypeLabel('Test');
     setSubDeptId(filterSubDeptId); setSubDeptName(filterSubDeptName);
     setMainTestId(''); setMtCode(''); setTestName('');
+    setTestNameSearch(''); setTestNameOpen(false);
     setRateTypeId(filterRateTypeId); setRateTypeName(filterRateTypeName);
     setPackageId(null); setPackageName('');
     setAmount(''); setPercentage(''); setEmergency('');
@@ -158,6 +163,8 @@ export default function TestChargesScreen({ navigation }: any) {
     setMainTestId(String(item.MainTestId));
     setMtCode(item.MTCODE);
     setTestName(item.TestName);
+    setTestNameSearch(item.TestName);
+    setTestNameOpen(false);
     setRateTypeId(item.RateTypeId);
     setRateTypeName(item.RateTypeName);
     setPackageId(item.PackageId);
@@ -376,8 +383,44 @@ export default function TestChargesScreen({ navigation }: any) {
               </Field>
 
               <Field label="Test Name" required>
-                <View style={st.inputWrap}><TextInput style={st.input} placeholder="e.g. Complete Blood Count" placeholderTextColor="#94A3B8"
-                  value={testName} onChangeText={setTestName} /></View>
+                <View style={{ marginBottom: 0 }}>
+                  <View style={st.inputWrap}>
+                    <TextInput
+                      style={st.input}
+                      placeholder="Search test name..."
+                      placeholderTextColor="#94A3B8"
+                      value={testNameSearch}
+                      onChangeText={v => { setTestNameSearch(v); setTestName(''); setTestNameOpen(true); }}
+                      onFocus={() => setTestNameOpen(true)}
+                    />
+                    {testNameSearch.length > 0 && (
+                      <TouchableOpacity onPress={() => { setTestName(''); setTestNameSearch(''); setTestNameOpen(false); }}>
+                        <Feather name="x" size={16} color="#94A3B8" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  {testNameOpen && testNameSearch.length > 0 && (
+                    <View style={st.ddMenu}>
+                      {testNames
+                        .filter(t => t.MainTestName.toLowerCase().includes(testNameSearch.toLowerCase()))
+                        .slice(0, 8)
+                        .map((t, i) => (
+                          <TouchableOpacity
+                            key={i}
+                            style={st.ddItem}
+                            onPress={() => { setTestName(t.MainTestName); setTestNameSearch(t.MainTestName); setTestNameOpen(false); }}
+                          >
+                            <Text style={st.ddItemText}>{t.MainTestName}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      {testNames.filter(t => t.MainTestName.toLowerCase().includes(testNameSearch.toLowerCase())).length === 0 && (
+                        <View style={st.ddItem}>
+                          <Text style={[st.ddItemText, { color: '#94A3B8' }]}>No matches</Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
               </Field>
 
               <DD label="Rate Type" required value={rateTypeName}
