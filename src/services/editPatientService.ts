@@ -86,6 +86,52 @@ export async function getEditPatientGrid(
   return { data: [], totalCount: 0, pageNo: body.PageNo, pageSize: body.PageSize };
 }
 
+// ─── Get single patient ───────────────────────────────────────────────────────
+
+export interface PatientDetail {
+  PID:          number;
+  PatRegID:     number;
+  PatientName:  string;
+  MobileNo:     string;
+  Age:          number | string;
+  Gender:       string;
+  DOB:          string | null;
+  CenterName:   string;
+  Patregdate:   string;
+  BranchId:     number;
+  Address?:     string;
+  Pataddress?:  string;
+  Email?:       string;
+  City?:        string;
+  Area?:        string;
+  Notes?:       string;
+  Remark?:      string;
+  Initial?:     string;
+  Patphoneno?:  string;
+  [key: string]: any;
+}
+
+/**
+ * POST /api/EditPatient/GetPatient
+ * Body: { PID: number }
+ */
+export async function getPatient(pid: number): Promise<PatientDetail> {
+  const res = await fetch(`${API_BASE_URL}/api/EditPatient/GetPatient`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body:    JSON.stringify({ PID: pid }),
+  });
+  const raw = await res.json();
+  if (!res.ok) throw new Error(raw?.Message || raw?.message || `Server error (${res.status})`);
+
+  // API may return array with one element or a plain object
+  if (Array.isArray(raw) && raw.length > 0) return raw[0];
+  if (raw?.data && Array.isArray(raw.data) && raw.data.length > 0) return raw.data[0];
+  if (raw?.Data && Array.isArray(raw.Data) && raw.Data.length > 0) return raw.Data[0];
+  if (raw?.PID || raw?.PatientName) return raw;
+  throw new Error('Patient not found');
+}
+
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 /** First day of current month  →  "YYYY-MM-01T00:00:00" */

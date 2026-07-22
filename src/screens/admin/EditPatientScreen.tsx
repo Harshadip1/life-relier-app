@@ -1,234 +1,442 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator
+  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { API_BASE_URL } from '../../utils/constants';
+import { getPatient, PatientDetail, fmtDate } from '../../services/editPatientService';
 
-const THEME = {
-  primary: '#0F766E',
-  primaryLight: '#F0FDFA',
-  textPrimary: '#0F172A',
-  textSecondary: '#64748B',
-  border: '#E2E8F0',
-  danger: '#EF4444',
-  bg: '#FFFFFF',
-  screenBg: '#FAFAFA',
+// ─── Theme ────────────────────────────────────────────────────────────────────
+const T = {
+  primary:   '#0D9488',
+  tealDark:  '#0F766E',
+  tealBg:    '#F0FDFA',
+  tealBorder:'#CCFBF1',
+  bg:        '#FFFFFF',
+  screenBg:  '#F8FAFC',
+  text:      '#0F172A',
+  sub:       '#64748B',
+  muted:     '#94A3B8',
+  border:    '#E2E8F0',
+  danger:    '#EF4444',
 };
 
+const GENDERS = ['Male', 'Female', 'Other'];
+
+// ─── Small helpers ────────────────────────────────────────────────────────────
+function Field({ label, required, children }: {
+  label: string; required?: boolean; children: React.ReactNode;
+}) {
+  return (
+    <View style={s.fieldWrap}>
+      <Text style={s.fieldLabel}>
+        {label}
+        {required && <Text style={{ color: T.danger }}> *</Text>}
+      </Text>
+      {children}
+    </View>
+  );
+}
+
+function SectionBar({ icon, title }: { icon: string; title: string }) {
+  return (
+    <View style={s.sectionBar}>
+      <MaterialCommunityIcons name={icon as any} size={15} color="#FFF" />
+      <Text style={s.sectionBarText}>{title}</Text>
+    </View>
+  );
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 export default function EditPatientScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
-  const patient = route?.params?.patient ?? {};
 
-  const [name, setName]     = useState(patient.name       ?? '');
-  const [mobile, setMobile] = useState(patient.phone      ?? '');
-  const [age, setAge]       = useState(patient.age        ?? '');
-  const [gender, setGender] = useState(patient.gender     ?? 'Male');
-  const [dob, setDob]       = useState(patient.dob        ?? '');
-  const [city, setCity]     = useState(patient.city       ?? '');
-  const [area, setArea]     = useState(patient.area       ?? '');
-  const [notes, setNotes]   = useState(patient.notes      ?? '');
-  const [loading, setLoading] = useState(false);
+  // PID can come from grid row params or as a standalone number
+  const passedPatient = route?.params?.patient ?? {};
+  const pid: number   = passedPatient.pid ?? passedPatient.PID ?? passedPatient.patRegId ?? 0;
 
+  // ── Form state ──────────────────────────────────────────────────────────
+  const [fetching,  setFetching]  = useState(true);
+  const [saving,    setSaving]    = useState(false);
+  const [patRegID,  setPatRegID]  = useState<number>(passedPatient.patRegId ?? 0);
+
+  const [name,      setName]      = useState(passedPatient.name     ?? '');
+  const [mobile,    setMobile]    = useState(passedPatient.phone     ?? '');
+  const [age,       setAge]       = useState(String(passedPatient.age ?? ''));
+  const [gender,    setGender]    = useState(passedPatient.gender    ?? '');
+  const [genderOpen,setGenderOpen]= useState(false);
+  const [dob,       setDob]       = useState(passedPatient.dob       ?? '');
+  const [address,   setAddress]   = useState(passedPatient.address   ?? '');
+  const [city,      setCity]      = useState(passedPatient.city      ?? '');
+  const [area,      setArea]      = useState(passedPatient.area      ?? '');
+  const [email,     setEmail]     = useState(passedPatient.email     ?? '');
+  const [notes,     setNotes]     = useState(passedPatient.notes     ?? '');
+
+  // ── Load from API on mount ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!pid) { setFetching(false); return; }
+    setFetching(true);
+    getPatient(pid)
+      .then((d: PatientDetail) => {
+        setPatRegID(d.PatRegID ?? 0);
+        setName(d.PatientName   ?? '');
+        setMobile(d.MobileNo ?? d.Patphoneno ?? '');
+        setAge(String(d.Age ?? ''));
+        setGender(d.Gender      ?? '');
+        setDob(d.DOB            ?? '');
+        setAddress(d.Address ?? d.Pataddress ?? '');
+        setCity(d.City          ?? '');
+        setArea(d.Area          ?? '');
+        setEmail(d.Email        ?? '');
+        setNotes(d.Notes ?? d.Remark ?? '');
+      })
+      .catch((e: any) => {
+        Alert.alert('Load Failed', e.message || 'Could not fetch patient details.');
+      })
+      .finally(() => setFetching(false));
+  }, [pid]);
+
+  // ── Save / Update ─────────────────────────────────────────────────────────
   const handleUpdate = async () => {
-    if (!name.trim() || !mobile.trim() || !age.trim() || !gender.trim()) {
-      Alert.alert('Validation Error', 'Name, Mobile, Age and Gender are required.');
-      return;
-    }
+    if (!name.trim())   { Alert.alert('Required', 'Patient name is required.');  return; }
+    if (!mobile.trim()) { Alert.alert('Required', 'Mobile number is required.'); return; }
+    if (!age.trim())    { Alert.alert('Required', 'Age is required.');           return; }
 
-    setLoading(true);
+    setSaving(true);
     try {
       const payload = {
-        PatRegID:      patient.patRegId ?? patient.PatRegID,
-        PID:           patient.pid      ?? patient.PID,
-        PatientName:   name.trim(),
-        MobileNo:      mobile.replace(/\s/g, ''),
-        Age:           age.trim(),
-        Gender:        gender,
-        DOB:           dob,
-        City:          city.trim(),
-        Area:          area.trim(),
-        Notes:         notes.trim(),
-        BranchId:      patient.branchId ?? 1,
-        UpdatedBy:     'admin',
+        PID:          pid,
+        PatRegID:     patRegID,
+        PatientName:  name.trim(),
+        MobileNo:     mobile.replace(/\s/g, ''),
+        Age:          parseInt(age, 10),
+        Gender:       gender,
+        DOB:          dob,
+        Address:      address.trim(),
+        City:         city.trim(),
+        Area:         area.trim(),
+        Email:        email.trim(),
+        Notes:        notes.trim(),
+        BranchId:     passedPatient.branchId ?? 1,
+        UpdatedBy:    'admin',
       };
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/NewRegistration/UpdatePatientFiles`,
-        {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body:    JSON.stringify(payload),
-        }
-      );
-
+      const res = await fetch(`${API_BASE_URL}/api/NewRegistration/UpdatePatientFiles`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body:    JSON.stringify(payload),
+      });
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.Message || data?.message || `Server error (${res.status})`);
-      }
+      if (!res.ok) throw new Error(data?.Message || data?.message || `Server error (${res.status})`);
 
       Alert.alert(
-        'Update Successful',
-        data.Message || 'Patient files updated successfully.',
+        '✅ Update Successful',
+        data.Message || 'Patient updated successfully.',
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (err: any) {
-      Alert.alert('Update Failed', err.message || 'Something went wrong. Please try again.');
+      Alert.alert('Update Failed', err.message || 'Something went wrong.');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const InputLabel = ({ title, required }: { title: string; required?: boolean }) => (
-    <Text style={styles.inputLabel}>
-      {title}{required && <Text style={{ color: THEME.danger }}> *</Text>}
-    </Text>
-  );
-
-  const SectionHeader = ({ icon, title }: { icon: any; title: string }) => (
-    <View style={styles.sectionHeader}>
-      <View style={styles.sectionIconBox}>
-        <Feather name={icon} size={16} color="#FFF" />
-      </View>
-      <Text style={styles.sectionTitle}>{title}</Text>
-    </View>
-  );
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
-      style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}
+      style={[s.root, { paddingTop: Math.max(insets.top, 0) }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={24} color={THEME.textPrimary} />
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+          <Feather name="arrow-left" size={22} color={T.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Patient</Text>
-        <View style={{ width: 32 }} />
+        <View style={{ flex: 1 }}>
+          <Text style={s.headerTitle}>Edit Patient</Text>
+          {pid > 0 && (
+            <Text style={s.headerSub}>
+              PID: <Text style={{ color: T.primary, fontWeight: '700' }}>{pid}</Text>
+              {patRegID > 0 && `   ·   PT${String(patRegID).padStart(6, '0')}`}
+            </Text>
+          )}
+        </View>
+        {fetching && <ActivityIndicator size="small" color={T.primary} style={{ marginRight: 4 }} />}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-
-        {/* Patient Information */}
-        <SectionHeader icon="user" title="Patient Information" />
-
-        <View style={styles.inputGroup}>
-          <InputLabel title="Full Name" required />
-          <View style={styles.inputWrapper}>
-            <Feather name="user" size={18} color={THEME.textSecondary} style={styles.inputIcon} />
-            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Enter full name" />
-          </View>
+      {/* Loading skeleton */}
+      {fetching ? (
+        <View style={s.centered}>
+          <ActivityIndicator size="large" color={T.primary} />
+          <Text style={s.loadingText}>Loading patient details…</Text>
         </View>
-
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 2, marginRight: 12 }]}>
-            <InputLabel title="Mobile Number" required />
-            <View style={styles.inputWrapper}>
-              <Feather name="phone" size={18} color={THEME.textSecondary} style={styles.inputIcon} />
-              <TextInput style={styles.input} value={mobile} onChangeText={setMobile} keyboardType="phone-pad" />
-            </View>
-          </View>
-
-          <View style={[styles.inputGroup, { flex: 1, marginRight: 12 }]}>
-            <InputLabel title="Age" required />
-            <View style={styles.inputWrapper}>
-              <Feather name="calendar" size={18} color={THEME.textSecondary} style={styles.inputIcon} />
-              <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" />
-            </View>
-          </View>
-
-          <View style={[styles.inputGroup, { flex: 1.2 }]}>
-            <InputLabel title="Gender" required />
-            <TouchableOpacity
-              style={styles.inputWrapper}
-              activeOpacity={0.7}
-              onPress={() => setGender(g => (g === 'Male' ? 'Female' : g === 'Female' ? 'Other' : 'Male'))}
-            >
-              <Feather name="users" size={18} color={THEME.textSecondary} style={styles.inputIcon} />
-              <Text style={[styles.input, { marginTop: 2 }]}>{gender}</Text>
-              <Feather name="chevron-down" size={18} color={THEME.textSecondary} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <InputLabel title="Date of Birth" />
-          <View style={styles.inputWrapper}>
-            <Feather name="calendar" size={18} color={THEME.textSecondary} style={styles.inputIcon} />
-            <TextInput style={styles.input} value={dob} onChangeText={setDob} placeholder="DD/MM/YYYY" />
-          </View>
-        </View>
-
-        {/* Address */}
-        <SectionHeader icon="map-pin" title="Address" />
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: 12 }]}>
-            <InputLabel title="City" />
-            <View style={styles.inputWrapper}>
-              <Feather name="map-pin" size={18} color={THEME.textSecondary} style={styles.inputIcon} />
-              <TextInput style={styles.input} value={city} onChangeText={setCity} placeholder="City" />
-            </View>
-          </View>
-          <View style={[styles.inputGroup, { flex: 1 }]}>
-            <InputLabel title="Area / Locality" />
-            <View style={styles.inputWrapper}>
-              <Feather name="map" size={18} color={THEME.textSecondary} style={styles.inputIcon} />
-              <TextInput style={styles.input} value={area} onChangeText={setArea} placeholder="Area" />
-            </View>
-          </View>
-        </View>
-
-        {/* Notes */}
-        <SectionHeader icon="file-text" title="Notes (Optional)" />
-        <View style={[styles.inputWrapper, { height: 90, alignItems: 'flex-start', paddingVertical: 12, marginBottom: 24 }]}>
-          <TextInput
-            style={[styles.input, { textAlignVertical: 'top' }]}
-            multiline
-            placeholder="Add notes for laboratory staff..."
-            value={notes}
-            onChangeText={setNotes}
-            maxLength={200}
-          />
-        </View>
-
-        {/* Update Button */}
-        <TouchableOpacity
-          style={[styles.updateBtn, loading && { opacity: 0.7 }]}
-          activeOpacity={0.8}
-          onPress={handleUpdate}
-          disabled={loading}
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={s.scroll}
         >
-          {loading
-            ? <ActivityIndicator color="#FFF" style={{ marginRight: 8 }} />
-            : <Feather name="save" size={18} color="#FFF" style={{ marginRight: 8 }} />}
-          <Text style={styles.updateBtnText}>{loading ? 'Updating...' : 'Update Patient'}</Text>
-        </TouchableOpacity>
+          {/* ── Patient Information ── */}
+          <SectionBar icon="account" title="Patient Information" />
+          <View style={s.formCard}>
 
-        <View style={{ height: 40 }} />
-      </ScrollView>
+            <Field label="Full Name" required>
+              <View style={s.inputRow}>
+                <Feather name="user" size={16} color={T.muted} style={s.inputIcon} />
+                <TextInput
+                  style={s.input}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Enter full name"
+                  placeholderTextColor={T.muted}
+                />
+              </View>
+            </Field>
+
+            <Field label="Mobile Number" required>
+              <View style={s.inputRow}>
+                <Feather name="phone" size={16} color={T.muted} style={s.inputIcon} />
+                <TextInput
+                  style={s.input}
+                  value={mobile}
+                  onChangeText={setMobile}
+                  keyboardType="phone-pad"
+                  placeholder="Enter mobile"
+                  placeholderTextColor={T.muted}
+                />
+              </View>
+            </Field>
+
+            {/* Age + Gender row */}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Field label="Age" required>
+                  <View style={s.inputRow}>
+                    <Feather name="calendar" size={16} color={T.muted} style={s.inputIcon} />
+                    <TextInput
+                      style={s.input}
+                      value={age}
+                      onChangeText={setAge}
+                      keyboardType="numeric"
+                      placeholder="Age"
+                      placeholderTextColor={T.muted}
+                    />
+                  </View>
+                </Field>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Gender" required>
+                  <TouchableOpacity
+                    style={s.inputRow}
+                    activeOpacity={0.8}
+                    onPress={() => setGenderOpen(o => !o)}
+                  >
+                    <Feather name="users" size={16} color={T.muted} style={s.inputIcon} />
+                    <Text style={[s.input, !gender && { color: T.muted }]}>
+                      {gender || 'Select'}
+                    </Text>
+                    <Feather name="chevron-down" size={15} color={T.sub} />
+                  </TouchableOpacity>
+                  {genderOpen && (
+                    <View style={s.ddMenu}>
+                      {GENDERS.map(g => (
+                        <TouchableOpacity
+                          key={g}
+                          style={s.ddItem}
+                          onPress={() => { setGender(g); setGenderOpen(false); }}
+                        >
+                          <Text style={[s.ddItemText, gender === g && { color: T.primary, fontWeight: '700' }]}>{g}</Text>
+                          {gender === g && <Feather name="check" size={14} color={T.primary} />}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </Field>
+              </View>
+            </View>
+
+            <Field label="Date of Birth">
+              <View style={s.inputRow}>
+                <Feather name="calendar" size={16} color={T.muted} style={s.inputIcon} />
+                <TextInput
+                  style={s.input}
+                  value={dob}
+                  onChangeText={setDob}
+                  placeholder="DD/MM/YYYY"
+                  placeholderTextColor={T.muted}
+                />
+              </View>
+            </Field>
+
+            <Field label="Email">
+              <View style={s.inputRow}>
+                <Feather name="mail" size={16} color={T.muted} style={s.inputIcon} />
+                <TextInput
+                  style={s.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholder="Enter email"
+                  placeholderTextColor={T.muted}
+                />
+              </View>
+            </Field>
+          </View>
+
+          {/* ── Address ── */}
+          <SectionBar icon="map-marker-outline" title="Address" />
+          <View style={s.formCard}>
+
+            <Field label="Address">
+              <View style={s.inputRow}>
+                <Feather name="map-pin" size={16} color={T.muted} style={s.inputIcon} />
+                <TextInput
+                  style={s.input}
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="Enter address"
+                  placeholderTextColor={T.muted}
+                />
+              </View>
+            </Field>
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Field label="City">
+                  <View style={s.inputRow}>
+                    <Feather name="map" size={16} color={T.muted} style={s.inputIcon} />
+                    <TextInput
+                      style={s.input}
+                      value={city}
+                      onChangeText={setCity}
+                      placeholder="City"
+                      placeholderTextColor={T.muted}
+                    />
+                  </View>
+                </Field>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Area / Locality">
+                  <View style={s.inputRow}>
+                    <Feather name="navigation" size={16} color={T.muted} style={s.inputIcon} />
+                    <TextInput
+                      style={s.input}
+                      value={area}
+                      onChangeText={setArea}
+                      placeholder="Area"
+                      placeholderTextColor={T.muted}
+                    />
+                  </View>
+                </Field>
+              </View>
+            </View>
+          </View>
+
+          {/* ── Notes ── */}
+          <SectionBar icon="note-text-outline" title="Notes" />
+          <View style={s.formCard}>
+            <TextInput
+              style={s.notesInput}
+              multiline
+              textAlignVertical="top"
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Add notes for laboratory staff…"
+              placeholderTextColor={T.muted}
+              maxLength={300}
+            />
+            <Text style={s.charCount}>{notes.length}/300</Text>
+          </View>
+
+          {/* ── Update Button ── */}
+          <TouchableOpacity
+            style={[s.updateBtn, saving && { opacity: 0.65 }]}
+            activeOpacity={0.85}
+            onPress={handleUpdate}
+            disabled={saving}
+          >
+            {saving
+              ? <ActivityIndicator color="#FFF" size="small" />
+              : <Feather name="save" size={18} color="#FFF" />}
+            <Text style={s.updateBtnText}>{saving ? 'Saving…' : 'Update Patient'}</Text>
+          </TouchableOpacity>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      )}
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  root:          { flex: 1, backgroundColor: THEME.bg },
-  header:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 16 },
-  backBtn:       { padding: 4, marginRight: 12 },
-  headerTitle:   { flex: 1, fontSize: 20, fontWeight: '700', color: THEME.textPrimary },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 10 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 24 },
-  sectionIconBox:{ width: 28, height: 28, borderRadius: 14, backgroundColor: THEME.primary, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  sectionTitle:  { fontSize: 16, fontWeight: '700', color: THEME.primary },
-  row:           { flexDirection: 'row', alignItems: 'flex-start' },
-  inputGroup:    { marginBottom: 16 },
-  inputLabel:    { fontSize: 12, fontWeight: '600', color: THEME.textSecondary, marginBottom: 6 },
-  inputWrapper:  { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: THEME.border, borderRadius: 12, paddingHorizontal: 12, height: 48, backgroundColor: THEME.bg },
-  inputIcon:     { marginRight: 8 },
-  input:         { flex: 1, fontSize: 14, color: THEME.textPrimary, fontWeight: '500' },
-  updateBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.primary, height: 54, borderRadius: 12 },
-  updateBtnText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  root:       { flex: 1, backgroundColor: T.screenBg },
+
+  header:     {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12,
+    backgroundColor: T.bg, borderBottomWidth: 1, borderBottomColor: T.border,
+  },
+  backBtn:    { padding: 4, marginRight: 10 },
+  headerTitle:{ fontSize: 18, fontWeight: '800', color: T.text },
+  headerSub:  { fontSize: 11, color: T.sub, marginTop: 1 },
+
+  centered:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingText:{ marginTop: 12, fontSize: 14, color: T.sub },
+
+  scroll:     { paddingBottom: 24 },
+
+  sectionBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: T.tealDark, paddingHorizontal: 14, paddingVertical: 10,
+  },
+  sectionBarText: { fontSize: 13, fontWeight: '700', color: '#FFF' },
+
+  formCard:   { backgroundColor: T.bg, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4, marginBottom: 2 },
+
+  fieldWrap:  { marginBottom: 10 },
+  fieldLabel: { fontSize: 11, fontWeight: '700', color: T.sub, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.4 },
+
+  inputRow:   {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1, borderColor: T.border, borderRadius: 8,
+    paddingHorizontal: 10, height: 44, backgroundColor: T.bg,
+  },
+  inputIcon:  { marginRight: 8 },
+  input:      { flex: 1, fontSize: 14, color: T.text },
+
+  // Gender dropdown
+  ddMenu:     {
+    borderWidth: 1, borderColor: T.border, borderRadius: 8,
+    backgroundColor: T.bg, marginTop: 2,
+    elevation: 6, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 6,
+    zIndex: 999,
+  },
+  ddItem:     {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 14, paddingVertical: 11,
+    borderBottomWidth: 1, borderBottomColor: '#F8FAFC',
+  },
+  ddItemText: { fontSize: 14, color: T.text },
+
+  // Notes
+  notesInput: {
+    borderWidth: 1, borderColor: T.border, borderRadius: 8,
+    paddingHorizontal: 12, paddingTop: 10, minHeight: 90,
+    fontSize: 13, color: T.text, backgroundColor: T.bg,
+  },
+  charCount:  { fontSize: 10, color: T.muted, textAlign: 'right', marginTop: 4 },
+
+  // Update button
+  updateBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, backgroundColor: T.tealDark,
+    marginHorizontal: 14, marginTop: 20, borderRadius: 12,
+    paddingVertical: 15,
+  },
+  updateBtnText: { fontSize: 15, fontWeight: '800', color: '#FFF' },
 });
