@@ -231,6 +231,32 @@ export async function updatePatient(payload: UpdatePatientPayload): Promise<stri
   return raw?.Message ?? raw?.message ?? 'Patient updated successfully.';
 }
 
+/**
+ * POST /api/EditPatient/UpdateFiles
+ * Body: { PID, BranchId, uploadPrescription, ImagePath }
+ */
+export async function updatePatientFiles(params: {
+  PID:                 number;
+  BranchId?:           number;
+  uploadPrescription?: string;
+  ImagePath?:          string;
+}): Promise<string> {
+  const body = {
+    PID:                 params.PID,
+    BranchId:            params.BranchId            ?? 1,
+    uploadPrescription:  params.uploadPrescription  ?? '',
+    ImagePath:           params.ImagePath           ?? '',
+  };
+  const res = await fetch(`${API_BASE_URL}/api/EditPatient/UpdateFiles`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body:    JSON.stringify(body),
+  });
+  const raw = await res.json();
+  if (!res.ok) throw new Error(raw?.Message || raw?.message || `Server error (${res.status})`);
+  return raw?.Message ?? raw?.message ?? 'Files updated successfully.';
+}
+
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 /** First day of current month  →  "YYYY-MM-01T00:00:00" */

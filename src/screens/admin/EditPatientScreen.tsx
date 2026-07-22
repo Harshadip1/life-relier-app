@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { getPatient, updatePatient, PatientDetail, UpdatePatientPayload } from '../../services/editPatientService';
+import * as ImagePicker from 'expo-image-picker';
+import { getPatient, updatePatient, updatePatientFiles, PatientDetail, UpdatePatientPayload } from '../../services/editPatientService';
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const T = {
@@ -90,6 +91,14 @@ export default function EditPatientScreen({ navigation, route }: any) {
   const [reportType,  setReportType]  = useState('Print');
   const [isEmergency, setIsEmergency] = useState(false);
 
+  // ── File upload state ─────────────────────────────────────────────────────
+  const [prescriptionUri,  setPrescriptionUri]  = useState<string | null>(null);
+  const [imageUri,         setImageUri]         = useState<string | null>(null);
+  const [uploadingFiles,   setUploadingFiles]   = useState(false);
+  // existing paths from API (display only)
+  const [existingPrescription, setExistingPrescription] = useState('');
+  const [existingImage,        setExistingImage]        = useState('');
+
   // ── Load from API on mount ────────────────────────────────────────────────
   useEffect(() => {
     if (!pid) { setFetching(false); return; }
@@ -121,6 +130,8 @@ export default function EditPatientScreen({ navigation, route }: any) {
         setHospitalNo(d.HospitalNo    ?? '');
         setReportType(d.ReportType    ?? 'Print');
         setIsEmergency(d.Isemergency  ?? false);
+        setExistingPrescription(d.uploadPrescription ?? '');
+        setExistingImage(d.ImagePath ?? '');
       })
       .catch((e: any) => {
         Alert.alert('Load Failed', e.message || 'Could not fetch patient details.');
@@ -214,6 +225,80 @@ export default function EditPatientScreen({ navigation, route }: any) {
       Alert.alert('Update Failed', err.message || 'Something went wrong.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── Image picker ─────────────────────────────────────────────────────────
+  const pickImage = async (type: 'prescription' | 'image') => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please allow access to your photo library.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets.length > 0) {
+      const uri = result.assets[0].uri;
+      if (type === 'prescription') setPrescriptionUri(uri);
+      else                         setImageUri(uri);
+    }
+  };
+
+  // ── Upload files ──────────────────────────────────────────────────────────
+  const handleUploadFiles = async () => {
+    if (!prescriptionUri && !imageUri) {
+      Alert.alert('No Files', 'Please select at least one file to upload.');
+      return;
+    }
+    if (!pid) { Alert.alert('Error', 'No patient PID available.'); return; }
+
+    setUploadingFiles(true);
+    try {
+      // Build multipart form for file upload
+      const formData = new FormData();
+      formData.append('PID',      String(pid));
+      formData.append('BranchId', String(raw?.BranchId ?? 1));
+
+      if (prescriptionUri) {
+        const filename = prescriptionUri.split('/').pop() ?? 'prescription.jpg';
+        const ext      = filename.split('.').pop()?.toLowerCase() ?? 'jpg';
+        formData.append('uploadPrescription', {
+          uri:  prescriptionUri,
+          name: filename,
+          type: `image/${ext}`,
+        } as any);
+      }
+      if (imageUri) {
+        const filename = imageUri.split('/').pop() ?? 'image.jpg';
+        const ext      = filename.split('.').pop()?.toLowerCase() ?? 'jpg';
+        formData.append('ImagePath', {
+          uri:  imageUri,
+          name: filename,
+          type: `image/${ext}`,
+        } as any);
+      }
+
+      const res = await fetch(`${(await import('../../utils/constants')).API_BASE_URL}/api/EditPatient/UpdateFiles`, {
+        method:  'POST',
+        headers: { Accept: 'application/json' },
+        body:    formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.Message || data?.message || `Server error (${res.status})`);
+
+      Alert.alert('✅ Files Uploaded', data.Message || 'Files updated successfully.');
+      // Update displayed paths
+      if (prescriptionUri) setExistingPrescription(prescriptionUri);
+      if (imageUri)        setExistingImage(imageUri);
+      setPrescriptionUri(null);
+      setImageUri(null);
+    } catch (err: any) {
+      Alert.alert('Upload Failed', err.message || 'Could not upload files.');
+    } finally {
+      setUploadingFiles(false);
     }
   };
 
@@ -498,6 +583,94 @@ export default function EditPatientScreen({ navigation, route }: any) {
             </TouchableOpacity>
           </View>
 
+          {/* ── Files & Documents ── */}
+          <SectionBar icon="file-upload-outline" title="Files & Documents" />
+          <View style={s.formCard}>
+
+            {/* Prescription */}
+            <Text style={s.fieldLabel}>Prescription</Text>
+            {existingPrescription ? (
+              <View style={s.existingFileRow}>
+                <Feather name="file-text" size={14} color={T.primary} />
+                <Text style={s.existingFilePath} numberOfLines={1}>{existingPrescription}</Text>
+                <View style={s.fileSavedBadge}><Text style={s.fileSavedText}>Saved</Text></View>
+              </View>
+            ) : null}
+            <TouchableOpacity style={s.pickBtn} onPress={() => pickImage('prescription')}>
+              {prescriptionUri
+                ? <Image source={{ uri: prescriptionUri }} style={s.previewThumb} />
+                : <><Feather name="upload" size={16} color={T.primary} />
+                    <Text style={s.pickBtnText}>
+                      {existingPrescription ? 'Replace Prescription' : 'Choose Prescription'}
+                    </Text></>
+              }
+            </TouchableOpacity>
+            {prescriptionUri && (
+              <View style={s.selectedFileRow}>
+                <Image source={{ uri: prescriptionUri }} style={s.previewThumb} />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={s.selectedFileName} numberOfLines={1}>
+                    {prescriptionUri.split('/').pop()}
+                  </Text>
+                  <Text style={s.selectedFileHint}>Ready to upload</Text>
+                </View>
+                <TouchableOpacity onPress={() => setPrescriptionUri(null)}>
+                  <Feather name="x" size={16} color={T.danger} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={s.fileDivider} />
+
+            {/* Image */}
+            <Text style={s.fieldLabel}>Patient Image</Text>
+            {existingImage ? (
+              <View style={s.existingFileRow}>
+                <Feather name="image" size={14} color={T.primary} />
+                <Text style={s.existingFilePath} numberOfLines={1}>{existingImage}</Text>
+                <View style={s.fileSavedBadge}><Text style={s.fileSavedText}>Saved</Text></View>
+              </View>
+            ) : null}
+            <TouchableOpacity style={s.pickBtn} onPress={() => pickImage('image')}>
+              {imageUri
+                ? <Image source={{ uri: imageUri }} style={s.previewThumb} />
+                : <><Feather name="camera" size={16} color={T.primary} />
+                    <Text style={s.pickBtnText}>
+                      {existingImage ? 'Replace Image' : 'Choose Image'}
+                    </Text></>
+              }
+            </TouchableOpacity>
+            {imageUri && (
+              <View style={s.selectedFileRow}>
+                <Image source={{ uri: imageUri }} style={s.previewThumb} />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={s.selectedFileName} numberOfLines={1}>
+                    {imageUri.split('/').pop()}
+                  </Text>
+                  <Text style={s.selectedFileHint}>Ready to upload</Text>
+                </View>
+                <TouchableOpacity onPress={() => setImageUri(null)}>
+                  <Feather name="x" size={16} color={T.danger} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Upload button */}
+            {(prescriptionUri || imageUri) && (
+              <TouchableOpacity
+                style={[s.uploadBtn, uploadingFiles && { opacity: 0.65 }]}
+                onPress={handleUploadFiles}
+                disabled={uploadingFiles}
+                activeOpacity={0.85}
+              >
+                {uploadingFiles
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Feather name="upload-cloud" size={16} color="#FFF" />}
+                <Text style={s.uploadBtnText}>{uploadingFiles ? 'Uploading…' : 'Upload Files'}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {/* ── Update Button ── */}
           <TouchableOpacity
             style={[s.updateBtn, saving && { opacity: 0.65 }]}
@@ -595,6 +768,29 @@ const s = StyleSheet.create({
   urgentBadge:{ marginLeft: 8, backgroundColor: '#FEE2E2', borderRadius: 6,
                 paddingHorizontal: 7, paddingVertical: 2 },
   urgentText: { fontSize: 9, fontWeight: '800', color: '#EF4444' },
+
+  // File upload
+  existingFileRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8,
+                      backgroundColor: T.tealBg, borderRadius: 8, padding: 8,
+                      borderWidth: 1, borderColor: T.tealBorder },
+  existingFilePath: { flex: 1, fontSize: 11, color: T.tealDark, fontWeight: '600' },
+  fileSavedBadge:   { backgroundColor: '#DCFCE7', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  fileSavedText:    { fontSize: 9, fontWeight: '800', color: '#15803D' },
+  pickBtn:          { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center',
+                      borderWidth: 1.5, borderColor: T.primary, borderRadius: 10, borderStyle: 'dashed',
+                      paddingVertical: 14, backgroundColor: T.tealBg, marginBottom: 8 },
+  pickBtnText:      { fontSize: 13, color: T.primary, fontWeight: '700' },
+  previewThumb:     { width: 48, height: 48, borderRadius: 8 },
+  selectedFileRow:  { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC',
+                      borderRadius: 8, padding: 8, marginBottom: 8,
+                      borderWidth: 1, borderColor: T.border },
+  selectedFileName: { fontSize: 12, color: T.text, fontWeight: '600' },
+  selectedFileHint: { fontSize: 10, color: T.primary, marginTop: 2 },
+  fileDivider:      { height: 1, backgroundColor: T.border, marginVertical: 12 },
+  uploadBtn:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                      gap: 8, backgroundColor: '#2563EB', borderRadius: 10,
+                      paddingVertical: 13, marginTop: 4 },
+  uploadBtnText:    { fontSize: 14, fontWeight: '700', color: '#FFF' },
 
   // Update button
   updateBtn: {
