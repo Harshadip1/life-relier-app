@@ -85,13 +85,18 @@ function DashboardStack() {
 function FrontDeskStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="FrontDeskMain"       component={FrontDeskScreen} />
-      <Stack.Screen name="NewRegistration"     component={NewRegistrationScreen} />
-      <Stack.Screen name="PatientStatus"       component={PatientsScreen} />
-      <Stack.Screen name="EditPatient"         component={EditPatientScreen} />
-      <Stack.Screen name="BillPayment"         component={PlaceholderScreen} initialParams={{ title: 'Bill Payment', icon: 'cash-register' }} />
-      <Stack.Screen name="AppointmentBooking"  component={SearchAvailableSlotsScreen} />
-      <Stack.Screen name="HomeCollection"      component={PlaceholderScreen} initialParams={{ title: 'Home Collection Booking', icon: 'home-city-outline' }} />
+      <Stack.Screen name="FrontDeskMain"   component={FrontDeskScreen} />
+      <Stack.Screen name="NewRegistration" component={NewRegistrationScreen} />
+      <Stack.Screen name="PatientStatus"   component={PatientsScreen} />
+      <Stack.Screen name="EditPatient"     component={EditPatientScreen} />
+      <Stack.Screen name="BillPayment"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Bill Payment', icon: 'cash-register' }}
+      />
+      <Stack.Screen name="HomeCollection"
+        component={PlaceholderScreen}
+        initialParams={{ title: 'Home Collection Booking', icon: 'home-city-outline' }}
+      />
     </Stack.Navigator>
   );
 }

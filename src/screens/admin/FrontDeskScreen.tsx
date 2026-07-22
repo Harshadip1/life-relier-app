@@ -48,17 +48,6 @@ const MODULES = [
     screen:  'BillPayment',
   },
   {
-    title:   'Appointment Booking',
-    sub:     'Book doctor consultations for patients',
-    icon:    'calendar-check-outline',
-    fam:     'material',
-    color:   '#7C3AED',
-    bg:      '#F5F3FF',
-    border:  '#DDD6FE',
-    screen:  'AppointmentBooking',
-    future:  true,
-  },
-  {
     title:   'Home Collection',
     sub:     'Schedule home sample collection visits',
     icon:    'home-city-outline',
@@ -123,8 +112,8 @@ export default function FrontDeskScreen({ navigation }: any) {
             {/* Icon */}
             <View style={[styles.iconBox, { backgroundColor: m.bg }]}>
               {m.fam === 'feather'
-                ? <Feather name={m.icon as any} size={26} color={m.color} />
-                : <MaterialCommunityIcons name={m.icon as any} size={28} color={m.color} />}
+                ? <Feather name={m.icon as any} size={22} color={m.color} />
+                : <MaterialCommunityIcons name={m.icon as any} size={24} color={m.color} />}
             </View>
 
             {/* Text */}
@@ -147,7 +136,7 @@ export default function FrontDeskScreen({ navigation }: any) {
           </TouchableOpacity>
         ))}
 
-        <View style={{ height: 110 }} />
+        <View style={{ height: 24 }} />
       </ScrollView>
     </View>
   );
@@ -180,38 +169,38 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 14, color: T.text },
 
-  scroll: { padding: 16 },
+  scroll: { padding: 14, paddingBottom: 20 },
 
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: T.muted, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 14 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: T.muted, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 12 },
 
   moduleCard: {
     backgroundColor: T.card,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1, borderColor: T.border,
     flexDirection: 'row', alignItems: 'center',
-    padding: 16, marginBottom: 12,
+    paddingVertical: 13, paddingHorizontal: 14, marginBottom: 10,
     elevation: 1, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4,
   },
   iconBox: {
-    width: 56, height: 56, borderRadius: 14,
+    width: 48, height: 48, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 14,
   },
   moduleText: { flex: 1 },
-  moduleTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  moduleTitle: { fontSize: 16, fontWeight: '700', color: T.text },
-  moduleSub:   { fontSize: 12, color: T.sub, lineHeight: 18 },
+  moduleTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
+  moduleTitle: { fontSize: 15, fontWeight: '700', color: T.text },
+  moduleSub:   { fontSize: 11.5, color: T.sub, lineHeight: 17 },
 
   futureBadge: {
-    backgroundColor: '#FEF3C7', borderRadius: 6,
-    paddingHorizontal: 6, paddingVertical: 2, marginLeft: 8,
+    backgroundColor: '#FEF3C7', borderRadius: 5,
+    paddingHorizontal: 5, paddingVertical: 2, marginLeft: 7,
   },
   futureBadgeText: { fontSize: 9, fontWeight: '800', color: '#92400E' },
 
   arrowBox: {
-    width: 32, height: 32, borderRadius: 8,
+    width: 30, height: 30, borderRadius: 8,
     alignItems: 'center', justifyContent: 'center',
-    marginLeft: 12,
+    marginLeft: 10,
   },
 });
