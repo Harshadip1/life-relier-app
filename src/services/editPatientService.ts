@@ -1,0 +1,114 @@
+import { API_BASE_URL } from '../utils/constants';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface EditPatientGridItem {
+  PatRegID:     number;
+  PID:          number;
+  PatientName:  string;
+  MobileNo:     string;
+  Age:          number;
+  Gender:       string;
+  DOB:          string | null;
+  CenterName:   string;
+  Patregdate:   string;
+  BranchId:     number;
+  // optional extras the API may return
+  Address?:     string;
+  Email?:       string;
+  City?:        string;
+  Area?:        string;
+  Notes?:       string;
+  [key: string]: any;
+}
+
+export interface GetGridParams {
+  BranchId:    number;
+  FromDate:    string;      // ISO  "2026-06-01T00:00:00"
+  ToDate:      string;      // ISO  "2026-06-29T23:59:59"
+  PageNo:      number;
+  PageSize:    number;
+  CenterName:  string;
+  PatientName: string;
+  MobileNo:    string;
+  PatRegID:    number;      // 0 = no filter
+}
+
+export interface GetGridResponse {
+  data:       EditPatientGridItem[];
+  totalCount: number;
+  pageNo:     number;
+  pageSize:   number;
+}
+
+// ─── API call ─────────────────────────────────────────────────────────────────
+
+/**
+ * POST /api/EditPatient/GetGrid
+ */
+export async function getEditPatientGrid(
+  params: Partial<GetGridParams> = {}
+): Promise<GetGridResponse> {
+  const body: GetGridParams = {
+    BranchId:    params.BranchId    ?? 1,
+    FromDate:    params.FromDate    ?? startOfMonth(),
+    ToDate:      params.ToDate      ?? endOfToday(),
+    PageNo:      params.PageNo      ?? 1,
+    PageSize:    params.PageSize    ?? 20,
+    CenterName:  params.CenterName  ?? '',
+    PatientName: params.PatientName ?? '',
+    MobileNo:    params.MobileNo    ?? '',
+    PatRegID:    params.PatRegID    ?? 0,
+  };
+
+  const res = await fetch(`${API_BASE_URL}/api/EditPatient/GetGrid`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body:    JSON.stringify(body),
+  });
+
+  const raw = await res.json();
+  if (!res.ok) throw new Error(raw?.Message || raw?.message || `Server error (${res.status})`);
+
+  // Normalise various response shapes the API might return
+  if (Array.isArray(raw)) {
+    return { data: raw, totalCount: raw.length, pageNo: body.PageNo, pageSize: body.PageSize };
+  }
+  if (raw?.data && Array.isArray(raw.data)) {
+    return { data: raw.data, totalCount: raw.totalCount ?? raw.data.length, pageNo: body.PageNo, pageSize: body.PageSize };
+  }
+  if (raw?.Data && Array.isArray(raw.Data)) {
+    return { data: raw.Data, totalCount: raw.TotalCount ?? raw.Data.length, pageNo: body.PageNo, pageSize: body.PageSize };
+  }
+  if (raw?.value && Array.isArray(raw.value)) {
+    return { data: raw.value, totalCount: raw.value.length, pageNo: body.PageNo, pageSize: body.PageSize };
+  }
+  return { data: [], totalCount: 0, pageNo: body.PageNo, pageSize: body.PageSize };
+}
+
+// ─── Date helpers ─────────────────────────────────────────────────────────────
+
+/** First day of current month  →  "YYYY-MM-01T00:00:00" */
+export function startOfMonth(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}-01T00:00:00`;
+}
+
+/** End of today  →  "YYYY-MM-DDT23:59:59" */
+export function endOfToday(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}T23:59:59`;
+}
+
+/** Format a date string for display */
+export function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
