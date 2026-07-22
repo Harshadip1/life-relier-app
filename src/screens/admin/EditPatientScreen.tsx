@@ -5,8 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { API_BASE_URL } from '../../utils/constants';
-import { getPatient, PatientDetail, fmtDate } from '../../services/editPatientService';
+import { getPatient, updatePatient, PatientDetail, UpdatePatientPayload } from '../../services/editPatientService';
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const T = {
@@ -58,21 +57,38 @@ export default function EditPatientScreen({ navigation, route }: any) {
   const pid: number   = passedPatient.pid ?? passedPatient.PID ?? passedPatient.patRegId ?? 0;
 
   // ── Form state ──────────────────────────────────────────────────────────
-  const [fetching,  setFetching]  = useState(true);
-  const [saving,    setSaving]    = useState(false);
-  const [patRegID,  setPatRegID]  = useState<number>(passedPatient.patRegId ?? 0);
+  const [fetching,    setFetching]    = useState(true);
+  const [saving,      setSaving]      = useState(false);
 
-  const [name,      setName]      = useState(passedPatient.name     ?? '');
-  const [mobile,    setMobile]    = useState(passedPatient.phone     ?? '');
-  const [age,       setAge]       = useState(String(passedPatient.age ?? ''));
-  const [gender,    setGender]    = useState(passedPatient.gender    ?? '');
-  const [genderOpen,setGenderOpen]= useState(false);
-  const [dob,       setDob]       = useState(passedPatient.dob       ?? '');
-  const [address,   setAddress]   = useState(passedPatient.address   ?? '');
-  const [city,      setCity]      = useState(passedPatient.city      ?? '');
-  const [area,      setArea]      = useState(passedPatient.area      ?? '');
-  const [email,     setEmail]     = useState(passedPatient.email     ?? '');
-  const [notes,     setNotes]     = useState(passedPatient.notes     ?? '');
+  // from GetPatient — kept as-is for UpdatePatient pass-through
+  const [raw,         setRaw]         = useState<PatientDetail | null>(null);
+
+  // editable fields
+  const [patRegID,    setPatRegID]    = useState<number>(passedPatient.patRegId ?? 0);
+  const [initial,     setInitial]     = useState('');
+  const [name,        setName]        = useState(passedPatient.name     ?? '');
+  const [mobile,      setMobile]      = useState(passedPatient.phone    ?? '');
+  const [age,         setAge]         = useState(String(passedPatient.age ?? ''));
+  const [mdy,         setMdy]         = useState('Year');
+  const [gender,      setGender]      = useState(passedPatient.gender   ?? '');
+  const [genderOpen,  setGenderOpen]  = useState(false);
+  const [dob,         setDob]         = useState(passedPatient.dob      ?? '');
+  const [address,     setAddress]     = useState(passedPatient.address  ?? '');
+  const [email,       setEmail]       = useState(passedPatient.email    ?? '');
+  const [patHistory,  setPatHistory]  = useState('');
+  const [comment,     setComment]     = useState('');
+  const [cardNo,      setCardNo]      = useState('');
+  const [cardExp,     setCardExp]     = useState('');
+  const [weight,      setWeight]      = useState('');
+  const [height,      setHeight]      = useState('');
+  const [disease,     setDisease]     = useState('');
+  const [symptoms,    setSymptoms]    = useState('');
+  const [fsTime,      setFsTime]      = useState('');
+  const [therapy,     setTherapy]     = useState('');
+  const [lastPeriod,  setLastPeriod]  = useState('');
+  const [hospitalNo,  setHospitalNo]  = useState('');
+  const [reportType,  setReportType]  = useState('Print');
+  const [isEmergency, setIsEmergency] = useState(false);
 
   // ── Load from API on mount ────────────────────────────────────────────────
   useEffect(() => {
@@ -80,17 +96,31 @@ export default function EditPatientScreen({ navigation, route }: any) {
     setFetching(true);
     getPatient(pid)
       .then((d: PatientDetail) => {
-        setPatRegID(d.PatRegID ?? 0);
-        setName(d.PatientName   ?? '');
-        setMobile(d.MobileNo ?? d.Patphoneno ?? '');
-        setAge(String(d.Age ?? ''));
-        setGender(d.Gender      ?? '');
-        setDob(d.DOB            ?? '');
-        setAddress(d.Address ?? d.Pataddress ?? '');
-        setCity(d.City          ?? '');
-        setArea(d.Area          ?? '');
-        setEmail(d.Email        ?? '');
-        setNotes(d.Notes ?? d.Remark ?? '');
+        setRaw(d);
+        setPatRegID(d.PatRegID        ?? 0);
+        setInitial(d.intial ?? d.Initial ?? '');
+        setName(d.Patname ?? d.PatientName ?? '');
+        setMobile(d.MobileNo          ?? '');
+        setAge(String(d.Age           ?? ''));
+        setMdy(d.MDY                  ?? 'Year');
+        setGender(d.sex ?? d.Gender   ?? '');
+        setDob(d.DateOfBirth ?? d.DOB ?? '');
+        setAddress(d.Pataddress ?? d.Address ?? '');
+        setEmail(d.Email ?? d.EmailID ?? '');
+        setPatHistory(d.PatHistory    ?? '');
+        setComment(d.Comment          ?? '');
+        setCardNo(d.PatientCardNo     ?? '');
+        setCardExp(d.PatientCardExpNo ?? '');
+        setWeight(d.Weights           ?? '');
+        setHeight(d.Heights           ?? '');
+        setDisease(d.Disease          ?? '');
+        setSymptoms(d.Symptoms        ?? '');
+        setFsTime(d.FSTime            ?? '');
+        setTherapy(d.Therapy          ?? '');
+        setLastPeriod(d.LastPeriod    ?? '');
+        setHospitalNo(d.HospitalNo    ?? '');
+        setReportType(d.ReportType    ?? 'Print');
+        setIsEmergency(d.Isemergency  ?? false);
       })
       .catch((e: any) => {
         Alert.alert('Load Failed', e.message || 'Could not fetch patient details.');
@@ -106,36 +136,80 @@ export default function EditPatientScreen({ navigation, route }: any) {
 
     setSaving(true);
     try {
-      const payload = {
-        PID:          pid,
-        PatRegID:     patRegID,
-        PatientName:  name.trim(),
-        MobileNo:     mobile.replace(/\s/g, ''),
-        Age:          parseInt(age, 10),
-        Gender:       gender,
-        DOB:          dob,
-        Address:      address.trim(),
-        City:         city.trim(),
-        Area:         area.trim(),
-        Email:        email.trim(),
-        Notes:        notes.trim(),
-        BranchId:     passedPatient.branchId ?? 1,
-        UpdatedBy:    'admin',
+      const payload: UpdatePatientPayload = {
+        // ── IDs ──
+        PID:               pid,
+        PPID:              raw?.PPID ?? pid,
+        BranchId:          raw?.BranchId ?? passedPatient.branchId ?? 1,
+        // ── Patient info ──
+        Patregdate:        raw?.Patregdate,
+        Age:               parseInt(age, 10),
+        MDY:               mdy,
+        intial:            initial,
+        Patname:           name.trim(),
+        sex:               gender,
+        MobileNo:          mobile.replace(/\s/g, ''),
+        Email:             email.trim(),
+        EmailID:           email.trim(),
+        Pataddress:        address.trim(),
+        PatHistory:        patHistory.trim(),
+        Comment:           comment.trim(),
+        DateOfBirth:       dob || raw?.DateOfBirth,
+        AccDateofBirth:    raw?.AccDateofBirth ?? false,
+        PatientCardNo:     cardNo.trim(),
+        PatientCardExpNo:  cardExp.trim(),
+        DoctorCode:        raw?.DoctorCode,
+        CenterCode:        raw?.CenterCode,
+        Username:          raw?.Username ?? 'admin',
+        Usertype:          raw?.Usertype ?? 'Patient',
+        Drname:            raw?.Drname,
+        CenterName:        raw?.CenterName,
+        Weights:           weight,
+        Heights:           height,
+        Disease:           disease.trim(),
+        RefDr:             raw?.RefDr,
+        LastPeriod:        lastPeriod,
+        Symptoms:          symptoms.trim(),
+        FSTime:            fsTime,
+        Therapy:           therapy.trim(),
+        TestCharges:       raw?.TestCharges,
+        Isemergency:       isEmergency,
+        IsbillBH:          raw?.IsbillBH ?? false,
+        HospitalNo:        hospitalNo || null,
+        ReportType:        reportType,
+        FID:               raw?.FID,
+        Patauthicante:     raw?.Patauthicante,
+        TestList:          raw?.TestList ?? [],
+        // ── Billing (pass through unchanged) ──
+        RID:               raw?.RID,
+        billdate:          raw?.billdate,
+        transdate:         raw?.transdate,
+        PaymentType:       raw?.PaymentType,
+        OnlineTransType:   raw?.OnlineTransType,
+        OnlineTransID:     raw?.OnlineTransID,
+        BankName:          raw?.BankName ?? null,
+        ChqNo:             raw?.ChqNo ?? null,
+        ChqDate:           raw?.ChqDate ?? null,
+        CardNo:            raw?.CardNo ?? null,
+        CardName:          raw?.CardName ?? null,
+        Cardtype:          raw?.Cardtype ?? null,
+        CardExpiryDate:    raw?.CardExpiryDate ?? null,
+        CardTransactionID: raw?.CardTransactionID ?? null,
+        BillAmt:           raw?.BillAmt,
+        DisAmt:            raw?.DisAmt,
+        OtherCharges:      raw?.OtherCharges,
+        OtherChargeRemark: raw?.OtherChargeRemark ?? null,
+        DiscountRemark:    raw?.DiscountRemark,
+        TaxPer:            raw?.TaxPer,
+        TaxAmount:         raw?.TaxAmount,
+        AmtPaid:           raw?.AmtPaid,
+        BalAmt:            raw?.BalAmt,
       };
 
-      const res = await fetch(`${API_BASE_URL}/api/NewRegistration/UpdatePatientFiles`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body:    JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.Message || data?.message || `Server error (${res.status})`);
-
-      Alert.alert(
-        '✅ Update Successful',
-        data.Message || 'Patient updated successfully.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      const msg = await updatePatient(payload);
+      Alert.alert('✅ Update Successful', msg, [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
     } catch (err: any) {
       Alert.alert('Update Failed', err.message || 'Something went wrong.');
     } finally {
@@ -182,73 +256,68 @@ export default function EditPatientScreen({ navigation, route }: any) {
           <SectionBar icon="account" title="Patient Information" />
           <View style={s.formCard}>
 
-            <Field label="Full Name" required>
-              <View style={s.inputRow}>
-                <Feather name="user" size={16} color={T.muted} style={s.inputIcon} />
-                <TextInput
-                  style={s.input}
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="Enter full name"
-                  placeholderTextColor={T.muted}
-                />
-              </View>
-            </Field>
-
-            <Field label="Mobile Number" required>
-              <View style={s.inputRow}>
-                <Feather name="phone" size={16} color={T.muted} style={s.inputIcon} />
-                <TextInput
-                  style={s.input}
-                  value={mobile}
-                  onChangeText={setMobile}
-                  keyboardType="phone-pad"
-                  placeholder="Enter mobile"
-                  placeholderTextColor={T.muted}
-                />
-              </View>
-            </Field>
-
-            {/* Age + Gender row */}
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <View style={{ flex: 1 }}>
-                <Field label="Age" required>
+            {/* Initial + Name row */}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ width: 80 }}>
+                <Field label="Initial">
                   <View style={s.inputRow}>
-                    <Feather name="calendar" size={16} color={T.muted} style={s.inputIcon} />
-                    <TextInput
-                      style={s.input}
-                      value={age}
-                      onChangeText={setAge}
-                      keyboardType="numeric"
-                      placeholder="Age"
-                      placeholderTextColor={T.muted}
-                    />
+                    <TextInput style={s.input} value={initial} onChangeText={setInitial}
+                      placeholder="Mr" placeholderTextColor={T.muted} />
                   </View>
                 </Field>
               </View>
               <View style={{ flex: 1 }}>
+                <Field label="Full Name" required>
+                  <View style={s.inputRow}>
+                    <Feather name="user" size={16} color={T.muted} style={s.inputIcon} />
+                    <TextInput style={s.input} value={name} onChangeText={setName}
+                      placeholder="Enter full name" placeholderTextColor={T.muted} />
+                  </View>
+                </Field>
+              </View>
+            </View>
+
+            <Field label="Mobile Number" required>
+              <View style={s.inputRow}>
+                <Feather name="phone" size={16} color={T.muted} style={s.inputIcon} />
+                <TextInput style={s.input} value={mobile} onChangeText={setMobile}
+                  keyboardType="phone-pad" placeholder="Enter mobile" placeholderTextColor={T.muted} />
+              </View>
+            </Field>
+
+            {/* Age + MDY + Gender */}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <Field label="Age" required>
+                  <View style={s.inputRow}>
+                    <TextInput style={s.input} value={age} onChangeText={setAge}
+                      keyboardType="numeric" placeholder="Age" placeholderTextColor={T.muted} />
+                  </View>
+                </Field>
+              </View>
+              <View style={{ width: 72 }}>
+                <Field label="Unit">
+                  <TouchableOpacity style={s.inputRow} onPress={() =>
+                    setMdy(m => m === 'Year' ? 'Month' : m === 'Month' ? 'Day' : 'Year')}>
+                    <Text style={[s.input, { fontSize: 13 }]}>{mdy}</Text>
+                    <Feather name="chevron-down" size={13} color={T.sub} />
+                  </TouchableOpacity>
+                </Field>
+              </View>
+              <View style={{ flex: 1 }}>
                 <Field label="Gender" required>
-                  <TouchableOpacity
-                    style={s.inputRow}
-                    activeOpacity={0.8}
-                    onPress={() => setGenderOpen(o => !o)}
-                  >
-                    <Feather name="users" size={16} color={T.muted} style={s.inputIcon} />
-                    <Text style={[s.input, !gender && { color: T.muted }]}>
-                      {gender || 'Select'}
-                    </Text>
-                    <Feather name="chevron-down" size={15} color={T.sub} />
+                  <TouchableOpacity style={s.inputRow} activeOpacity={0.8}
+                    onPress={() => setGenderOpen(o => !o)}>
+                    <Text style={[s.input, !gender && { color: T.muted }]}>{gender || 'Select'}</Text>
+                    <Feather name="chevron-down" size={13} color={T.sub} />
                   </TouchableOpacity>
                   {genderOpen && (
                     <View style={s.ddMenu}>
                       {GENDERS.map(g => (
-                        <TouchableOpacity
-                          key={g}
-                          style={s.ddItem}
-                          onPress={() => { setGender(g); setGenderOpen(false); }}
-                        >
+                        <TouchableOpacity key={g} style={s.ddItem}
+                          onPress={() => { setGender(g); setGenderOpen(false); }}>
                           <Text style={[s.ddItemText, gender === g && { color: T.primary, fontWeight: '700' }]}>{g}</Text>
-                          {gender === g && <Feather name="check" size={14} color={T.primary} />}
+                          {gender === g && <Feather name="check" size={13} color={T.primary} />}
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -257,98 +326,176 @@ export default function EditPatientScreen({ navigation, route }: any) {
               </View>
             </View>
 
-            <Field label="Date of Birth">
-              <View style={s.inputRow}>
-                <Feather name="calendar" size={16} color={T.muted} style={s.inputIcon} />
-                <TextInput
-                  style={s.input}
-                  value={dob}
-                  onChangeText={setDob}
-                  placeholder="DD/MM/YYYY"
-                  placeholderTextColor={T.muted}
-                />
-              </View>
-            </Field>
-
-            <Field label="Email">
-              <View style={s.inputRow}>
-                <Feather name="mail" size={16} color={T.muted} style={s.inputIcon} />
-                <TextInput
-                  style={s.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholder="Enter email"
-                  placeholderTextColor={T.muted}
-                />
-              </View>
-            </Field>
-          </View>
-
-          {/* ── Address ── */}
-          <SectionBar icon="map-marker-outline" title="Address" />
-          <View style={s.formCard}>
-
-            <Field label="Address">
-              <View style={s.inputRow}>
-                <Feather name="map-pin" size={16} color={T.muted} style={s.inputIcon} />
-                <TextInput
-                  style={s.input}
-                  value={address}
-                  onChangeText={setAddress}
-                  placeholder="Enter address"
-                  placeholderTextColor={T.muted}
-                />
-              </View>
-            </Field>
-
-            <View style={{ flexDirection: 'row', gap: 10 }}>
+            {/* DOB + Email */}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
               <View style={{ flex: 1 }}>
-                <Field label="City">
+                <Field label="Date of Birth">
                   <View style={s.inputRow}>
-                    <Feather name="map" size={16} color={T.muted} style={s.inputIcon} />
-                    <TextInput
-                      style={s.input}
-                      value={city}
-                      onChangeText={setCity}
-                      placeholder="City"
-                      placeholderTextColor={T.muted}
-                    />
+                    <Feather name="calendar" size={14} color={T.muted} style={s.inputIcon} />
+                    <TextInput style={s.input} value={dob} onChangeText={setDob}
+                      placeholder="YYYY-MM-DD" placeholderTextColor={T.muted} />
                   </View>
                 </Field>
               </View>
               <View style={{ flex: 1 }}>
-                <Field label="Area / Locality">
+                <Field label="Email">
                   <View style={s.inputRow}>
-                    <Feather name="navigation" size={16} color={T.muted} style={s.inputIcon} />
-                    <TextInput
-                      style={s.input}
-                      value={area}
-                      onChangeText={setArea}
-                      placeholder="Area"
-                      placeholderTextColor={T.muted}
-                    />
+                    <Feather name="mail" size={14} color={T.muted} style={s.inputIcon} />
+                    <TextInput style={s.input} value={email} onChangeText={setEmail}
+                      keyboardType="email-address" autoCapitalize="none"
+                      placeholder="Email" placeholderTextColor={T.muted} />
                   </View>
                 </Field>
               </View>
             </View>
+
+            <Field label="Address">
+              <View style={s.inputRow}>
+                <Feather name="map-pin" size={14} color={T.muted} style={s.inputIcon} />
+                <TextInput style={s.input} value={address} onChangeText={setAddress}
+                  placeholder="Enter address" placeholderTextColor={T.muted} />
+              </View>
+            </Field>
+
+            {/* Card No + Expiry */}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <Field label="Patient Card No">
+                  <View style={s.inputRow}>
+                    <TextInput style={s.input} value={cardNo} onChangeText={setCardNo}
+                      placeholder="PCN2026001" placeholderTextColor={T.muted} />
+                  </View>
+                </Field>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Card Expiry">
+                  <View style={s.inputRow}>
+                    <TextInput style={s.input} value={cardExp} onChangeText={setCardExp}
+                      placeholder="2030" placeholderTextColor={T.muted} keyboardType="numeric" />
+                  </View>
+                </Field>
+              </View>
+            </View>
+
+            {/* Weight + Height */}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <Field label="Weight (kg)">
+                  <View style={s.inputRow}>
+                    <TextInput style={s.input} value={weight} onChangeText={setWeight}
+                      keyboardType="numeric" placeholder="62" placeholderTextColor={T.muted} />
+                  </View>
+                </Field>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Height (cm)">
+                  <View style={s.inputRow}>
+                    <TextInput style={s.input} value={height} onChangeText={setHeight}
+                      keyboardType="numeric" placeholder="165" placeholderTextColor={T.muted} />
+                  </View>
+                </Field>
+              </View>
+            </View>
+
+            <Field label="Hospital No">
+              <View style={s.inputRow}>
+                <TextInput style={s.input} value={hospitalNo} onChangeText={setHospitalNo}
+                  placeholder="Hospital number (optional)" placeholderTextColor={T.muted} />
+              </View>
+            </Field>
           </View>
 
-          {/* ── Notes ── */}
-          <SectionBar icon="note-text-outline" title="Notes" />
+          {/* ── Clinical Info ── */}
+          <SectionBar icon="stethoscope" title="Clinical Info" />
           <View style={s.formCard}>
-            <TextInput
-              style={s.notesInput}
-              multiline
-              textAlignVertical="top"
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Add notes for laboratory staff…"
-              placeholderTextColor={T.muted}
-              maxLength={300}
-            />
-            <Text style={s.charCount}>{notes.length}/300</Text>
+
+            <Field label="Disease">
+              <View style={s.inputRow}>
+                <TextInput style={s.input} value={disease} onChangeText={setDisease}
+                  placeholder="e.g. Hypertension" placeholderTextColor={T.muted} />
+              </View>
+            </Field>
+
+            <Field label="Symptoms">
+              <View style={s.inputRow}>
+                <TextInput style={s.input} value={symptoms} onChangeText={setSymptoms}
+                  placeholder="e.g. Headache" placeholderTextColor={T.muted} />
+              </View>
+            </Field>
+
+            <Field label="Therapy">
+              <View style={s.inputRow}>
+                <TextInput style={s.input} value={therapy} onChangeText={setTherapy}
+                  placeholder="e.g. Medication" placeholderTextColor={T.muted} />
+              </View>
+            </Field>
+
+            {/* FS Time + Last Period */}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <Field label="FS Time">
+                  <View style={s.inputRow}>
+                    <TextInput style={s.input} value={fsTime} onChangeText={setFsTime}
+                      placeholder="08:00 AM" placeholderTextColor={T.muted} />
+                  </View>
+                </Field>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Last Period">
+                  <View style={s.inputRow}>
+                    <TextInput style={s.input} value={lastPeriod} onChangeText={setLastPeriod}
+                      placeholder="YYYY-MM-DD" placeholderTextColor={T.muted} />
+                  </View>
+                </Field>
+              </View>
+            </View>
+
+            <Field label="Pat History">
+              <View style={[s.inputRow, { height: 70, alignItems: 'flex-start', paddingTop: 10 }]}>
+                <TextInput style={[s.input, { textAlignVertical: 'top' }]}
+                  multiline value={patHistory} onChangeText={setPatHistory}
+                  placeholder="Patient history…" placeholderTextColor={T.muted} />
+              </View>
+            </Field>
+
+            <Field label="Comment">
+              <View style={s.inputRow}>
+                <TextInput style={s.input} value={comment} onChangeText={setComment}
+                  placeholder="e.g. Follow Up" placeholderTextColor={T.muted} />
+              </View>
+            </Field>
+          </View>
+
+          {/* ── Report & Flags ── */}
+          <SectionBar icon="file-document-outline" title="Report & Flags" />
+          <View style={s.formCard}>
+
+            <Field label="Report Type">
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {['Print', 'Email', 'WhatsApp', 'Online'].map(rt => (
+                  <TouchableOpacity
+                    key={rt}
+                    style={[s.pill, reportType === rt && s.pillActive]}
+                    onPress={() => setReportType(rt)}
+                  >
+                    <Text style={[s.pillText, reportType === rt && s.pillTextActive]}>{rt}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Field>
+
+            {/* Emergency toggle */}
+            <TouchableOpacity style={s.toggleRow} onPress={() => setIsEmergency(e => !e)}>
+              <View style={[s.checkbox, isEmergency && s.checkboxOn]}>
+                {isEmergency && <Feather name="check" size={12} color="#FFF" />}
+              </View>
+              <Text style={s.toggleLabel}>Emergency</Text>
+              {isEmergency && (
+                <View style={s.urgentBadge}>
+                  <Text style={s.urgentText}>URGENT</Text>
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
 
           {/* ── Update Button ── */}
@@ -423,13 +570,31 @@ const s = StyleSheet.create({
   },
   ddItemText: { fontSize: 14, color: T.text },
 
-  // Notes
+  // Notes (kept for any multiline use)
   notesInput: {
     borderWidth: 1, borderColor: T.border, borderRadius: 8,
-    paddingHorizontal: 12, paddingTop: 10, minHeight: 90,
+    paddingHorizontal: 12, paddingTop: 10, minHeight: 70,
     fontSize: 13, color: T.text, backgroundColor: T.bg,
   },
-  charCount:  { fontSize: 10, color: T.muted, textAlign: 'right', marginTop: 4 },
+  charCount: { fontSize: 10, color: T.muted, textAlign: 'right', marginTop: 4 },
+
+  // Report type pills
+  pill:          { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20,
+                   borderWidth: 1, borderColor: T.border, backgroundColor: T.bg },
+  pillActive:    { backgroundColor: T.primary, borderColor: T.primary },
+  pillText:      { fontSize: 11, color: T.sub, fontWeight: '600' },
+  pillTextActive:{ color: '#FFF' },
+
+  // Emergency toggle
+  toggleRow:  { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  checkbox:   { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5,
+                borderColor: T.border, backgroundColor: T.bg,
+                alignItems: 'center', justifyContent: 'center', marginRight: 8 },
+  checkboxOn: { backgroundColor: T.danger, borderColor: T.danger },
+  toggleLabel:{ fontSize: 14, color: T.text, fontWeight: '600' },
+  urgentBadge:{ marginLeft: 8, backgroundColor: '#FEE2E2', borderRadius: 6,
+                paddingHorizontal: 7, paddingVertical: 2 },
+  urgentText: { fontSize: 9, fontWeight: '800', color: '#EF4444' },
 
   // Update button
   updateBtn: {

@@ -132,6 +132,105 @@ export async function getPatient(pid: number): Promise<PatientDetail> {
   throw new Error('Patient not found');
 }
 
+// ─── Update patient ───────────────────────────────────────────────────────────
+
+export interface UpdatePatientPayload {
+  PID:                 number;
+  PPID?:               number;
+  BranchId:            number;
+  Patregdate?:         string;
+  Age:                 number;
+  MDY?:                string;
+  intial?:             string;
+  Patname:             string;
+  sex:                 string;
+  MobileNo:            string;
+  Email?:              string;
+  EmailID?:            string;
+  Pataddress?:         string;
+  PatHistory?:         string;
+  Comment?:            string;
+  DateOfBirth?:        string;
+  AccDateofBirth?:     boolean;
+  PatientCardNo?:      string;
+  PatientCardExpNo?:   string;
+  DoctorCode?:         number;
+  CenterCode?:         number;
+  Username?:           string;
+  Usertype?:           string;
+  Drname?:             string;
+  CenterName?:         string;
+  Weights?:            string;
+  Heights?:            string;
+  Disease?:            string;
+  RefDr?:              string;
+  LastPeriod?:         string;
+  Symptoms?:           string;
+  FSTime?:             string;
+  Therapy?:            string;
+  TestCharges?:        number;
+  Isemergency?:        boolean;
+  IsbillBH?:           boolean;
+  HospitalNo?:         string | null;
+  ReportType?:         string;
+  FID?:                number;
+  Patauthicante?:      string;
+  RID?:                number;
+  billdate?:           string;
+  transdate?:          string;
+  PaymentType?:        string;
+  OnlineTransType?:    string;
+  OnlineTransID?:      string;
+  BankName?:           string | null;
+  ChqNo?:              string | null;
+  ChqDate?:            string | null;
+  CardNo?:             string | null;
+  CardName?:           string | null;
+  Cardtype?:           string | null;
+  CardExpiryDate?:     string | null;
+  CardTransactionID?:  string | null;
+  BillAmt?:            number;
+  DisAmt?:             number;
+  OtherCharges?:       number;
+  OtherChargeRemark?:  string | null;
+  DiscountRemark?:     string;
+  TaxPer?:             number;
+  TaxAmount?:          number;
+  AmtPaid?:            number;
+  BalAmt?:             number;
+  TestList?:           TestListItem[];
+}
+
+export interface TestListItem {
+  TestType:      string;
+  MainTestId:    number;
+  PackageId:     number;
+  PackageCode?:  string;
+  MTCode:        string;
+  SDCode?:       string;
+  PatTestName?:  string;
+  MainTestName?: string;
+  SampleType?:   string;
+  SampleTypeID?: number;
+  Amount:        number;
+  ClientRate?:   number;
+  BarcodeID?:    string;
+}
+
+/**
+ * POST /api/EditPatient/UpdatePatient
+ */
+export async function updatePatient(payload: UpdatePatientPayload): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/api/EditPatient/UpdatePatient`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body:    JSON.stringify(payload),
+  });
+  const raw = await res.json();
+  if (!res.ok) throw new Error(raw?.Message || raw?.message || `Server error (${res.status})`);
+  return raw?.Message ?? raw?.message ?? 'Patient updated successfully.';
+}
+
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 /** First day of current month  →  "YYYY-MM-01T00:00:00" */
