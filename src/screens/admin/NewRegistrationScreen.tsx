@@ -37,12 +37,11 @@ const PAYMENT_TYPES = ['Cash','Cheque','Card','Online'];
 const DISC_TYPES    = ['Amt','Per%'];
 
 const STEPS = [
-  { key: 1, label: 'Patient\nInfo',    icon: 'account-outline'       },
-  { key: 2, label: 'Add\nTests',       icon: 'flask-outline'          },
-  { key: 3, label: 'Payment\nDetails', icon: 'credit-card-outline'    },
+  { key: 1, label: 'Patient\nInfo',    icon: 'account-outline'    },
+  { key: 2, label: 'Add\nTests',       icon: 'flask-outline'       },
+  { key: 3, label: 'Payment\nDetails', icon: 'credit-card-outline' },
 ];
 
-// ─── Reusable helpers ──────────────────────────────────────────────────────────
 function SectionBar({ icon, title }: { icon: string; title: string }) {
   return (
     <View style={s.sectionBar}>
@@ -69,8 +68,7 @@ function InlineSelect({ value, options, onSelect, placeholder }: any) {
       {open && (
         <View style={s.ddMenu}>
           {options.map((o: string) => (
-            <TouchableOpacity key={o} style={s.ddItem}
-              onPress={() => { onSelect(o); setOpen(false); }}>
+            <TouchableOpacity key={o} style={s.ddItem} onPress={() => { onSelect(o); setOpen(false); }}>
               <Text style={s.ddItemText}>{o}</Text>
             </TouchableOpacity>
           ))}
@@ -91,12 +89,7 @@ function Checkbox({ value, onToggle, label }: { value: boolean; onToggle: () => 
   );
 }
 
-// ─── Date Field with Calendar Picker ─────────────────────────────────────────
-function DateField({ label, value, onChange }: {
-  label?: string;
-  value: Date | null;
-  onChange: (d: Date) => void;
-}) {
+function DateField({ value, onChange }: { value: Date | null; onChange: (d: Date) => void }) {
   const [show, setShow] = useState(false);
   const display = value
     ? `${String(value.getDate()).padStart(2,'0')}-${String(value.getMonth()+1).padStart(2,'0')}-${value.getFullYear()}`
@@ -105,9 +98,7 @@ function DateField({ label, value, onChange }: {
     <>
       <TouchableOpacity style={s.datePicker} onPress={() => setShow(true)} activeOpacity={0.8}>
         <MaterialCommunityIcons name="calendar-month-outline" size={18} color={T.sub} style={{ marginRight: 8 }} />
-        <Text style={[s.datePickerText, !value && { color: T.muted }]}>
-          {display || 'dd-mm-yyyy'}
-        </Text>
+        <Text style={[s.datePickerText, !value && { color: T.muted }]}>{display || 'dd-mm-yyyy'}</Text>
         <MaterialCommunityIcons name="calendar-blank-outline" size={18} color={T.sub} />
       </TouchableOpacity>
       {show && (
@@ -124,32 +115,26 @@ function DateField({ label, value, onChange }: {
     </>
   );
 }
+
 function StepIndicator({ current }: { current: number }) {
   return (
     <View style={s.stepBar}>
       {STEPS.map((step, idx) => {
-        const done   = current > step.key;
+        const done = current > step.key;
         const active = current === step.key;
         return (
           <React.Fragment key={step.key}>
             <View style={s.stepItem}>
-              <View style={[s.stepCircle,
-                done   && s.stepCircleDone,
-                active && s.stepCircleActive,
-              ]}>
+              <View style={[s.stepCircle, done && s.stepCircleDone, active && s.stepCircleActive]}>
                 {done
                   ? <Feather name="check" size={14} color="#FFF" />
-                  : <MaterialCommunityIcons name={step.icon as any} size={16}
-                      color={active ? '#FFF' : T.muted} />}
+                  : <MaterialCommunityIcons name={step.icon as any} size={16} color={active ? '#FFF' : T.muted} />}
               </View>
-              <Text style={[s.stepLabel,
-                active && { color: T.tealDark, fontWeight: '700' },
-                done   && { color: T.green },
-              ]}>{step.label}</Text>
+              <Text style={[s.stepLabel, active && { color: T.tealDark, fontWeight: '700' }, done && { color: T.green }]}>
+                {step.label}
+              </Text>
             </View>
-            {idx < STEPS.length - 1 && (
-              <View style={[s.stepLine, done && s.stepLineDone]} />
-            )}
+            {idx < STEPS.length - 1 && <View style={[s.stepLine, done && s.stepLineDone]} />}
           </React.Fragment>
         );
       })}
@@ -157,15 +142,11 @@ function StepIndicator({ current }: { current: number }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export default function NewRegistrationScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
-
-  // ── Wizard step ───────────────────────────────────────────────────────────
   const [step, setStep] = useState(1);
 
-  // ── Patient Info ──────────────────────────────────────────────────────────
   const [mainLab,      setMainLab]      = useState('');
   const [rateType,     setRateType]     = useState('MRP1');
   const [refDoctor,    setRefDoctor]    = useState('');
@@ -194,13 +175,11 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const [repWhatsapp,  setRepWhatsapp]  = useState(false);
   const [repOnline,    setRepOnline]    = useState(false);
 
-  // ── Tests ─────────────────────────────────────────────────────────────────
-  const [testSearch,   setTestSearch]   = useState('');
-  const [addedTests,   setAddedTests]   = useState<string[]>([]);
-  const [testResults,  setTestResults]  = useState<any[]>([]);
-  const [searchingTest,setSearchingTest]= useState(false);
+  const [testSearch,    setTestSearch]   = useState('');
+  const [addedTests,    setAddedTests]   = useState<string[]>([]);
+  const [testResults,   setTestResults]  = useState<any[]>([]);
+  const [searchingTest, setSearchingTest]= useState(false);
 
-  // ── Payment ───────────────────────────────────────────────────────────────
   const [payType,      setPayType]      = useState('Cash');
   const [otherCharge,  setOtherCharge]  = useState('0');
   const [otherRemark,  setOtherRemark]  = useState('');
@@ -212,7 +191,6 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const [prescriptionFile, setPrescriptionFile] = useState<string | null>(null);
   const [photoFile,        setPhotoFile]        = useState<string | null>(null);
 
-  // ── API state ─────────────────────────────────────────────────────────────
   const [registering,  setRegistering]  = useState(false);
   const [updating,     setUpdating]     = useState(false);
   const [regNo,        setRegNo]        = useState<string>('—');
@@ -224,7 +202,24 @@ export default function NewRegistrationScreen({ navigation }: any) {
     getDoctors().then(d  => { if (d.length) setDoctorsList(d);  }).catch(() => {});
   }, []);
 
-  // ── Navigation helpers ────────────────────────────────────────────────────
+  // Auto-set gender based on initial
+  const handleInitialSelect = (val: string) => {
+    setInitial(val);
+    if (['Mr', 'Master', 'Dr'].includes(val))         setGender('Male');
+    else if (['Mrs', 'Ms'].includes(val))             setGender('Female');
+  };
+
+  // Auto-calculate age from DOB
+  const handleDobChange = (date: Date) => {
+    setDob(date);
+    const today = new Date();
+    let years = today.getFullYear() - date.getFullYear();
+    const m = today.getMonth() - date.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < date.getDate())) years--;
+    setAgeType('Year');
+    setAge(String(Math.max(0, years)));
+  };
+
   const goToStep = (n: number) => {
     setStep(n);
     scrollRef.current?.scrollTo({ y: 0, animated: true });
@@ -234,26 +229,20 @@ export default function NewRegistrationScreen({ navigation }: any) {
     if (step === 1) {
       if (!patName.trim()) { Alert.alert('Required', 'Please enter patient name.'); return; }
       if (!age.trim())     { Alert.alert('Required', 'Please enter age.');          return; }
+      if (mobile && mobile.length !== 10) { Alert.alert('Invalid Mobile', 'Mobile number must be exactly 10 digits.'); return; }
     }
     if (step === 2 && addedTests.length === 0) {
-      Alert.alert(
-        'No Tests Added',
-        'You have not added any tests yet. Continue without tests?',
-        [
-          { text: 'Go Back', style: 'cancel' },
-          { text: 'Continue', onPress: () => goToStep(3) },
-        ]
-      );
+      Alert.alert('No Tests Added', 'Continue without tests?', [
+        { text: 'Go Back', style: 'cancel' },
+        { text: 'Continue', onPress: () => goToStep(3) },
+      ]);
       return;
     }
     if (step < 3) goToStep(step + 1);
   };
 
-  const handleBack = () => {
-    if (step > 1) goToStep(step - 1);
-  };
+  const handleBack = () => { if (step > 1) goToStep(step - 1); };
 
-  // ── Clear ─────────────────────────────────────────────────────────────────
   const handleClear = () => {
     setStep(1);
     setMainLab(''); setRateType('MRP1'); setRefDoctor('');
@@ -264,8 +253,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
     setWeight(''); setHeight(''); setDisease('');
     setSymptoms(''); setTherapy(''); setFsTime('');
     setLastPeriod(null); setClinicalHist('');
-    setRepPrint(false); setRepEmail(false);
-    setRepWhatsapp(false); setRepOnline(false);
+    setRepPrint(false); setRepEmail(false); setRepWhatsapp(false); setRepOnline(false);
     setTestSearch(''); setAddedTests([]);
     setPayType('Cash'); setOtherCharge('0'); setOtherRemark('');
     setDiscType('Amt'); setDiscAmt('0'); setPaidAmt('0.00');
@@ -274,54 +262,34 @@ export default function NewRegistrationScreen({ navigation }: any) {
     setRegNo('—');
   };
 
-  // ── Save (Register) ───────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!patName.trim()) { Alert.alert('Required', 'Please enter patient name.'); return; }
     if (!age.trim())     { Alert.alert('Required', 'Please enter age.');          return; }
     setRegistering(true);
     try {
-      const data = await registerPatient({
-        Patname:    patName.trim(),
-        Age:        parseInt(age, 10),
-        Pataddress: address.trim() || 'N/A',
-      });
+      const data = await registerPatient({ Patname: patName.trim(), Age: parseInt(age, 10), Pataddress: address.trim() || 'N/A' });
       const pid = String(data?.PID ?? data?.PPID ?? data?.PatRegID ?? '—');
       setRegNo(pid);
-      Alert.alert(
-        '✅ ' + (data?.Message ?? 'Patient Registered'),
-        `Patient ID    : ${data?.PID            ?? '—'}\n` +
-        `Reg Number    : ${data?.PrefixRegNumber ?? '—'}\n` +
-        `Receipt No    : ${data?.ReceiptNo       ?? '—'}\n` +
-        `Bill No       : ${data?.BillNo          ?? '—'}`,
-        [
-          { text: 'New Patient', onPress: handleClear },
-          { text: 'Done',        onPress: () => navigation.goBack() },
-        ]
+      Alert.alert('✅ ' + (data?.Message ?? 'Patient Registered'),
+        `Patient ID : ${data?.PID ?? '—'}\nReg Number : ${data?.PrefixRegNumber ?? '—'}\nReceipt No : ${data?.ReceiptNo ?? '—'}\nBill No    : ${data?.BillNo ?? '—'}`,
+        [{ text: 'New Patient', onPress: handleClear }, { text: 'Done', onPress: () => navigation.goBack() }]
       );
     } catch (err: any) {
       Alert.alert('Registration Failed', err?.message ?? 'Could not connect to server.');
-    } finally {
-      setRegistering(false);
-    }
+    } finally { setRegistering(false); }
   };
 
   const handleUpdate = async () => {
     if (regNo === '—') { Alert.alert('No Patient', 'Register a patient first.'); return; }
     setUpdating(true);
     try {
-      const data = await updatePatientFiles({
-        PID: parseInt(regNo, 10), Patname: patName.trim(),
-        Age: parseInt(age, 10), Pataddress: address.trim() || 'N/A', BranchID: 1,
-      });
+      const data = await updatePatientFiles({ PID: parseInt(regNo, 10), Patname: patName.trim(), Age: parseInt(age, 10), Pataddress: address.trim() || 'N/A', BranchID: 1 });
       Alert.alert('✅ ' + (data?.Message ?? 'Updated'), `Patient ID: ${regNo}`, [{ text: 'OK' }]);
     } catch (err: any) {
       Alert.alert('Update Failed', err?.message ?? 'Could not connect to server.');
-    } finally {
-      setUpdating(false);
-    }
+    } finally { setUpdating(false); }
   };
 
-  // ── File pickers ──────────────────────────────────────────────────────────
   const handleChoosePrescription = async () => {
     try {
       const res = await DocumentPicker.getDocumentAsync({ type: ['image/*', 'application/pdf'], copyToCacheDirectory: true });
@@ -330,9 +298,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
   };
 
   const pickImage = async (camera: boolean) => {
-    const perm = camera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const perm = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) { Alert.alert('Permission Denied', `${camera ? 'Camera' : 'Gallery'} permission required.`); return; }
     const res = camera
       ? await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, aspect: [1,1] })
@@ -341,7 +307,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
   };
 
   const handleChoosePhoto = () => Alert.alert('Upload Photo', 'Choose source', [
-    { text: 'Take Photo',          onPress: () => pickImage(true)  },
+    { text: 'Take Photo', onPress: () => pickImage(true) },
     { text: 'Choose from Gallery', onPress: () => pickImage(false) },
     { text: 'Cancel', style: 'cancel' },
   ]);
@@ -351,129 +317,126 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const handleSampleBarcode = () => Alert.alert('Sample Barcode', 'Coming soon.');
   const handleCapturePhoto  = () => pickImage(true);
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <KeyboardAvoidingView style={[s.root, { paddingTop: Math.max(insets.top, 0) }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-
-      {/* Header */}
+    <KeyboardAvoidingView style={[s.root, { paddingTop: Math.max(insets.top, 0) }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
           <Feather name="arrow-left" size={22} color={T.text} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>New Registration</Text>
-        <View style={s.regNoBadge}>
-          <Text style={s.regNoBadgeTxt}>Reg: {regNo}</Text>
-        </View>
+        <View style={s.regNoBadge}><Text style={s.regNoBadgeTxt}>Reg: {regNo}</Text></View>
       </View>
 
-      {/* Step Indicator */}
       <StepIndicator current={step} />
 
-      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled" contentContainerStyle={s.scroll}>
+      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={s.scroll}>
 
-        {/* ══════════ STEP 1 — PATIENT INFORMATION ══════════ */}
         {step === 1 && (
           <>
             <SectionBar icon="account" title="Patient Information" />
             <View style={s.formCard}>
 
-              <Field>
-                <InlineSelect value={mainLab} options={['Main Lab','Branch 1','Branch 2']}
-                  onSelect={setMainLab} placeholder="Main Lab" />
-              </Field>
-              <Field>
-                <InlineSelect value={rateType} options={['MRP1','MRP2','MRP3','General']}
-                  onSelect={setRateType} placeholder="MRP1" />
-              </Field>
+              {/* Ref Doctor */}
               <Field>
                 <InlineSelect value={refDoctor}
                   options={doctorsList.length ? doctorsList.map(d => d.Name) : ['Dr. Smith','Dr. Patel','Dr. Khan']}
                   onSelect={setRefDoctor} placeholder="Ref Doctor" />
               </Field>
 
-              {/* Initial | Name | Gender | Age */}
+              {/* Initial | Name */}
               <Field>
                 <View style={s.rowWrap}>
-                  <View style={{ width: 80 }}>
-                    <InlineSelect value={initial}
+                  <View style={{ width: 90 }}>
+                    <InlineSelect
+                      value={initial}
                       options={initialsList.length ? initialsList.map(i => i.Name) : INITIALS}
-                      onSelect={setInitial} placeholder="Initial" />
+                      onSelect={handleInitialSelect}
+                      placeholder="Initial"
+                    />
                   </View>
-                  <TextInput style={[s.input, { flex: 1, marginHorizontal: 6 }]}
-                    placeholder="Enter Name" placeholderTextColor={T.muted}
-                    value={patName} onChangeText={setPatName} />
-                  <View style={{ width: 100 }}>
-                    <InlineSelect value={gender} options={GENDERS} onSelect={setGender} placeholder="Gender" />
-                  </View>
-                  <TextInput style={[s.input, { width: 52, marginLeft: 6 }]}
-                    placeholder="Age" placeholderTextColor={T.muted}
-                    keyboardType="numeric" value={age} onChangeText={setAge} />
+                  <TextInput
+                    style={[s.input, { flex: 1, marginLeft: 8 }]}
+                    placeholder="Enter Name"
+                    placeholderTextColor={T.muted}
+                    value={patName}
+                    onChangeText={setPatName}
+                  />
                 </View>
               </Field>
 
-              {/* Age Type | DOB */}
+              {/* Gender — auto-set from Initial, can still be changed */}
+              <Field>
+                <InlineSelect value={gender} options={GENDERS} onSelect={setGender} placeholder="Gender" />
+              </Field>
+
+              {/* DOB — auto-fills Age */}
               <Field>
                 <View style={s.rowWrap}>
-                  <View style={{ width: 80 }}>
+                  <Text style={[s.inputLabel, { marginRight: 8, alignSelf: 'center', width: 30 }]}>DOB</Text>
+                  <View style={{ flex: 1 }}><DateField value={dob} onChange={handleDobChange} /></View>
+                </View>
+              </Field>
+
+              {/* Age Type | Age — auto-filled from DOB, editable */}
+              <Field>
+                <View style={s.rowWrap}>
+                  <View style={{ width: 90 }}>
                     <InlineSelect value={ageType} options={AGE_TYPES} onSelect={setAgeType} placeholder="Year" />
                   </View>
-                  <Text style={[s.inputLabel, { marginHorizontal: 8, alignSelf: 'center' }]}>DOB</Text>
-                  <View style={{ flex: 1 }}>
-                    <DateField value={dob} onChange={setDob} />
-                  </View>
+                  <TextInput
+                    style={[s.input, { flex: 1, marginLeft: 8 }]}
+                    placeholder="Age"
+                    placeholderTextColor={T.muted}
+                    keyboardType="numeric"
+                    value={age}
+                    onChangeText={setAge}
+                  />
                 </View>
+                {dob && <Text style={{ fontSize: 11, color: T.primary, marginTop: 3, marginLeft: 2 }}>Auto-calculated from DOB</Text>}
               </Field>
 
-              <Field><TextInput style={s.input} placeholder="Mobile" placeholderTextColor={T.muted} keyboardType="phone-pad" value={mobile} onChangeText={setMobile} /></Field>
-              <Field><TextInput style={s.input} placeholder="Enter Email" placeholderTextColor={T.muted} keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} /></Field>
-              <Field><TextInput style={s.input} placeholder="Enter Address" placeholderTextColor={T.muted} value={address} onChangeText={setAddress} /></Field>
-
+              {/* Mobile — exactly 10 digits */}
               <Field>
-                <View style={s.rowWrap}>
-                  <TextInput style={[s.input, { flex: 1, marginRight: 6 }]} placeholder="Patient Card No (e.g. PCN2026001)" placeholderTextColor={T.muted} value={patCardNo} onChangeText={setPatCardNo} />
-                  <TextInput style={[s.input, { flex: 1 }]} placeholder="Hospital Id" placeholderTextColor={T.muted} value={hospitalId} onChangeText={setHospitalId} />
+                <View style={[s.input, { flexDirection: 'row', alignItems: 'center', height: 44, paddingHorizontal: 12 }]}>
+                  <Feather name="phone" size={15} color={T.sub} style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={{ flex: 1, fontSize: 13, color: T.text }}
+                    placeholder="Mobile (10 digits)"
+                    placeholderTextColor={T.muted}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    value={mobile}
+                    onChangeText={txt => setMobile(txt.replace(/\D/g,'').slice(0,10))}
+                  />
+                  {mobile.length > 0 && (
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: mobile.length === 10 ? '#15803D' : T.danger }}>
+                      {mobile.length}/10
+                    </Text>
+                  )}
                 </View>
+                {mobile.length > 0 && mobile.length !== 10 && (
+                  <Text style={{ fontSize: 11, color: T.danger, marginTop: 3, marginLeft: 2 }}>
+                    Mobile must be exactly 10 digits
+                  </Text>
+                )}
               </Field>
 
-              <Field><TextInput style={s.input} placeholder="Card Exp (e.g.2030)" placeholderTextColor={T.muted} value={cardExp} onChangeText={setCardExp} /></Field>
-
+              {/* Address */}
               <Field>
-                <View style={s.rowWrap}>
-                  <TextInput style={[s.input, { flex: 1, marginRight: 6 }]} placeholder="Weight in kg" placeholderTextColor={T.muted} keyboardType="numeric" value={weight} onChangeText={setWeight} />
-                  <TextInput style={[s.input, { flex: 1 }]} placeholder="Height in cm" placeholderTextColor={T.muted} keyboardType="numeric" value={height} onChangeText={setHeight} />
-                </View>
+                <TextInput
+                  style={[s.input, { height: 72, textAlignVertical: 'top', paddingTop: 8 }]}
+                  placeholder="Enter Address"
+                  placeholderTextColor={T.muted}
+                  multiline
+                  value={address}
+                  onChangeText={setAddress}
+                />
               </Field>
 
-              <Field><TextInput style={s.input} placeholder="Enter Disease" placeholderTextColor={T.muted} value={disease} onChangeText={setDisease} /></Field>
-              <Field><TextInput style={s.input} placeholder="Enter Symptoms" placeholderTextColor={T.muted} value={symptoms} onChangeText={setSymptoms} /></Field>
-              <Field><TextInput style={s.input} placeholder="Enter Therapy" placeholderTextColor={T.muted} value={therapy} onChangeText={setTherapy} /></Field>
-              <Field><TextInput style={s.input} placeholder="FSTime (e.g. 08:00 AM)" placeholderTextColor={T.muted} value={fsTime} onChangeText={setFsTime} /></Field>
-              <Field>
-                <Text style={[s.inputLabel, { marginBottom: 4 }]}>Last Period</Text>
-                <DateField value={lastPeriod} onChange={setLastPeriod} />
-              </Field>
-              <Field><TextInput style={[s.input, s.inputHighlight]} placeholder="Enter Clinical History" placeholderTextColor={T.muted} value={clinicalHist} onChangeText={setClinicalHist} /></Field>
-
-              {/* Report Type */}
-              <View style={s.reportTypeRow}>
-                <View style={s.reportTypeLabel}>
-                  <MaterialCommunityIcons name="file-document-outline" size={14} color={T.tealDark} />
-                  <Text style={s.reportTypeLabelText}> REPORT TYPE</Text>
-                </View>
-                <Checkbox value={repPrint}    onToggle={() => setRepPrint(!repPrint)}       label="Print" />
-                <Checkbox value={repEmail}    onToggle={() => setRepEmail(!repEmail)}       label="Email" />
-                <Checkbox value={repWhatsapp} onToggle={() => setRepWhatsapp(!repWhatsapp)} label="Whatsapp" />
-              </View>
-              <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
-                <Checkbox value={repOnline} onToggle={() => setRepOnline(!repOnline)} label="Online" />
-              </View>
             </View>
           </>
         )}
 
-        {/* ══════════ STEP 2 — ADD TESTS ══════════ */}
         {step === 2 && (
           <>
             <SectionBar icon="flask-outline" title="Add Tests" />
@@ -481,32 +444,24 @@ export default function NewRegistrationScreen({ navigation }: any) {
               <Field>
                 <View style={[s.rowWrap, { borderWidth: 1.5, borderColor: T.danger, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 }]}>
                   <Feather name="search" size={16} color={T.muted} style={{ marginRight: 8 }} />
-                  <TextInput style={{ flex: 1, fontSize: 13, color: T.text }}
-                    placeholder="Type test name to search..."
-                    placeholderTextColor={T.muted}
-                    value={testSearch}
+                  <TextInput style={{ flex: 1, fontSize: 13, color: T.text }} placeholder="Type test name to search..." placeholderTextColor={T.muted} value={testSearch}
                     onChangeText={async (txt) => {
                       setTestSearch(txt);
                       if (txt.length >= 2) {
                         setSearchingTest(true);
                         try { const r = await searchTests(txt); setTestResults(r); }
-                        catch { setTestResults([]); }
-                        finally { setSearchingTest(false); }
+                        catch { setTestResults([]); } finally { setSearchingTest(false); }
                       } else { setTestResults([]); }
-                    }}
-                  />
+                    }} />
                   {searchingTest && <ActivityIndicator size="small" color={T.primary} />}
                 </View>
                 {testResults.length > 0 && (
                   <View style={s.ddMenu}>
-                    {testResults.slice(0, 8).map((t: any, i: number) => {
+                    {testResults.slice(0,8).map((t: any, i: number) => {
                       const name = t.TestName || t.testName || t.name || String(t);
                       return (
                         <TouchableOpacity key={i} style={s.ddItem}
-                          onPress={() => {
-                            if (!addedTests.includes(name)) setAddedTests([...addedTests, name]);
-                            setTestSearch(''); setTestResults([]);
-                          }}>
+                          onPress={() => { if (!addedTests.includes(name)) setAddedTests([...addedTests, name]); setTestSearch(''); setTestResults([]); }}>
                           <Text style={s.ddItemText}>{name}</Text>
                         </TouchableOpacity>
                       );
@@ -514,17 +469,12 @@ export default function NewRegistrationScreen({ navigation }: any) {
                   </View>
                 )}
               </Field>
-
               {addedTests.length === 0
-                ? <View style={s.noTestsBox}>
-                    <MaterialCommunityIcons name="flask-outline" size={40} color={T.primary} />
-                    <Text style={s.noTestsText}>No tests added yet</Text>
-                  </View>
+                ? <View style={s.noTestsBox}><MaterialCommunityIcons name="flask-outline" size={40} color={T.primary} /><Text style={s.noTestsText}>No tests added yet</Text></View>
                 : <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 8 }}>
                     {addedTests.map((t, i) => (
-                      <TouchableOpacity key={i}
-                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.tealBorder }}
-                        onPress={() => setAddedTests(addedTests.filter((_, idx) => idx !== i))}>
+                      <TouchableOpacity key={i} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.tealBorder }}
+                        onPress={() => setAddedTests(addedTests.filter((_,idx) => idx !== i))}>
                         <Text style={{ fontSize: 12, color: T.tealDark, fontWeight: '600' }}>{t}</Text>
                         <Feather name="x" size={13} color={T.tealDark} style={{ marginLeft: 4 }} />
                       </TouchableOpacity>
@@ -535,31 +485,25 @@ export default function NewRegistrationScreen({ navigation }: any) {
           </>
         )}
 
-        {/* ══════════ STEP 3 — PAYMENT DETAILS ══════════ */}
         {step === 3 && (
           <>
             <SectionBar icon="credit-card-outline" title="Payment Details" />
             <View style={s.formCard}>
-
               <View style={s.payTypeRow}>
                 <Text style={s.payTypeLabel}>Payment Type</Text>
                 <View style={s.payTypeBtns}>
                   {PAYMENT_TYPES.map(pt => (
-                    <TouchableOpacity key={pt}
-                      style={[s.payTypeBtn, payType === pt && s.payTypeBtnActive]}
-                      onPress={() => setPayType(pt)} activeOpacity={0.8}>
-                      <Text style={[s.payTypeBtnText, payType === pt && s.payTypeBtnTextActive]}>{pt}</Text>
+                    <TouchableOpacity key={pt} style={[s.payTypeBtn, payType===pt && s.payTypeBtnActive]} onPress={() => setPayType(pt)} activeOpacity={0.8}>
+                      <Text style={[s.payTypeBtnText, payType===pt && s.payTypeBtnTextActive]}>{pt}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               </View>
-
               <View style={s.amountRow}>
                 <Text style={s.amountLabel}>Total Amount</Text>
                 <View style={s.amountValueBox}><Text style={s.amountValue}>0.00</Text></View>
                 <Checkbox value={false} onToggle={() => {}} label="BTH" />
               </View>
-
               <View style={s.rowWrap2}>
                 <View style={{ flex: 1, marginRight: 8 }}>
                   <Text style={s.fieldLabel}>Other Charge</Text>
@@ -570,15 +514,12 @@ export default function NewRegistrationScreen({ navigation }: any) {
                   <TextInput style={s.input} value={otherRemark} onChangeText={setOtherRemark} placeholderTextColor={T.muted} />
                 </View>
               </View>
-
               <View style={s.discRow}>
                 <Text style={s.fieldLabel}>Disc Type</Text>
                 <View style={{ marginLeft: 12 }}>
                   {DISC_TYPES.map(dt => (
                     <TouchableOpacity key={dt} style={s.radioRow} onPress={() => setDiscType(dt)}>
-                      <View style={[s.radioOuter, discType === dt && s.radioOuterOn]}>
-                        {discType === dt && <View style={s.radioInner} />}
-                      </View>
+                      <View style={[s.radioOuter, discType===dt && s.radioOuterOn]}>{discType===dt && <View style={s.radioInner} />}</View>
                       <Text style={s.radioLabel}>{dt}</Text>
                     </TouchableOpacity>
                   ))}
@@ -589,12 +530,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
                   <TextInput style={[s.input, { width: 80, textAlign: 'right' }]} value={discAmt} onChangeText={setDiscAmt} keyboardType="numeric" placeholderTextColor={T.muted} />
                 </View>
               </View>
-
-              <View style={s.netAmtRow}>
-                <Text style={s.netAmtLabel}>Net Amount</Text>
-                <Text style={s.netAmtValue}>₹ 0.00</Text>
-              </View>
-
+              <View style={s.netAmtRow}><Text style={s.netAmtLabel}>Net Amount</Text><Text style={s.netAmtValue}>₹ 0.00</Text></View>
               <View style={s.rowWrap2}>
                 <View style={{ flex: 1, marginRight: 8 }}>
                   <Text style={s.fieldLabel}>Paid Amt <Text style={{ color: T.danger }}>*</Text></Text>
@@ -605,13 +541,10 @@ export default function NewRegistrationScreen({ navigation }: any) {
                   <View style={s.balanceBox}><Text style={s.balanceText}>0.00</Text></View>
                 </View>
               </View>
-
               <View style={s.remarkRow}>
                 <Text style={s.fieldLabel}>Remark <Text style={{ color: T.danger }}>*</Text></Text>
                 <TextInput style={[s.input, { marginTop: 4 }]} placeholder="Remark" placeholderTextColor={T.muted} value={remark} onChangeText={setRemark} />
               </View>
-
-              {/* Upload Prescription + Emergency */}
               <View style={s.uploadRow}>
                 <Text style={s.uploadLabel}>Upload Prescription</Text>
                 <TouchableOpacity style={s.chooseFileBtn} onPress={handleChoosePrescription} activeOpacity={0.8}>
@@ -621,68 +554,37 @@ export default function NewRegistrationScreen({ navigation }: any) {
                 <View style={{ width: 12 }} />
                 <Checkbox value={emergency} onToggle={() => setEmergency(!emergency)} label="Emergency" />
               </View>
-
-              {/* Upload Photo */}
               <View style={[s.uploadRow, { marginBottom: 14 }]}>
                 <Text style={s.uploadLabel}>Upload Photo</Text>
                 <TouchableOpacity style={s.chooseFileBtn} onPress={handleChoosePhoto} activeOpacity={0.8}>
                   <MaterialCommunityIcons name="image-outline" size={14} color={T.tealDark} />
                   <Text style={s.chooseFileTxt}> {photoFile ? 'Change Photo' : 'Choose File'}</Text>
                 </TouchableOpacity>
-                {photoFile && (
-                  <Image source={{ uri: photoFile }}
-                    style={{ width: 48, height: 48, borderRadius: 8, marginLeft: 10, borderWidth: 1, borderColor: T.tealBorder }} />
-                )}
+                {photoFile && <Image source={{ uri: photoFile }} style={{ width: 48, height: 48, borderRadius: 8, marginLeft: 10, borderWidth: 1, borderColor: T.tealBorder }} />}
               </View>
-
-              {/* Action buttons row */}
               <View style={s.footerBtns}>
-                <TouchableOpacity style={s.clearBtn} onPress={handleClear} activeOpacity={0.8}>
-                  <MaterialCommunityIcons name="refresh" size={16} color="#FFF" />
-                  <Text style={s.clearBtnText}> Clear</Text>
-                </TouchableOpacity>
+                <TouchableOpacity style={s.clearBtn} onPress={handleClear} activeOpacity={0.8}><MaterialCommunityIcons name="refresh" size={16} color="#FFF" /><Text style={s.saveBtnText}> Clear</Text></TouchableOpacity>
                 <TouchableOpacity style={[s.saveBtn, registering && { opacity: 0.6 }]} onPress={handleSave} disabled={registering} activeOpacity={0.8}>
                   {registering ? <ActivityIndicator color="#FFF" size="small" /> : <MaterialCommunityIcons name="content-save-outline" size={16} color="#FFF" />}
                   <Text style={s.saveBtnText}> {registering ? 'Saving…' : 'Save'}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[s.updateBtn, (updating || regNo === '—') && { opacity: 0.5 }]} onPress={handleUpdate} disabled={updating || regNo === '—'} activeOpacity={0.8}>
+                <TouchableOpacity style={[s.updateBtn, (updating||regNo==='—') && { opacity: 0.5 }]} onPress={handleUpdate} disabled={updating||regNo==='—'} activeOpacity={0.8}>
                   {updating ? <ActivityIndicator color="#FFF" size="small" /> : <MaterialCommunityIcons name="pencil-outline" size={16} color="#FFF" />}
                   <Text style={s.saveBtnText}> {updating ? 'Updating…' : 'Update'}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={s.saveBillBtn} activeOpacity={0.8}>
-                  <MaterialCommunityIcons name="receipt" size={14} color="#FFF" />
-                  <Text style={s.saveBtnText}> Save &amp; Bill</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={s.waBtn} activeOpacity={0.8}>
-                  <MaterialCommunityIcons name="whatsapp" size={16} color="#FFF" />
-                  <Text style={s.saveBtnText}> WhatsApp</Text>
-                </TouchableOpacity>
+                <TouchableOpacity style={s.saveBillBtn} activeOpacity={0.8}><MaterialCommunityIcons name="receipt" size={14} color="#FFF" /><Text style={s.saveBtnText}> Save &amp; Bill</Text></TouchableOpacity>
+                <TouchableOpacity style={s.waBtn} activeOpacity={0.8}><MaterialCommunityIcons name="whatsapp" size={16} color="#FFF" /><Text style={s.saveBtnText}> WhatsApp</Text></TouchableOpacity>
               </View>
-
-              {/* Bottom action buttons */}
               <View style={s.bottomBar}>
-                <TouchableOpacity style={s.bottomBarBtn} onPress={handleDeptBarcode} activeOpacity={0.8}>
-                  <MaterialCommunityIcons name="barcode-scan" size={16} color="#FFF" />
-                  <Text style={s.bottomBarTxt}> Dept Barcode</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[s.bottomBarBtn, { backgroundColor: '#334155' }]} onPress={handleCard} activeOpacity={0.8}>
-                  <MaterialCommunityIcons name="credit-card-outline" size={16} color="#FFF" />
-                  <Text style={s.bottomBarTxt}> Card</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[s.bottomBarBtn, { backgroundColor: T.tealDark }]} onPress={handleSampleBarcode} activeOpacity={0.8}>
-                  <MaterialCommunityIcons name="qrcode-scan" size={16} color="#FFF" />
-                  <Text style={s.bottomBarTxt}> Sample Barcode</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[s.bottomBarBtn, { backgroundColor: '#1D4ED8' }]} onPress={handleCapturePhoto} activeOpacity={0.8}>
-                  <MaterialCommunityIcons name="camera-outline" size={16} color="#FFF" />
-                  <Text style={s.bottomBarTxt}> Capture Photo</Text>
-                </TouchableOpacity>
+                <TouchableOpacity style={s.bottomBarBtn} onPress={handleDeptBarcode} activeOpacity={0.8}><MaterialCommunityIcons name="barcode-scan" size={16} color="#FFF" /><Text style={s.bottomBarTxt}> Dept Barcode</Text></TouchableOpacity>
+                <TouchableOpacity style={[s.bottomBarBtn,{backgroundColor:'#334155'}]} onPress={handleCard} activeOpacity={0.8}><MaterialCommunityIcons name="credit-card-outline" size={16} color="#FFF" /><Text style={s.bottomBarTxt}> Card</Text></TouchableOpacity>
+                <TouchableOpacity style={[s.bottomBarBtn,{backgroundColor:T.tealDark}]} onPress={handleSampleBarcode} activeOpacity={0.8}><MaterialCommunityIcons name="qrcode-scan" size={16} color="#FFF" /><Text style={s.bottomBarTxt}> Sample Barcode</Text></TouchableOpacity>
+                <TouchableOpacity style={[s.bottomBarBtn,{backgroundColor:'#1D4ED8'}]} onPress={handleCapturePhoto} activeOpacity={0.8}><MaterialCommunityIcons name="camera-outline" size={16} color="#FFF" /><Text style={s.bottomBarTxt}> Capture Photo</Text></TouchableOpacity>
               </View>
             </View>
           </>
         )}
 
-        {/* ══════════ STEP NAVIGATION BUTTONS ══════════ */}
         <View style={s.wizardNav}>
           {step > 1 && (
             <TouchableOpacity style={s.backNavBtn} onPress={handleBack} activeOpacity={0.8}>
@@ -698,7 +600,6 @@ export default function NewRegistrationScreen({ navigation }: any) {
             </TouchableOpacity>
           )}
         </View>
-
         <View style={{ height: 40 }} />
       </ScrollView>
     </KeyboardAvoidingView>
@@ -712,8 +613,6 @@ const s = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: T.text },
   regNoBadge:  { backgroundColor: T.tealBg, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: T.tealBorder },
   regNoBadgeTxt:{ fontSize: 11, fontWeight: '700', color: T.tealDark },
-
-  // Step Indicator
   stepBar:     { flexDirection: 'row', alignItems: 'center', backgroundColor: T.bg, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: T.border },
   stepItem:    { alignItems: 'center', width: 64 },
   stepCircle:  { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: T.border, marginBottom: 4 },
@@ -722,7 +621,6 @@ const s = StyleSheet.create({
   stepLabel:   { fontSize: 10, color: T.muted, textAlign: 'center', lineHeight: 13 },
   stepLine:    { flex: 1, height: 2, backgroundColor: T.border, marginBottom: 14 },
   stepLineDone:{ backgroundColor: T.green },
-
   scroll:      { paddingBottom: 20 },
   sectionBar:  { flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealDark, paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
   sectionBarText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
@@ -730,34 +628,26 @@ const s = StyleSheet.create({
   fieldWrap:   { marginBottom: 8 },
   rowWrap:     { flexDirection: 'row', alignItems: 'center' },
   rowWrap2:    { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
-
   input:       { borderWidth: 1, borderColor: T.border, borderRadius: 6, paddingHorizontal: 10, height: 40, fontSize: 13, color: T.text, backgroundColor: T.bg },
   inputHighlight: { borderColor: T.primary, borderWidth: 1.5 },
   inputLabel:  { fontSize: 11, color: T.sub, fontWeight: '600' },
   fieldLabel:  { fontSize: 11, color: T.sub, fontWeight: '600', marginBottom: 4 },
-
-  // Date Picker
   datePicker:     { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: T.border, borderRadius: 6, paddingHorizontal: 10, height: 40, backgroundColor: T.bg },
   datePickerText: { flex: 1, fontSize: 13, color: T.text },
-
   inlineSelect: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: T.border, borderRadius: 6, paddingHorizontal: 8, height: 40, backgroundColor: T.bg },
   inlineSelectText: { flex: 1, fontSize: 13, color: T.text },
   ddMenu:      { borderWidth: 1, borderColor: T.border, borderRadius: 6, backgroundColor: T.bg, zIndex: 999, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 6 },
   ddItem:      { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F8FAFC' },
   ddItemText:  { fontSize: 13, color: T.text },
-
   checkRow:    { flexDirection: 'row', alignItems: 'center', marginRight: 16 },
   checkBox:    { width: 16, height: 16, borderRadius: 3, borderWidth: 1.5, borderColor: T.border, backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center', marginRight: 5 },
   checkBoxOn:  { backgroundColor: T.primary, borderColor: T.primary },
   checkLabel:  { fontSize: 12, color: T.text, fontWeight: '500' },
-
   reportTypeRow:   { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.border },
   reportTypeLabel: { flexDirection: 'row', alignItems: 'center', marginRight: 12 },
   reportTypeLabelText: { fontSize: 11, fontWeight: '800', color: T.tealDark, letterSpacing: 0.4 },
-
   noTestsBox:  { alignItems: 'center', paddingVertical: 32 },
   noTestsText: { fontSize: 13, color: T.muted, marginTop: 8 },
-
   payTypeRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   payTypeLabel: { fontSize: 13, fontWeight: '600', color: T.text, marginRight: 12, width: 90 },
   payTypeBtns:  { flexDirection: 'row', gap: 6 },
@@ -765,46 +655,36 @@ const s = StyleSheet.create({
   payTypeBtnActive:     { backgroundColor: T.primary, borderColor: T.primary },
   payTypeBtnText:       { fontSize: 12, color: T.sub, fontWeight: '600' },
   payTypeBtnTextActive: { color: '#FFF' },
-
   amountRow:     { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   amountLabel:   { fontSize: 13, color: T.text, fontWeight: '600', width: 100 },
   amountValueBox:{ flex: 1, borderWidth: 1, borderColor: T.border, borderRadius: 6, paddingHorizontal: 10, height: 38, justifyContent: 'center', backgroundColor: '#F0FDFA' },
   amountValue:   { fontSize: 15, fontWeight: '800', color: T.primary },
-
   discRow:     { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
   radioRow:    { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   radioOuter:  { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: T.border, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
   radioOuterOn:{ borderColor: T.primary },
   radioInner:  { width: 8, height: 8, borderRadius: 4, backgroundColor: T.primary },
   radioLabel:  { fontSize: 13, color: T.text },
-
   netAmtRow:   { flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealBg, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 12, borderWidth: 1, borderColor: T.tealBorder },
   netAmtLabel: { flex: 1, fontSize: 15, fontWeight: '800', color: T.tealDark },
   netAmtValue: { fontSize: 18, fontWeight: '900', color: T.tealDark },
-
   balanceBox:  { borderWidth: 1, borderColor: '#FDE68A', borderRadius: 6, paddingHorizontal: 10, height: 40, justifyContent: 'center', backgroundColor: '#FFFBEB' },
   balanceText: { fontSize: 14, fontWeight: '700', color: '#92400E' },
   remarkRow:   { marginBottom: 10 },
-
   uploadRow:    { flexDirection: 'row', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 6 },
   uploadLabel:  { fontSize: 12, color: T.text, fontWeight: '600', width: 130 },
   chooseFileBtn:{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: T.tealBorder, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: T.tealBg },
   chooseFileTxt:{ fontSize: 12, color: T.tealDark, fontWeight: '600' },
-
   footerBtns:  { flexDirection: 'row', gap: 8, paddingVertical: 12, flexWrap: 'wrap' },
   clearBtn:    { flexDirection: 'row', alignItems: 'center', backgroundColor: '#64748B', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 11 },
-  clearBtnText:{ color: '#FFF', fontSize: 13, fontWeight: '700' },
   saveBtn:     { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2563EB', borderRadius: 20, paddingHorizontal: 18, paddingVertical: 11 },
   updateBtn:   { flexDirection: 'row', alignItems: 'center', backgroundColor: '#D97706', borderRadius: 20, paddingHorizontal: 18, paddingVertical: 11 },
   saveBillBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealDark, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 11 },
   waBtn:       { flexDirection: 'row', alignItems: 'center', backgroundColor: '#16A34A', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 11 },
   saveBtnText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
-
   bottomBar:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 10 },
   bottomBarBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#475569', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9 },
   bottomBarTxt: { fontSize: 12, fontWeight: '700', color: '#FFF' },
-
-  // Wizard navigation
   wizardNav:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
   backNavBtn:  { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: T.tealDark, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 10 },
   backNavTxt:  { fontSize: 14, fontWeight: '700', color: T.tealDark },
