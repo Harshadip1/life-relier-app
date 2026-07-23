@@ -13,7 +13,8 @@ export interface EditPatientGridItem {
   CenterName:   string;
   Patregdate:   string;
   BranchId:     number;
-  // optional extras the API may return
+  TestName?:    string;
+  TestCharges?: number;
   Address?:     string;
   Email?:       string;
   City?:        string;
@@ -70,20 +71,49 @@ export async function getEditPatientGrid(
   const raw = await res.json();
   if (!res.ok) throw new Error(raw?.Message || raw?.message || `Server error (${res.status})`);
 
-  // Normalise various response shapes the API might return
-  if (Array.isArray(raw)) {
-    return { data: raw, totalCount: raw.length, pageNo: body.PageNo, pageSize: body.PageSize };
+  // API returns { GridData: [...], TotalCount: [{ TotalRecords: N }] }
+  let list: any[] = [];
+  let total = 0;
+
+  if (raw?.GridData && Array.isArray(raw.GridData)) {
+    list = raw.GridData;
+    // TotalCount is an array like [{ TotalRecords: 44 }]
+    if (Array.isArray(raw.TotalCount) && raw.TotalCount.length > 0) {
+      total = raw.TotalCount[0]?.TotalRecords ?? list.length;
+    } else {
+      total = raw.TotalCount ?? list.length;
+    }
+  } else if (Array.isArray(raw)) {
+    list = raw; total = raw.length;
+  } else if (raw?.data && Array.isArray(raw.data)) {
+    list = raw.data; total = raw.totalCount ?? raw.data.length;
+  } else if (raw?.value && Array.isArray(raw.value)) {
+    list = raw.value; total = raw.value.length;
   }
-  if (raw?.data && Array.isArray(raw.data)) {
-    return { data: raw.data, totalCount: raw.totalCount ?? raw.data.length, pageNo: body.PageNo, pageSize: body.PageSize };
-  }
-  if (raw?.Data && Array.isArray(raw.Data)) {
-    return { data: raw.Data, totalCount: raw.TotalCount ?? raw.Data.length, pageNo: body.PageNo, pageSize: body.PageSize };
-  }
-  if (raw?.value && Array.isArray(raw.value)) {
-    return { data: raw.value, totalCount: raw.value.length, pageNo: body.PageNo, pageSize: body.PageSize };
-  }
-  return { data: [], totalCount: 0, pageNo: body.PageNo, pageSize: body.PageSize };
+
+  // Normalise field names — API uses "Name" but service expects "PatientName"
+  const data: EditPatientGridItem[] = list.map((r: any) => ({
+    PID:         r.PID        ?? 0,
+    PatRegID:    r.PatRegID   ?? r.PID ?? 0,
+    PatientName: r.PatientName ?? r.Name ?? r.Patname ?? '—',
+    MobileNo:    r.MobileNo   ?? r.Patphoneno ?? '—',
+    Age:         r.Age        ?? 0,
+    Gender:      r.Gender     ?? r.sex ?? '—',
+    DOB:         r.DOB        ?? r.DateOfBirth ?? null,
+    CenterName:  r.CenterName ?? '—',
+    Patregdate:  r.Patregdate ?? '',
+    BranchId:    r.BranchId   ?? r.Branchid ?? 1,
+    Address:     r.Address    ?? r.Pataddress ?? '',
+    Email:       r.Email      ?? r.EmailID ?? '',
+    City:        r.City       ?? '',
+    Area:        r.Area       ?? '',
+    Notes:       r.Notes      ?? r.Remark ?? '',
+    TestName:    r.TestName   ?? '',
+    TestCharges: r.TestCharges ?? 0,
+    ...r,
+  }));
+
+  return { data, totalCount: total, pageNo: body.PageNo, pageSize: body.PageSize };
 }
 
 // ─── Get single patient ───────────────────────────────────────────────────────
