@@ -30,11 +30,11 @@ const QUICK_ACTIONS = [
   { id: 'contact', icon: 'phone', label: 'Contact\nLab', color: '#8B5CF6', bg: '#EDE9FE' },
 ];
 
-const BOOKING_STEPS = [
-  { id: 1, label: 'Registration\nComplete', done: true, date: '20 May 2025' },
-  { id: 2, label: 'Sample\nCollected', done: true, date: '20 May 2025' },
-  { id: 3, label: 'Report\nProcessing', active: true, date: '—' },
-  { id: 4, label: 'Report\nReady', done: false, date: '—' },
+const STATUS_STEPS = [
+  { id: 1, label: 'Registration\nComplete', apiStatus: 'Registered' },
+  { id: 2, label: 'Sample\nCollected',      apiStatus: 'Sample Collected' },
+  { id: 3, label: 'Report\nProcessing',     apiStatus: 'Processing' },
+  { id: 4, label: 'Report\nReady',          apiStatus: 'Report Ready' },
 ];
 
 const AVAILABLE_TESTS = [
@@ -62,6 +62,8 @@ export default function HomeScreen() {
   const [upcomingTests, setUpcomingTests] = useState<AppointmentItem[]>([]);
   const [totalReportsCount, setTotalReportsCount] = useState(0);
   const [recentReports, setRecentReports] = useState<ReportItem[]>([]);
+  const [latestStatus, setLatestStatus]   = useState('Registered');
+  const [latestDate,   setLatestDate]     = useState('—');
   const [loadingReports, setLoadingReports] = useState(false);
 
   // ── Fetch patient records from API ──
@@ -87,6 +89,15 @@ export default function HomeScreen() {
       // De-duplicate by PID for counts
       const uniquePIDs = new Set(rows.map((r: any) => r.PID));
       setTotalReportsCount(uniquePIDs.size);
+
+      // Latest status from most recent record
+      if (rows.length > 0) {
+        const latest = rows[0];
+        setLatestStatus(latest.Status ?? 'Registered');
+        setLatestDate(latest.Patregdate
+          ? new Date(latest.Patregdate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+          : '—');
+      }
 
       // Outstanding balance (max across records)
       const outstanding = rows.reduce((max: number, r: any) =>
@@ -352,28 +363,30 @@ export default function HomeScreen() {
         <SectionHeader title="Booking Status" />
         <View style={styles.statusCard}>
           <View style={styles.statusTrack}>
-            {BOOKING_STEPS.map((step, idx) => (
-              <View key={step.id} style={styles.stepWrapper}>
-                {idx > 0 && (
-                  <View style={[
-                    styles.stepLine,
-                    (step.done || step.active) ? styles.stepLineDone : styles.stepLineEmpty
-                  ]} />
-                )}
-                <View style={[
-                  styles.stepCircle,
-                  step.done ? styles.stepDone : step.active ? styles.stepActive : styles.stepEmpty,
-                ]}>
-                  {step.done
-                    ? <MaterialCommunityIcons name="check" size={14} color="#fff" />
-                    : step.active
-                    ? <View style={styles.stepActiveDot} />
-                    : null}
+            {STATUS_STEPS.map((step, idx) => {
+              const ORDER = ['Registered','Sample Collected','Processing','Report Ready'];
+              const currentIdx = ORDER.indexOf(latestStatus);
+              const stepIdx    = ORDER.indexOf(step.apiStatus);
+              const done   = stepIdx < currentIdx;
+              const active = stepIdx === currentIdx;
+              return (
+                <View key={step.id} style={styles.stepWrapper}>
+                  {idx > 0 && (
+                    <View style={[styles.stepLine, (done || active) ? styles.stepLineDone : styles.stepLineEmpty]} />
+                  )}
+                  <View style={[styles.stepCircle,
+                    done   ? styles.stepDone   :
+                    active ? styles.stepActive : styles.stepEmpty,
+                  ]}>
+                    {done
+                      ? <MaterialCommunityIcons name="check" size={14} color="#fff" />
+                      : active ? <View style={styles.stepActiveDot} /> : null}
+                  </View>
+                  <Text style={[styles.stepLabel, active && styles.stepLabelActive]}>{step.label}</Text>
+                  <Text style={styles.stepDate}>{active ? latestDate : done ? '✓' : '—'}</Text>
                 </View>
-                <Text style={[styles.stepLabel, step.active && styles.stepLabelActive]}>{step.label}</Text>
-                <Text style={styles.stepDate}>{step.date}</Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
 
