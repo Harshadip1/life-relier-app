@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, Modal, Platform, ActivityIndicator,
@@ -128,13 +128,6 @@ function statusColor(status: string) {
     case 'Delivered':         return { color: '#6366F1', bg: '#EEF2FF' };
     default:                  return { color: T.muted,  bg: '#F1F5F9' };
   }
-}
-
-function toAPIDate(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function toDisplayDate(d: Date) {
-  return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
 
 // ─── Patient Card ─────────────────────────────────────────────────────────────
@@ -280,11 +273,11 @@ function DetailSheet({ item, onClose, onEdit }: {
 export default function PatientsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
 
-  // Date state
+  // Date state — wide range by default to show all records
   const today      = new Date();
-  const weekAgo    = new Date(today); weekAgo.setDate(today.getDate() - 7);
-  const [fromDate, setFromDate]       = useState<Date>(weekAgo);
-  const [toDate,   setToDate]         = useState<Date>(today);
+  const yearStart  = new Date('2024-01-01');
+  const [fromDate, setFromDate]   = useState<Date>(yearStart);
+  const [toDate,   setToDate]     = useState<Date>(today);
   const [showFrom, setShowFrom]       = useState(false);
   const [showTo,   setShowTo]         = useState(false);
 
@@ -309,6 +302,9 @@ export default function PatientsScreen({ navigation }: any) {
   }, [fromDate, toDate, activeTab]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  // Also reload when tab changes
+  useEffect(() => { load(); }, [activeTab]);
 
   // Filter by tab and search
   const displayed = rows.filter(r => {
