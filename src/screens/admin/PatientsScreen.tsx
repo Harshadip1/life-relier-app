@@ -8,11 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
-import {
-  getEditPatientGrid,
-  EditPatientGridItem,
-  fmtDate,
-} from '../../services/editPatientService';
+import { API_BASE_URL } from '../../utils/constants';
 
 const T = {
   primary:    '#0D9488',
@@ -30,6 +26,98 @@ const T = {
 };
 
 const TABS = ['All', 'Registered', 'Sample Collected', 'Processing', 'Report Ready', 'Delivered'];
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+interface PatientRow {
+  PID:               number;
+  PatRegID:          number;
+  PatientName:       string;
+  Patphoneno:        string;
+  sex:               string;
+  Age:               number;
+  MDY:               string;
+  Drname:            string;
+  CenterName:        string;
+  Status:            string;
+  Patregdate:        string;
+  TestCharges:       number;
+  PaidAmount:        number;
+  DiscountAmount:    number;
+  OutstandingAmount: number;
+  Isemergency:       boolean;
+  Remark:            string | null;
+  tests:             string[];
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmtDate(iso: string) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
+  catch { return iso; }
+}
+
+function toAPIDate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function toDisplayDate(d: Date) {
+  return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+}
+
+async function fetchPatients(fromDate: Date, toDate: Date, status: string): Promise<PatientRow[]> {
+  const res = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      BranchId:      1,
+      FromDate:      toAPIDate(fromDate),
+      ToDate:        toAPIDate(toDate),
+      PatRegID:      '',
+      PatientName:   '',
+      DoctorName:    '',
+      TestName:      '',
+      MobileNo:      '',
+      Barcode:       '',
+      CenterCode:    '',
+      SubDepartment: '',
+      Status:        status === 'All' ? 'All' : status,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.message || data?.Message || `Server error (${res.status})`);
+
+  const rows: any[] = Array.isArray(data) ? data : (data?.value ?? []);
+
+  // Group by PID — collapse tests into one card per patient
+  const map = new Map<number, PatientRow>();
+  for (const r of rows) {
+    if (map.has(r.PID)) {
+      map.get(r.PID)!.tests.push(r.MainTestName);
+    } else {
+      map.set(r.PID, {
+        PID:               r.PID,
+        PatRegID:          r.PatRegID,
+        PatientName:       r.PatientName ?? r.Patname ?? '—',
+        Patphoneno:        r.Patphoneno ?? '—',
+        sex:               r.sex ?? '',
+        Age:               r.Age ?? 0,
+        MDY:               r.MDY ?? 'Year',
+        Drname:            r.Drname ?? '—',
+        CenterName:        r.CenterName ?? '—',
+        Status:            r.Status ?? 'Registered',
+        Patregdate:        r.Patregdate ?? '',
+        TestCharges:       r.TestCharges ?? 0,
+        PaidAmount:        r.PaidAmount  ?? 0,
+        DiscountAmount:    r.DiscountAmount    ?? 0,
+        OutstandingAmount: r.OutstandingAmount ?? 0,
+        Isemergency:       r.Isemergency ?? false,
+        Remark:            r.Remark ?? null,
+        tests:             [r.MainTestName],
+      });
+    }
+  }
+  return Array.from(map.values());
+}
 
 function statusColor(status: string) {
   switch (status) {
@@ -51,12 +139,11 @@ function toDisplayDate(d: Date) {
 
 // ─── Patient Card ─────────────────────────────────────────────────────────────
 function PatientCard({ item, onView, onEdit }: {
-  item: EditPatientGridItem;
+  item: PatientRow;
   onView: () => void;
   onEdit: () => void;
 }) {
   const sc = statusColor(item.Status ?? 'Registered');
-  const hasDiscount = (item.DiscountAmount ?? 0) > 0;
 
   return (
     <View style={s.card}>
@@ -69,11 +156,11 @@ function PatientCard({ item, onView, onEdit }: {
           <Text style={s.name} numberOfLines={1}>{item.PatientName}</Text>
           <Text style={s.pid}>
             PID: <Text style={{ color: T.primary }}>PT{String(item.PatRegID).padStart(6,'0')}</Text>
-            {'  ·  '}{item.Gender || '—'}, {item.Age ?? '—'} Year
+            {'  ·  '}{item.sex || '—'}, {item.Age ?? '—'} {item.MDY ?? 'Year'}
           </Text>
           <View style={s.metaRow}>
             <MaterialCommunityIcons name="phone-outline" size={12} color={T.sub} />
-            <Text style={s.metaText}>{item.MobileNo || '—'}</Text>
+            <Text style={s.metaText}>{item.Patphoneno || '—'}</Text>
             <MaterialCommunityIcons name="calendar-outline" size={12} color={T.sub} style={{ marginLeft: 10 }} />
             <Text style={s.metaText}>{fmtDate(item.Patregdate)}</Text>
           </View>
@@ -85,10 +172,10 @@ function PatientCard({ item, onView, onEdit }: {
       </View>
 
       {/* Tests row */}
-      {!!item.TestName && (
+      {item.tests.length > 0 && (
         <View style={s.testsRow}>
           <MaterialCommunityIcons name="pulse" size={13} color={T.sub} style={{ marginRight: 6 }} />
-          <Text style={s.testsText} numberOfLines={1}>{item.TestName}</Text>
+          <Text style={s.testsText} numberOfLines={1}>{item.tests.join(' · ')}</Text>
         </View>
       )}
 
@@ -96,15 +183,11 @@ function PatientCard({ item, onView, onEdit }: {
       <View style={s.billingRow}>
         <View style={s.billingItem}>
           <Text style={s.billingLabel}>Charges</Text>
-          <Text style={s.billingValue}>₹{(item.TestCharges ?? 0).toFixed(0)}</Text>
+          <Text style={s.billingValue}>₹{item.TestCharges.toFixed(0)}</Text>
         </View>
         <View style={s.billingItem}>
           <Text style={s.billingLabel}>Paid</Text>
-          <Text style={[s.billingValue, { color: T.green }]}>
-            {hasDiscount
-              ? <Text style={{ textDecorationLine: 'line-through', color: T.muted }}>₹{(item.PaidAmount ?? 0).toFixed(0)}</Text>
-              : `₹${(item.PaidAmount ?? 0).toFixed(0)}`}
-          </Text>
+          <Text style={[s.billingValue, { color: T.green }]}>₹{item.PaidAmount.toFixed(0)}</Text>
         </View>
         <View style={s.billingItem}>
           <Text style={s.billingLabel}>Doctor</Text>
@@ -128,7 +211,7 @@ function PatientCard({ item, onView, onEdit }: {
         <View style={s.actionDivider} />
         <TouchableOpacity
           style={s.actionBtn}
-          onPress={() => item.MobileNo && Linking.openURL(`tel:${item.MobileNo}`)}
+          onPress={() => item.Patphoneno && Linking.openURL(`tel:${item.Patphoneno}`)}
         >
           <MaterialCommunityIcons name="phone-outline" size={14} color={T.primary} />
           <Text style={s.actionText}>Call Patient</Text>
@@ -140,7 +223,7 @@ function PatientCard({ item, onView, onEdit }: {
 
 // ─── Detail Sheet ─────────────────────────────────────────────────────────────
 function DetailSheet({ item, onClose, onEdit }: {
-  item: EditPatientGridItem; onClose: () => void; onEdit: () => void;
+  item: PatientRow; onClose: () => void; onEdit: () => void;
 }) {
   const sc = statusColor(item.Status ?? 'Registered');
   return (
@@ -167,15 +250,16 @@ function DetailSheet({ item, onClose, onEdit }: {
             </View>
           </View>
           {[
-            ['Gender',   item.Gender    || '—'],
-            ['Age',      item.Age != null ? `${item.Age} yrs` : '—'],
-            ['Mobile',   item.MobileNo  || '—'],
-            ['Center',   item.CenterName|| '—'],
-            ['Reg Date', fmtDate(item.Patregdate)],
-            ['Tests',    item.TestName  || '—'],
-            ['Charges',  `₹${(item.TestCharges ?? 0).toFixed(2)}`],
-            ['Paid',     `₹${(item.PaidAmount   ?? 0).toFixed(2)}`],
-            ['Doctor',   (item.Drname   ?? '—').trim()],
+            ['Gender',    `${item.sex || '—'}, ${item.Age} ${item.MDY}`],
+            ['Mobile',    item.Patphoneno || '—'],
+            ['Center',    item.CenterName || '—'],
+            ['Doctor',    (item.Drname ?? '—').trim()],
+            ['Reg Date',  fmtDate(item.Patregdate)],
+            ['Tests',     item.tests.join(', ') || '—'],
+            ['Charges',   `₹${item.TestCharges.toFixed(2)}`],
+            ['Paid',      `₹${item.PaidAmount.toFixed(2)}`],
+            ['Due',       `₹${item.OutstandingAmount.toFixed(2)}`],
+            ['Remark',    item.Remark || '—'],
           ].map(([label, value]) => (
             <View key={label} style={s.detailRow}>
               <Text style={s.detailLabel}>{label}</Text>
@@ -209,24 +293,20 @@ export default function PatientsScreen({ navigation }: any) {
   const [search,       setSearch]       = useState('');
 
   // Data
-  const [rows,       setRows]       = useState<EditPatientGridItem[]>([]);
+  const [rows,       setRows]       = useState<PatientRow[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selected,   setSelected]   = useState<EditPatientGridItem | null>(null);
+  const [selected,   setSelected]   = useState<PatientRow | null>(null);
 
   const load = useCallback(async (isRefresh = false) => {
     isRefresh ? setRefreshing(true) : setLoading(true);
     try {
-      const res = await getEditPatientGrid({
-        FromDate: `${toAPIDate(fromDate)}T00:00:00`,
-        ToDate:   `${toAPIDate(toDate)}T23:59:59`,
-        PageNo:   1, PageSize: 100,
-      });
-      setRows(res.data);
+      const data = await fetchPatients(fromDate, toDate, activeTab);
+      setRows(data);
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to load patients.');
     } finally { setLoading(false); setRefreshing(false); }
-  }, [fromDate, toDate]);
+  }, [fromDate, toDate, activeTab]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -241,14 +321,14 @@ export default function PatientsScreen({ navigation }: any) {
     return tabOk && searchOk;
   });
 
-  const goEdit = (item: EditPatientGridItem) => {
+  const goEdit = (item: PatientRow) => {
     setSelected(null);
     navigation.navigate('EditPatient', {
       patient: {
         patRegId: item.PatRegID, pid: item.PID,
-        name: item.PatientName, phone: item.MobileNo,
-        age: String(item.Age ?? ''), gender: item.Gender ?? '',
-        branchId: item.BranchId ?? 1,
+        name: item.PatientName, phone: item.Patphoneno,
+        age: String(item.Age ?? ''), gender: item.sex ?? '',
+        branchId: 1,
       },
     });
   };
@@ -324,7 +404,7 @@ export default function PatientsScreen({ navigation }: any) {
           renderItem={({ item: tab }) => (
             <TouchableOpacity
               style={[s.tabBtn, activeTab === tab && s.tabBtnActive]}
-              onPress={() => setActiveTab(tab)}
+              onPress={() => { setActiveTab(tab); }}
             >
               <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>{tab}</Text>
             </TouchableOpacity>
