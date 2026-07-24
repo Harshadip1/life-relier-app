@@ -11,8 +11,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import {
   registerPatient, updatePatientFiles,
-  getInitials, getDoctors, searchTests,
-  InitialItem, DoctorItem,
+  getInitials, getDoctors, searchTests, searchPatient,
+  InitialItem, DoctorItem, SearchPatientItem, TestResult,
 } from '../../services/registrationService';
 
 const T = {
@@ -177,8 +177,11 @@ export default function NewRegistrationScreen({ navigation }: any) {
 
   const [testSearch,    setTestSearch]   = useState('');
   const [addedTests,    setAddedTests]   = useState<string[]>([]);
-  const [testResults,   setTestResults]  = useState<any[]>([]);
+  const [addedTestIds,  setAddedTestIds] = useState<number[]>([]);
+  const [testResults,   setTestResults]  = useState<TestResult[]>([]);
   const [searchingTest, setSearchingTest]= useState(false);
+  const [showTestDrop,  setShowTestDrop] = useState(false);
+  const testDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [payType,      setPayType]      = useState('Cash');
   const [otherCharge,  setOtherCharge]  = useState('0');
@@ -197,10 +200,106 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const [initialsList, setInitialsList] = useState<InitialItem[]>([]);
   const [doctorsList,  setDoctorsList]  = useState<DoctorItem[]>([]);
 
+  // ── Patient search (auto-fill) ─────────────────────────────────────────────
+  const [patSearch,        setPatSearch]        = useState('');
+  const [patSearchResults, setPatSearchResults] = useState<SearchPatientItem[]>([]);
+  const [searching,        setSearching]        = useState(false);
+
+  // ── Autocomplete: Name field ───────────────────────────────────────────────
+  const [nameResults,  setNameResults]  = useState<SearchPatientItem[]>([]);
+  const [nameSearching,setNameSearching]= useState(false);
+  const [showNameDrop, setShowNameDrop] = useState(false);
+
+  // ── Autocomplete: Mobile field ─────────────────────────────────────────────
+  const [mobileResults,  setMobileResults]  = useState<SearchPatientItem[]>([]);
+  const [mobileSearching,setMobileSearching]= useState(false);
+  const [showMobileDrop, setShowMobileDrop] = useState(false);
+
   useEffect(() => {
     getInitials().then(d => { if (d.length) setInitialsList(d); }).catch(() => {});
     getDoctors().then(d  => { if (d.length) setDoctorsList(d);  }).catch(() => {});
   }, []);
+
+  // ── Auto-fill all fields from a searched patient ───────────────────────────
+  const handlePatientSelect = (p: SearchPatientItem) => {
+    setPatSearch('');
+    setPatSearchResults([]);
+    setShowNameDrop(false);
+    setShowMobileDrop(false);
+    setNameResults([]);
+    setMobileResults([]);
+    setRegNo(String(p.PPID));
+    if (p.intial)          setInitial(p.intial);
+    if (p.Patname)         setPatName(p.Patname);
+    if (p.sex)             setGender(p.sex);
+    if (p.Age != null)     setAge(String(p.Age));
+    if (p.MobileNo)        setMobile(p.MobileNo);
+    if (p.Email)           setEmail(p.Email);
+    if (p.Pataddress)      setAddress(p.Pataddress);
+    if (p.PatientCardNo)   setPatCardNo(p.PatientCardNo);
+    if (p.PatientCardExpNo)setCardExp(p.PatientCardExpNo);
+    if (p.DateOfBirth) {
+      const d = new Date(p.DateOfBirth);
+      if (!isNaN(d.getTime())) setDob(d);
+    }
+    Alert.alert('✅ Patient Loaded', `Data auto-filled for ${p.Patname ?? 'Patient'} (ID: ${p.PPID})`);
+  };
+
+  // ── Live search helpers ────────────────────────────────────────────────────
+  const searchByName = async (txt: string) => {
+    setPatName(txt);
+    if (txt.trim().length < 2) { setNameResults([]); setShowNameDrop(false); return; }
+    setNameSearching(true);
+    setShowNameDrop(true);
+    try {
+      const r = await searchPatient(txt.trim());
+      setNameResults(r);
+    } catch { setNameResults([]); }
+    finally { setNameSearching(false); }
+  };
+
+  const searchByMobile = async (txt: string) => {
+    const clean = txt.replace(/\D/g, '').slice(0, 10);
+    setMobile(clean);
+    if (clean.length < 2) { setMobileResults([]); setShowMobileDrop(false); return; }
+    setMobileSearching(true);
+    setShowMobileDrop(true);
+    try {
+      const r = await searchPatient(clean);
+      setMobileResults(r);
+    } catch { setMobileResults([]); }
+    finally { setMobileSearching(false); }
+  };
+
+  // ── Debounced test search ──────────────────────────────────────────────────
+  const searchByTest = (txt: string) => {
+    setTestSearch(txt);
+    if (testDebounce.current) clearTimeout(testDebounce.current);
+    if (txt.trim().length < 2) {
+      setTestResults([]);
+      setShowTestDrop(false);
+      return;
+    }
+    setShowTestDrop(true);
+    setSearchingTest(true);
+    testDebounce.current = setTimeout(async () => {
+      try {
+        const r = await searchTests(txt.trim());
+        setTestResults(r);
+      } catch { setTestResults([]); }
+      finally { setSearchingTest(false); }
+    }, 350); // 350ms debounce
+  };
+
+  const handleTestSelect = (t: TestResult) => {
+    if (!addedTestIds.includes(t.mainTestId)) {
+      setAddedTests(prev => [...prev, t.testName]);
+      setAddedTestIds(prev => [...prev, t.mainTestId]);
+    }
+    setTestSearch('');
+    setTestResults([]);
+    setShowTestDrop(false);
+  };
 
   // Auto-set gender based on initial
   const handleInitialSelect = (val: string) => {
@@ -254,12 +353,16 @@ export default function NewRegistrationScreen({ navigation }: any) {
     setSymptoms(''); setTherapy(''); setFsTime('');
     setLastPeriod(null); setClinicalHist('');
     setRepPrint(false); setRepEmail(false); setRepWhatsapp(false); setRepOnline(false);
-    setTestSearch(''); setAddedTests([]);
+    setTestSearch(''); setAddedTests([]); setAddedTestIds([]);
+    setTestResults([]); setShowTestDrop(false);
     setPayType('Cash'); setOtherCharge('0'); setOtherRemark('');
     setDiscType('Amt'); setDiscAmt('0'); setPaidAmt('0.00');
     setRemark(''); setEmergency(false);
     setPrescriptionFile(null); setPhotoFile(null);
     setRegNo('—');
+    setPatSearch(''); setPatSearchResults([]);
+    setNameResults([]); setShowNameDrop(false);
+    setMobileResults([]); setShowMobileDrop(false);
   };
 
   const handleSave = async () => {
@@ -343,7 +446,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
                   onSelect={setRefDoctor} placeholder="Ref Doctor" />
               </Field>
 
-              {/* Initial | Name */}
+              {/* Initial | Name — with autocomplete */}
               <Field>
                 <View style={s.rowWrap}>
                   <View style={{ width: 90 }}>
@@ -354,13 +457,48 @@ export default function NewRegistrationScreen({ navigation }: any) {
                       placeholder="Initial"
                     />
                   </View>
-                  <TextInput
-                    style={[s.input, { flex: 1, marginLeft: 8 }]}
-                    placeholder="Enter Name"
-                    placeholderTextColor={T.muted}
-                    value={patName}
-                    onChangeText={setPatName}
-                  />
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <TextInput
+                      style={s.input}
+                      placeholder="Enter Name"
+                      placeholderTextColor={T.muted}
+                      value={patName}
+                      onChangeText={searchByName}
+                      onBlur={() => setTimeout(() => setShowNameDrop(false), 200)}
+                      onFocus={() => { if (nameResults.length > 0) setShowNameDrop(true); }}
+                    />
+                    {showNameDrop && (
+                      <View style={s.acDrop}>
+                        {nameSearching && (
+                          <View style={s.acLoading}>
+                            <ActivityIndicator size="small" color={T.primary} />
+                            <Text style={s.acLoadingTxt}> Searching…</Text>
+                          </View>
+                        )}
+                        {!nameSearching && nameResults.length === 0 && (
+                          <View style={s.acEmpty}>
+                            <Feather name="user-x" size={13} color={T.muted} />
+                            <Text style={s.acEmptyTxt}>  No patient found</Text>
+                          </View>
+                        )}
+                        {!nameSearching && nameResults.slice(0, 5).map((p, i) => (
+                          <TouchableOpacity
+                            key={`n-${p.PPID}-${i}`}
+                            style={[s.acRow, i < Math.min(nameResults.length, 5) - 1 && s.acRowBorder]}
+                            onPress={() => handlePatientSelect(p)}
+                            activeOpacity={0.75}
+                          >
+                            <MaterialCommunityIcons name="account-circle-outline" size={22} color={T.primary} style={{ marginRight: 8 }} />
+                            <View style={{ flex: 1 }}>
+                              <Text style={s.acName}>{p.intial ? `${p.intial} ` : ''}{p.Patname ?? '—'}</Text>
+                              <Text style={s.acSub}>📱 {p.MobileNo ?? '—'}  •  Age {p.Age ?? '—'}  •  ID: {p.PPID}</Text>
+                            </View>
+                            <View style={s.acBadge}><Text style={s.acBadgeTxt}>Select</Text></View>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
                 </View>
               </Field>
 
@@ -395,7 +533,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
                 {dob && <Text style={{ fontSize: 11, color: T.primary, marginTop: 3, marginLeft: 2 }}>Auto-calculated from DOB</Text>}
               </Field>
 
-              {/* Mobile — exactly 10 digits */}
+              {/* Mobile — with autocomplete */}
               <Field>
                 <View style={[s.input, { flexDirection: 'row', alignItems: 'center', height: 44, paddingHorizontal: 12 }]}>
                   <Feather name="phone" size={15} color={T.sub} style={{ marginRight: 8 }} />
@@ -406,14 +544,49 @@ export default function NewRegistrationScreen({ navigation }: any) {
                     keyboardType="phone-pad"
                     maxLength={10}
                     value={mobile}
-                    onChangeText={txt => setMobile(txt.replace(/\D/g,'').slice(0,10))}
+                    onChangeText={searchByMobile}
+                    onBlur={() => setTimeout(() => setShowMobileDrop(false), 200)}
+                    onFocus={() => { if (mobileResults.length > 0) setShowMobileDrop(true); }}
                   />
-                  {mobile.length > 0 && (
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: mobile.length === 10 ? '#15803D' : T.danger }}>
-                      {mobile.length}/10
-                    </Text>
-                  )}
+                  {mobileSearching
+                    ? <ActivityIndicator size="small" color={T.primary} />
+                    : mobile.length > 0
+                      ? <Text style={{ fontSize: 11, fontWeight: '700', color: mobile.length === 10 ? '#15803D' : T.danger }}>
+                          {mobile.length}/10
+                        </Text>
+                      : null}
                 </View>
+                {showMobileDrop && (
+                  <View style={s.acDrop}>
+                    {mobileSearching && (
+                      <View style={s.acLoading}>
+                        <ActivityIndicator size="small" color={T.primary} />
+                        <Text style={s.acLoadingTxt}> Searching…</Text>
+                      </View>
+                    )}
+                    {!mobileSearching && mobileResults.length === 0 && (
+                      <View style={s.acEmpty}>
+                        <Feather name="user-x" size={13} color={T.muted} />
+                        <Text style={s.acEmptyTxt}>  No patient found</Text>
+                      </View>
+                    )}
+                    {!mobileSearching && mobileResults.slice(0, 5).map((p, i) => (
+                      <TouchableOpacity
+                        key={`m-${p.PPID}-${i}`}
+                        style={[s.acRow, i < Math.min(mobileResults.length, 5) - 1 && s.acRowBorder]}
+                        onPress={() => handlePatientSelect(p)}
+                        activeOpacity={0.75}
+                      >
+                        <MaterialCommunityIcons name="account-circle-outline" size={22} color={T.primary} style={{ marginRight: 8 }} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.acName}>{p.intial ? `${p.intial} ` : ''}{p.Patname ?? '—'}</Text>
+                          <Text style={s.acSub}>📱 {p.MobileNo ?? '—'}  •  Age {p.Age ?? '—'}  •  ID: {p.PPID}</Text>
+                        </View>
+                        <View style={s.acBadge}><Text style={s.acBadgeTxt}>Select</Text></View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
                 {mobile.length > 0 && mobile.length !== 10 && (
                   <Text style={{ fontSize: 11, color: T.danger, marginTop: 3, marginLeft: 2 }}>
                     Mobile must be exactly 10 digits
@@ -442,43 +615,114 @@ export default function NewRegistrationScreen({ navigation }: any) {
             <SectionBar icon="flask-outline" title="Add Tests" />
             <View style={s.formCard}>
               <Field>
-                <View style={[s.rowWrap, { borderWidth: 1.5, borderColor: T.danger, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 }]}>
-                  <Feather name="search" size={16} color={T.muted} style={{ marginRight: 8 }} />
-                  <TextInput style={{ flex: 1, fontSize: 13, color: T.text }} placeholder="Type test name to search..." placeholderTextColor={T.muted} value={testSearch}
-                    onChangeText={async (txt) => {
-                      setTestSearch(txt);
-                      if (txt.length >= 2) {
-                        setSearchingTest(true);
-                        try { const r = await searchTests(txt); setTestResults(r); }
-                        catch { setTestResults([]); } finally { setSearchingTest(false); }
-                      } else { setTestResults([]); }
-                    }} />
-                  {searchingTest && <ActivityIndicator size="small" color={T.primary} />}
+                <Text style={s.fieldHint}>Type at least 2 characters to search tests from database</Text>
+                <View style={s.testSearchBox}>
+                  <Feather name="search" size={16} color={T.sub} style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={{ flex: 1, fontSize: 13, color: T.text }}
+                    placeholder="Type test name or code (e.g. CBC, Blood)..."
+                    placeholderTextColor={T.muted}
+                    value={testSearch}
+                    onChangeText={searchByTest}
+                    onBlur={() => setTimeout(() => setShowTestDrop(false), 200)}
+                    onFocus={() => { if (testResults.length > 0) setShowTestDrop(true); }}
+                    returnKeyType="search"
+                  />
+                  {searchingTest
+                    ? <ActivityIndicator size="small" color={T.primary} />
+                    : testSearch.length > 0
+                      ? <TouchableOpacity onPress={() => { setTestSearch(''); setTestResults([]); setShowTestDrop(false); }}>
+                          <Feather name="x" size={16} color={T.muted} />
+                        </TouchableOpacity>
+                      : null}
                 </View>
-                {testResults.length > 0 && (
-                  <View style={s.ddMenu}>
-                    {testResults.slice(0,8).map((t: any, i: number) => {
-                      const name = t.TestName || t.testName || t.name || String(t);
+
+                {/* Autocomplete dropdown */}
+                {showTestDrop && (
+                  <View style={s.acDrop}>
+                    {searchingTest && (
+                      <View style={s.acLoading}>
+                        <ActivityIndicator size="small" color={T.primary} />
+                        <Text style={s.acLoadingTxt}> Searching tests…</Text>
+                      </View>
+                    )}
+                    {!searchingTest && testResults.length === 0 && (
+                      <View style={s.acEmpty}>
+                        <MaterialCommunityIcons name="flask-off-outline" size={14} color={T.muted} />
+                        <Text style={s.acEmptyTxt}>  No test found</Text>
+                      </View>
+                    )}
+                    {!searchingTest && testResults.slice(0, 8).map((t, i) => {
+                      const alreadyAdded = addedTestIds.includes(t.mainTestId);
                       return (
-                        <TouchableOpacity key={i} style={s.ddItem}
-                          onPress={() => { if (!addedTests.includes(name)) setAddedTests([...addedTests, name]); setTestSearch(''); setTestResults([]); }}>
-                          <Text style={s.ddItemText}>{name}</Text>
+                        <TouchableOpacity
+                          key={`t-${t.mainTestId}-${i}`}
+                          style={[
+                            s.acRow,
+                            i < Math.min(testResults.length, 8) - 1 && s.acRowBorder,
+                            alreadyAdded && { backgroundColor: T.tealBg },
+                          ]}
+                          onPress={() => !alreadyAdded && handleTestSelect(t)}
+                          activeOpacity={alreadyAdded ? 1 : 0.75}
+                        >
+                          <View style={[s.testIconBox, { backgroundColor: alreadyAdded ? T.tealBorder : '#F0F9FF' }]}>
+                            <MaterialCommunityIcons
+                              name="flask-outline"
+                              size={16}
+                              color={alreadyAdded ? T.tealDark : '#0369A1'}
+                            />
+                          </View>
+                          <View style={{ flex: 1, marginLeft: 10 }}>
+                            <Text style={[s.acName, alreadyAdded && { color: T.tealDark }]}>
+                              {t.testName}
+                            </Text>
+                            {t.testCode ? (
+                              <Text style={s.acSub}>Code: {t.testCode}  •  ID: {t.mainTestId}</Text>
+                            ) : (
+                              <Text style={s.acSub}>ID: {t.mainTestId}</Text>
+                            )}
+                          </View>
+                          {alreadyAdded
+                            ? <View style={[s.acBadge, { backgroundColor: T.tealDark }]}>
+                                <Text style={s.acBadgeTxt}>Added ✓</Text>
+                              </View>
+                            : <View style={s.acBadge}>
+                                <Text style={s.acBadgeTxt}>+ Add</Text>
+                              </View>}
                         </TouchableOpacity>
                       );
                     })}
                   </View>
                 )}
               </Field>
+
+              {/* Added tests chips */}
               {addedTests.length === 0
-                ? <View style={s.noTestsBox}><MaterialCommunityIcons name="flask-outline" size={40} color={T.primary} /><Text style={s.noTestsText}>No tests added yet</Text></View>
-                : <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 8 }}>
-                    {addedTests.map((t, i) => (
-                      <TouchableOpacity key={i} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.tealBorder }}
-                        onPress={() => setAddedTests(addedTests.filter((_,idx) => idx !== i))}>
-                        <Text style={{ fontSize: 12, color: T.tealDark, fontWeight: '600' }}>{t}</Text>
-                        <Feather name="x" size={13} color={T.tealDark} style={{ marginLeft: 4 }} />
-                      </TouchableOpacity>
-                    ))}
+                ? <View style={s.noTestsBox}>
+                    <MaterialCommunityIcons name="flask-outline" size={40} color={T.primary} />
+                    <Text style={s.noTestsText}>No tests added yet</Text>
+                    <Text style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>Search and select tests above</Text>
+                  </View>
+                : <View style={{ padding: 8 }}>
+                    <Text style={[s.fieldHint, { marginBottom: 8 }]}>
+                      {addedTests.length} test{addedTests.length > 1 ? 's' : ''} selected — tap to remove
+                    </Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {addedTests.map((t, i) => (
+                        <TouchableOpacity
+                          key={i}
+                          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.tealBorder }}
+                          onPress={() => {
+                            setAddedTests(prev => prev.filter((_, idx) => idx !== i));
+                            setAddedTestIds(prev => prev.filter((_, idx) => idx !== i));
+                          }}
+                        >
+                          <MaterialCommunityIcons name="flask-outline" size={13} color={T.tealDark} style={{ marginRight: 4 }} />
+                          <Text style={{ fontSize: 12, color: T.tealDark, fontWeight: '600' }}>{t}</Text>
+                          <Feather name="x" size={13} color={T.tealDark} style={{ marginLeft: 4 }} />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
               }
             </View>
@@ -690,4 +934,78 @@ const s = StyleSheet.create({
   backNavTxt:  { fontSize: 14, fontWeight: '700', color: T.tealDark },
   nextNavBtn:  { flexDirection: 'row', alignItems: 'center', backgroundColor: T.primary, borderRadius: 20, paddingHorizontal: 22, paddingVertical: 10 },
   nextNavTxt:  { fontSize: 14, fontWeight: '700', color: '#FFF' },
+
+  // Patient search
+  searchHint:    { fontSize: 11, color: T.primary, fontWeight: '600', marginBottom: 6 },
+  patSearchBar:  {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1.5, borderColor: T.tealBorder, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 10,
+    backgroundColor: T.tealBg,
+  },
+  patResultsBox: {
+    borderWidth: 1, borderColor: T.tealBorder, borderRadius: 10,
+    backgroundColor: T.bg, marginTop: 4,
+    elevation: 6, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 8,
+  },
+  patResultsHeader: {
+    fontSize: 11, fontWeight: '700', color: T.tealDark,
+    paddingHorizontal: 14, paddingVertical: 8,
+    backgroundColor: T.tealBg, borderTopLeftRadius: 10, borderTopRightRadius: 10,
+    borderBottomWidth: 1, borderBottomColor: T.tealBorder,
+  },
+  patResultRow:  {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 12, paddingVertical: 12,
+    backgroundColor: T.bg,
+  },
+  patResultAvatar: { marginRight: 10 },
+  patResultName: { fontSize: 14, fontWeight: '700', color: T.text },
+  patResultSub:  { fontSize: 11, color: T.sub, marginTop: 2 },
+  patResultAddr: { fontSize: 11, color: T.muted, marginTop: 1 },
+  patResultFillBtn: {
+    backgroundColor: T.primary, borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 5, marginLeft: 8,
+  },
+  patResultFillTxt: { fontSize: 11, fontWeight: '800', color: '#FFF' },
+  noPatResult:   {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#FFFBEB', borderRadius: 8,
+    borderWidth: 1, borderColor: '#FDE68A',
+    paddingHorizontal: 12, paddingVertical: 10, marginTop: 4,
+  },
+  noPatResultTxt:{ fontSize: 12, color: '#92400E', flex: 1 },
+
+  // Test search
+  fieldHint:    { fontSize: 11, color: T.sub, marginBottom: 6 },
+  testSearchBox:{
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1.5, borderColor: T.border, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 10,
+    backgroundColor: T.bg,
+  },
+  testIconBox:  {
+    width: 30, height: 30, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+  },
+
+  // Autocomplete dropdown
+  acDrop: {
+    borderWidth: 1, borderColor: T.border, borderRadius: 8,
+    backgroundColor: T.bg, marginTop: 2,
+    elevation: 10, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8,
+    zIndex: 9999,
+  },
+  acLoading: { flexDirection: 'row', alignItems: 'center', padding: 12 },
+  acLoadingTxt: { fontSize: 12, color: T.sub },
+  acEmpty:  { flexDirection: 'row', alignItems: 'center', padding: 12 },
+  acEmptyTxt: { fontSize: 12, color: T.muted },
+  acRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 11, backgroundColor: T.bg },
+  acRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  acName:   { fontSize: 13, fontWeight: '700', color: T.text },
+  acSub:    { fontSize: 11, color: T.sub, marginTop: 2 },
+  acBadge:  { backgroundColor: T.primary, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginLeft: 6 },
+  acBadgeTxt: { fontSize: 10, fontWeight: '800', color: '#FFF' },
 });
