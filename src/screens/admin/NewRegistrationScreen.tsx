@@ -11,9 +11,10 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import {
   registerPatient, updatePatientFiles,
-  getInitials, getDoctors, searchTests, searchPatient,
-  InitialItem, DoctorItem, SearchPatientItem, TestResult,
+  getInitials, getDoctors, searchPatient,
+  InitialItem, DoctorItem, SearchPatientItem,
 } from '../../services/registrationService';
+import { getTestNames, TestNameItem } from '../../services/testChargesService';
 
 const T = {
   primary:    '#0D9488',
@@ -177,8 +178,8 @@ export default function NewRegistrationScreen({ navigation }: any) {
 
   const [testSearch,    setTestSearch]   = useState('');
   const [addedTests,    setAddedTests]   = useState<string[]>([]);
-  const [addedTestIds,  setAddedTestIds] = useState<number[]>([]);
-  const [testResults,   setTestResults]  = useState<TestResult[]>([]);
+  const [allTests,      setAllTests]     = useState<TestNameItem[]>([]);
+  const [testResults,   setTestResults]  = useState<TestNameItem[]>([]);
   const [searchingTest, setSearchingTest]= useState(false);
   const [showTestDrop,  setShowTestDrop] = useState(false);
   const testDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -218,6 +219,8 @@ export default function NewRegistrationScreen({ navigation }: any) {
   useEffect(() => {
     getInitials().then(d => { if (d.length) setInitialsList(d); }).catch(() => {});
     getDoctors().then(d  => { if (d.length) setDoctorsList(d);  }).catch(() => {});
+    // Load all test names once for local filtering
+    getTestNames(1).then(d => setAllTests(d)).catch(() => {});
   }, []);
 
   // ── Auto-fill all fields from a searched patient ───────────────────────────
@@ -271,30 +274,25 @@ export default function NewRegistrationScreen({ navigation }: any) {
     finally { setMobileSearching(false); }
   };
 
-  // ── Debounced test search ──────────────────────────────────────────────────
+  // ── Local test search — filter from pre-loaded allTests ──────────────────
   const searchByTest = (txt: string) => {
     setTestSearch(txt);
-    if (testDebounce.current) clearTimeout(testDebounce.current);
-    if (txt.trim().length < 2) {
+    if (txt.trim().length < 1) {
       setTestResults([]);
       setShowTestDrop(false);
       return;
     }
-    setShowTestDrop(true);
-    setSearchingTest(true);
-    testDebounce.current = setTimeout(async () => {
-      try {
-        const r = await searchTests(txt.trim());
-        setTestResults(r);
-      } catch { setTestResults([]); }
-      finally { setSearchingTest(false); }
-    }, 350); // 350ms debounce
+    const q = txt.toLowerCase();
+    const filtered = allTests.filter(t =>
+      t.MainTestName.toLowerCase().includes(q)
+    );
+    setTestResults(filtered);
+    setShowTestDrop(filtered.length > 0);
   };
 
-  const handleTestSelect = (t: TestResult) => {
-    if (!addedTestIds.includes(t.mainTestId)) {
-      setAddedTests(prev => [...prev, t.testName]);
-      setAddedTestIds(prev => [...prev, t.mainTestId]);
+  const handleTestSelect = (name: string) => {
+    if (!addedTests.includes(name)) {
+      setAddedTests(prev => [...prev, name]);
     }
     setTestSearch('');
     setTestResults([]);
@@ -353,7 +351,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
     setSymptoms(''); setTherapy(''); setFsTime('');
     setLastPeriod(null); setClinicalHist('');
     setRepPrint(false); setRepEmail(false); setRepWhatsapp(false); setRepOnline(false);
-    setTestSearch(''); setAddedTests([]); setAddedTestIds([]);
+    setTestSearch(''); setAddedTests([]);
     setTestResults([]); setShowTestDrop(false);
     setPayType('Cash'); setOtherCharge('0'); setOtherRemark('');
     setDiscType('Amt'); setDiscAmt('0'); setPaidAmt('0.00');
@@ -652,17 +650,17 @@ export default function NewRegistrationScreen({ navigation }: any) {
                         <Text style={s.acEmptyTxt}>  No test found</Text>
                       </View>
                     )}
-                    {!searchingTest && testResults.slice(0, 8).map((t, i) => {
-                      const alreadyAdded = addedTestIds.includes(t.mainTestId);
+                    {!searchingTest && testResults.slice(0, 10).map((t, i) => {
+                      const alreadyAdded = addedTests.includes(t.MainTestName);
                       return (
                         <TouchableOpacity
-                          key={`t-${t.mainTestId}-${i}`}
+                          key={`t-${i}`}
                           style={[
                             s.acRow,
-                            i < Math.min(testResults.length, 8) - 1 && s.acRowBorder,
+                            i < Math.min(testResults.length, 10) - 1 && s.acRowBorder,
                             alreadyAdded && { backgroundColor: T.tealBg },
                           ]}
-                          onPress={() => !alreadyAdded && handleTestSelect(t)}
+                          onPress={() => !alreadyAdded && handleTestSelect(t.MainTestName)}
                           activeOpacity={alreadyAdded ? 1 : 0.75}
                         >
                           <View style={[s.testIconBox, { backgroundColor: alreadyAdded ? T.tealBorder : '#F0F9FF' }]}>
@@ -674,13 +672,8 @@ export default function NewRegistrationScreen({ navigation }: any) {
                           </View>
                           <View style={{ flex: 1, marginLeft: 10 }}>
                             <Text style={[s.acName, alreadyAdded && { color: T.tealDark }]}>
-                              {t.testName}
+                              {t.MainTestName}
                             </Text>
-                            {t.testCode ? (
-                              <Text style={s.acSub}>Code: {t.testCode}  •  ID: {t.mainTestId}</Text>
-                            ) : (
-                              <Text style={s.acSub}>ID: {t.mainTestId}</Text>
-                            )}
                           </View>
                           {alreadyAdded
                             ? <View style={[s.acBadge, { backgroundColor: T.tealDark }]}>
@@ -714,7 +707,6 @@ export default function NewRegistrationScreen({ navigation }: any) {
                           style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.tealBorder }}
                           onPress={() => {
                             setAddedTests(prev => prev.filter((_, idx) => idx !== i));
-                            setAddedTestIds(prev => prev.filter((_, idx) => idx !== i));
                           }}
                         >
                           <MaterialCommunityIcons name="flask-outline" size={13} color={T.tealDark} style={{ marginRight: 4 }} />
