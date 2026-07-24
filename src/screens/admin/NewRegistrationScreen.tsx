@@ -11,10 +11,11 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import {
   registerPatient, updatePatientFiles,
-  getInitials, getDoctors, searchPatient,
-  InitialItem, DoctorItem, SearchPatientItem,
+  getInitials, searchPatient,
+  InitialItem, SearchPatientItem,
 } from '../../services/registrationService';
 import { getTestNames, TestNameItem } from '../../services/testChargesService';
+import { getAllReferingDoctors, ReferingDoctorRecord } from '../../services/referingDoctorService';
 
 const T = {
   primary:    '#0D9488',
@@ -199,7 +200,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const [updating,     setUpdating]     = useState(false);
   const [regNo,        setRegNo]        = useState<string>('—');
   const [initialsList, setInitialsList] = useState<InitialItem[]>([]);
-  const [doctorsList,  setDoctorsList]  = useState<DoctorItem[]>([]);
+  const [doctorsList,  setDoctorsList]  = useState<ReferingDoctorRecord[]>([]);
 
   // ── Patient search (auto-fill) ─────────────────────────────────────────────
   const [patSearch,        setPatSearch]        = useState('');
@@ -218,7 +219,8 @@ export default function NewRegistrationScreen({ navigation }: any) {
 
   useEffect(() => {
     getInitials().then(d => { if (d.length) setInitialsList(d); }).catch(() => {});
-    getDoctors().then(d  => { if (d.length) setDoctorsList(d);  }).catch(() => {});
+    // Load referring doctors from real API — always prepend "Self"
+    getAllReferingDoctors(1).then(d => setDoctorsList(d)).catch(() => {});;
     // Load all test names once for local filtering
     getTestNames(1).then(d => setAllTests(d)).catch(() => {});
   }, []);
@@ -440,7 +442,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
               {/* Ref Doctor */}
               <Field>
                 <InlineSelect value={refDoctor}
-                  options={doctorsList.length ? doctorsList.map(d => d.Name) : ['Dr. Smith','Dr. Patel','Dr. Khan']}
+                  options={['Self', ...doctorsList.map(d => d.DoctorName)]}
                   onSelect={setRefDoctor} placeholder="Ref Doctor" />
               </Field>
 
