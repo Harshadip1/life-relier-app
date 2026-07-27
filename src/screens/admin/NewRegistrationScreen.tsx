@@ -179,6 +179,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
 
   const [testSearch,    setTestSearch]   = useState('');
   const [addedTests,    setAddedTests]   = useState<string[]>([]);
+  const [testPrices,    setTestPrices]   = useState<Record<string, number>>({});
   const [allTests,      setAllTests]     = useState<TestNameItem[]>([]);
   const [testResults,   setTestResults]  = useState<TestNameItem[]>([]);
   const [searchingTest, setSearchingTest]= useState(false);
@@ -193,6 +194,16 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const [paidAmt,      setPaidAmt]      = useState('0.00');
   const [remark,       setRemark]       = useState('');
   const [emergency,    setEmergency]    = useState(false);
+
+  // ── Computed totals ──────────────────────────────────────────────────────
+  const testTotal   = addedTests.reduce((sum, t) => sum + (testPrices[t] ?? 0), 0);
+  const other       = parseFloat(otherCharge) || 0;
+  const disc        = parseFloat(discAmt) || 0;
+  const grossTotal  = testTotal + other;
+  const netTotal    = discType === 'Per%'
+    ? grossTotal - (grossTotal * disc / 100)
+    : grossTotal - disc;
+  const balance     = netTotal - (parseFloat(paidAmt) || 0);
   const [prescriptionFile, setPrescriptionFile] = useState<string | null>(null);
   const [photoFile,        setPhotoFile]        = useState<string | null>(null);
 
@@ -295,6 +306,31 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const handleTestSelect = (name: string) => {
     if (!addedTests.includes(name)) {
       setAddedTests(prev => [...prev, name]);
+      // Fetch price for this test
+      if (!testPrices[name]) {
+        const today = new Date().toISOString().split('T')[0];
+        fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            BranchId: 1, FromDate: '2024-01-01', ToDate: today,
+            PatRegID: '', PatientName: '', DoctorName: '', TestName: name,
+            MobileNo: '', Barcode: '', CenterCode: '', SubDepartment: '', Status: 'All',
+          }),
+        })
+          .then(r => r.json())
+          .then(data => {
+            const rows: any[] = Array.isArray(data) ? data : (data?.value ?? []);
+            // Use the most recent TestCharges for this single test
+            if (rows.length > 0) {
+              // Find the row where only this test is registered (TestCharges closest to per-test)
+              // Sort by TestCharges ascending and take the smallest (most likely single-test charge)
+              const sorted = [...rows].sort((a, b) => a.TestCharges - b.TestCharges);
+              setTestPrices(prev => ({ ...prev, [name]: sorted[0].TestCharges }));
+            }
+          })
+          .catch(() => {});
+      }
     }
     setTestSearch('');
     setTestResults([]);
@@ -442,7 +478,9 @@ export default function NewRegistrationScreen({ navigation }: any) {
               {/* Ref Doctor */}
               <Field>
                 <InlineSelect value={refDoctor}
-                  options={['Self', ...doctorsList.map(d => d.DoctorName)]}
+                  options={['Self', ...doctorsList
+                    .filter(d => d.DoctorName?.toLowerCase() !== 'self')
+                    .map(d => d.DoctorName)]}
                   onSelect={setRefDoctor} placeholder="Ref Doctor" />
               </Field>
 
@@ -739,7 +777,11 @@ export default function NewRegistrationScreen({ navigation }: any) {
               </View>
               <View style={s.amountRow}>
                 <Text style={s.amountLabel}>Total Amount</Text>
-                <View style={s.amountValueBox}><Text style={s.amountValue}>0.00</Text></View>
+                <View style={s.amountValueBox}>
+                  <Text style={s.amountValue}>
+                    {grossTotal > 0 ? `₹${grossTotal.toFixed(2)}` : '0.00'}
+                  </Text>
+                </View>
                 <Checkbox value={false} onToggle={() => {}} label="BTH" />
               </View>
               <View style={s.rowWrap2}>
@@ -768,7 +810,10 @@ export default function NewRegistrationScreen({ navigation }: any) {
                   <TextInput style={[s.input, { width: 80, textAlign: 'right' }]} value={discAmt} onChangeText={setDiscAmt} keyboardType="numeric" placeholderTextColor={T.muted} />
                 </View>
               </View>
-              <View style={s.netAmtRow}><Text style={s.netAmtLabel}>Net Amount</Text><Text style={s.netAmtValue}>₹ 0.00</Text></View>
+              <View style={s.netAmtRow}>
+                <Text style={s.netAmtLabel}>Net Amount</Text>
+                <Text style={s.netAmtValue}>₹ {netTotal.toFixed(2)}</Text>
+              </View>
               <View style={s.rowWrap2}>
                 <View style={{ flex: 1, marginRight: 8 }}>
                   <Text style={s.fieldLabel}>Paid Amt <Text style={{ color: T.danger }}>*</Text></Text>
@@ -776,7 +821,11 @@ export default function NewRegistrationScreen({ navigation }: any) {
                 </View>
                 <View style={{ flex: 1.5 }}>
                   <Text style={s.fieldLabel}>Balance <Text style={{ color: T.danger }}>*</Text></Text>
-                  <View style={s.balanceBox}><Text style={s.balanceText}>0.00</Text></View>
+                  <View style={s.balanceBox}>
+                    <Text style={[s.balanceText, { color: balance < 0 ? '#EF4444' : '#92400E' }]}>
+                      {balance.toFixed(2)}
+                    </Text>
+                  </View>
                 </View>
               </View>
               <View style={s.remarkRow}>
