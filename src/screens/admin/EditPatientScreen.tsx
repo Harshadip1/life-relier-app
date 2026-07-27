@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { API_BASE_URL } from '../../utils/constants';
 import { getPatient, updatePatient, updatePatientFiles, PatientDetail, UpdatePatientPayload } from '../../services/editPatientService';
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
@@ -108,11 +109,11 @@ export default function EditPatientScreen({ navigation, route }: any) {
         setRaw(d);
         setPatRegID(d.PatRegID        ?? 0);
         setInitial(d.intial ?? d.Initial ?? '');
-        setName(d.Patname ?? d.PatientName ?? '');
-        setMobile(d.MobileNo          ?? '');
-        setAge(String(d.Age           ?? ''));
+        setName(d.Patname ?? d.PatientName ?? passedPatient.name ?? '');
+        setMobile(d.MobileNo ?? d.Patphoneno ?? passedPatient.phone ?? '');
+        setAge(String(d.Age           ?? passedPatient.age ?? ''));
         setMdy(d.MDY                  ?? 'Year');
-        setGender(d.sex ?? d.Gender   ?? '');
+        setGender(d.sex ?? d.Gender   ?? passedPatient.gender ?? '');
         setDob(d.DateOfBirth ?? d.DOB ?? '');
         setAddress(d.Pataddress ?? d.Address ?? '');
         setEmail(d.Email ?? d.EmailID ?? '');
@@ -134,7 +135,12 @@ export default function EditPatientScreen({ navigation, route }: any) {
         setExistingImage(d.ImagePath ?? '');
       })
       .catch((e: any) => {
-        Alert.alert('Load Failed', e.message || 'Could not fetch patient details.');
+        // Network error — fall back to route params silently
+        console.warn('[EditPatient] getPatient network error:', e.message);
+        setName(passedPatient.name    ?? '');
+        setMobile(passedPatient.phone ?? '');
+        setAge(String(passedPatient.age ?? ''));
+        setGender(passedPatient.gender ?? '');
       })
       .finally(() => setFetching(false));
   }, [pid]);
@@ -215,6 +221,9 @@ export default function EditPatientScreen({ navigation, route }: any) {
         TaxAmount:         raw?.TaxAmount,
         AmtPaid:           raw?.AmtPaid,
         BalAmt:            raw?.BalAmt,
+        // ── Files (pass through existing paths) ──
+        uploadPrescription: existingPrescription || raw?.uploadPrescription || '',
+        ImagePath:          existingImage        || raw?.ImagePath          || '',
       };
 
       const msg = await updatePatient(payload);
@@ -281,15 +290,17 @@ export default function EditPatientScreen({ navigation, route }: any) {
         } as any);
       }
 
-      const res = await fetch(`${(await import('../../utils/constants')).API_BASE_URL}/api/EditPatient/UpdateFiles`, {
+      const res = await fetch(`${API_BASE_URL}/api/EditPatient/UpdateFiles`, {
         method:  'POST',
         headers: { Accept: 'application/json' },
         body:    formData,
       });
-      const data = await res.json();
+      const respText = await res.text();
+      let data: any = null;
+      try { data = respText ? JSON.parse(respText) : null; } catch { data = null; }
       if (!res.ok) throw new Error(data?.Message || data?.message || `Server error (${res.status})`);
 
-      Alert.alert('✅ Files Uploaded', data.Message || 'Files updated successfully.');
+      Alert.alert('✅ Files Uploaded', data?.Message || data?.message || 'Files updated successfully.');
       // Update displayed paths
       if (prescriptionUri) setExistingPrescription(prescriptionUri);
       if (imageUri)        setExistingImage(imageUri);

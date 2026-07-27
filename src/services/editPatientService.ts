@@ -68,7 +68,9 @@ export async function getEditPatientGrid(
     body:    JSON.stringify(body),
   });
 
-  const raw = await res.json();
+  const text = await res.text();
+  let raw: any = null;
+  try { raw = text ? JSON.parse(text) : null; } catch { raw = null; }
   if (!res.ok) throw new Error(raw?.Message || raw?.message || `Server error (${res.status})`);
 
   // API returns { GridData: [...], TotalCount: [{ TotalRecords: N }] }
@@ -146,20 +148,50 @@ export interface PatientDetail {
  * Body: { PID: number }
  */
 export async function getPatient(pid: number): Promise<PatientDetail> {
+  console.log('[EditPatient] getPatient called with PID:', pid);
+
   const res = await fetch(`${API_BASE_URL}/api/EditPatient/GetPatient`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body:    JSON.stringify({ PID: pid }),
   });
-  const raw = await res.json();
+
+  // Parse safely — response may be empty
+  const text = await res.text();
+  console.log('[EditPatient] GetPatient raw response:', text?.substring(0, 500));
+
+  let raw: any = null;
+  try { raw = text ? JSON.parse(text) : null; } catch { raw = null; }
+
   if (!res.ok) throw new Error(raw?.Message || raw?.message || `Server error (${res.status})`);
 
-  // API may return array with one element or a plain object
-  if (Array.isArray(raw) && raw.length > 0) return raw[0];
-  if (raw?.data && Array.isArray(raw.data) && raw.data.length > 0) return raw.data[0];
-  if (raw?.Data && Array.isArray(raw.Data) && raw.Data.length > 0) return raw.Data[0];
-  if (raw?.PID || raw?.PatientName) return raw;
-  throw new Error('Patient not found');
+  // API may return array with one element, plain object, or nested data
+  let record: any = null;
+  if (Array.isArray(raw) && raw.length > 0) {
+    record = raw[0];
+  } else if (raw?.data && Array.isArray(raw.data) && raw.data.length > 0) {
+    record = raw.data[0];
+  } else if (raw?.Data && Array.isArray(raw.Data) && raw.Data.length > 0) {
+    record = raw.Data[0];
+  } else if (raw?.PatientData && Array.isArray(raw.PatientData) && raw.PatientData.length > 0) {
+    record = raw.PatientData[0];
+  } else if (raw && typeof raw === 'object' && !Array.isArray(raw) &&
+             (raw.PID || raw.Patname || raw.PatientName || raw.MobileNo || raw.intial)) {
+    record = raw;
+  }
+
+  console.log('[EditPatient] GetPatient resolved record:', JSON.stringify(record)?.substring(0, 300));
+
+  if (!record) {
+    // API returned empty for this PID — return a minimal shell.
+    // EditPatientScreen will fill the form from route params (name/phone/age/gender)
+    // that were already passed from the patient list.
+    console.warn(`[EditPatient] GetPatient returned no data for PID ${pid} — using shell`);
+    return { PID: pid, PatRegID: 0, PatientName: '', MobileNo: '', Age: 0,
+             Gender: '', DOB: null, CenterName: '', Patregdate: '', BranchId: 1 } as PatientDetail;
+  }
+
+  return record as PatientDetail;
 }
 
 // ─── Update patient ───────────────────────────────────────────────────────────
@@ -229,6 +261,8 @@ export interface UpdatePatientPayload {
   AmtPaid?:            number;
   BalAmt?:             number;
   TestList?:           TestListItem[];
+  uploadPrescription?: string;
+  ImagePath?:          string;
 }
 
 export interface TestListItem {
@@ -256,7 +290,13 @@ export async function updatePatient(payload: UpdatePatientPayload): Promise<stri
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body:    JSON.stringify(payload),
   });
-  const raw = await res.json();
+
+  // Parse safely — some endpoints return empty body on success
+  const text = await res.text();
+  console.log('[EditPatient] UpdatePatient response status:', res.status, '| body:', text?.substring(0, 200));
+  let raw: any = null;
+  try { raw = text ? JSON.parse(text) : null; } catch { raw = null; }
+
   if (!res.ok) throw new Error(raw?.Message || raw?.message || `Server error (${res.status})`);
   return raw?.Message ?? raw?.message ?? 'Patient updated successfully.';
 }
@@ -282,9 +322,11 @@ export async function updatePatientFiles(params: {
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body:    JSON.stringify(body),
   });
-  const raw = await res.json();
-  if (!res.ok) throw new Error(raw?.Message || raw?.message || `Server error (${res.status})`);
-  return raw?.Message ?? raw?.message ?? 'Files updated successfully.';
+  const text2 = await res.text();
+  let raw2: any = null;
+  try { raw2 = text2 ? JSON.parse(text2) : null; } catch { raw2 = null; }
+  if (!res.ok) throw new Error(raw2?.Message || raw2?.message || `Server error (${res.status})`);
+  return raw2?.Message ?? raw2?.message ?? 'Files updated successfully.';
 }
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
