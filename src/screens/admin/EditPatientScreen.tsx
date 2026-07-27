@@ -162,9 +162,10 @@ export default function EditPatientScreen({ navigation, route }: any) {
       // This prevents the backend from receiving undefined for any required field.
       const payload: UpdatePatientPayload = {
         ...(raw ?? {}),                          // all original API fields as base
-        // ── IDs (always explicit) ──
+        // ── IDs (always explicit — these are required by the backend) ──
         PID:               pid,
         PPID:              raw?.PPID ?? pid,
+        RID:               raw?.RID  ?? 0,       // required by backend for billing record match
         BranchId:          raw?.BranchId ?? passedPatient.branchId ?? 1,
         // ── User-edited patient info ──
         Age:               parseInt(age, 10),

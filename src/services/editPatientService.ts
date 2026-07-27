@@ -167,7 +167,10 @@ export async function getPatient(pid: number): Promise<PatientDetail> {
 
   // API may return: array of records, nested object, or the record directly
   let record: any = null;
-  if (Array.isArray(raw) && raw.length > 0) {
+  if (raw?.PatientInfo && Array.isArray(raw.PatientInfo) && raw.PatientInfo.length > 0) {
+    // Confirmed shape from logs: { "PatientInfo": [{...}] }
+    record = raw.PatientInfo[0];
+  } else if (Array.isArray(raw) && raw.length > 0) {
     record = raw[0];
   } else if (raw?.data && Array.isArray(raw.data) && raw.data.length > 0) {
     record = raw.data[0];
