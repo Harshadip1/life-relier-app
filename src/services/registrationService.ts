@@ -70,13 +70,14 @@ export interface SearchPatientItem {
   intial:           string | null;
   sex:              string | null;
   Age:              number | null;
+  MDY:              string | null;
   MobileNo:         string | null;
   Email:            string | null;
   Pataddress:       string | null;
   DateOfBirth:      string | null;
   PatientCardNo:    string | null;
   PatientCardExpNo: string | null;
-  BranchId:         number | null;
+  BranchId?:        number | null;
 }
 
 export interface TestResult {
@@ -131,18 +132,49 @@ export async function getDoctors(): Promise<DoctorItem[]> {
 }
 
 /**
- * POST /api/Search/SearchPatInfoByMobileNoAndName
- * Body: { SearchText: string, BranchId: number }
- * Used to pre-fill form when searching existing patient by mobile/name
+ * Search patients by name using GetPatientTestStatus (confirmed working).
+ * De-duplicates by PID so each patient appears once in dropdown.
  */
 export async function searchPatient(searchText: string): Promise<SearchPatientItem[]> {
-  const data = await postJson<any>('/api/Search/SearchPatInfoByMobileNoAndName', {
-    SearchText: searchText,
-    BranchId:   1,
-  });
-  if (Array.isArray(data)) return data;
-  if (data?.data && Array.isArray(data.data)) return data.data;
-  return [];
+  if (!searchText || searchText.trim().length < 2) return [];
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        BranchId: 1, FromDate: '2024-01-01', ToDate: today,
+        PatRegID: '', PatientName: searchText.trim(),
+        DoctorName: '', TestName: '', MobileNo: '',
+        Barcode: '', CenterCode: '', SubDepartment: '', Status: 'All',
+      }),
+    });
+    const data = await res.json();
+    const rows: any[] = Array.isArray(data) ? data : (data?.value ?? []);
+    // De-duplicate by PID
+    const seen = new Set<number>();
+    const result: SearchPatientItem[] = [];
+    for (const r of rows) {
+      const pid = r.PatRegID ?? r.PID;
+      if (seen.has(pid)) continue;
+      seen.add(pid);
+      result.push({
+        PPID:             pid,
+        Patname:          r.Patname ?? r.PatientName ?? '',
+        intial:           '',
+        sex:              r.sex ?? '',
+        Age:              r.Age ?? 0,
+        MDY:              r.MDY ?? 'Year',
+        MobileNo:         r.Patphoneno ?? '',
+        Email:            r.Email ?? '',
+        Pataddress:       '',
+        PatientCardNo:    '',
+        PatientCardExpNo: '',
+        DateOfBirth:      null,
+      });
+    }
+    return result.slice(0, 8);
+  } catch { return []; }
 }
 
 /**
