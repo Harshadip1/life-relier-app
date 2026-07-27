@@ -157,13 +157,16 @@ export default function EditPatientScreen({ navigation, route }: any) {
 
     setSaving(true);
     try {
+      // ── Spread the full raw API record first so no original field is lost ──
+      // Then override only the fields the user can actually edit in the form.
+      // This prevents the backend from receiving undefined for any required field.
       const payload: UpdatePatientPayload = {
-        // ── IDs ──
+        ...(raw ?? {}),                          // all original API fields as base
+        // ── IDs (always explicit) ──
         PID:               pid,
         PPID:              raw?.PPID ?? pid,
         BranchId:          raw?.BranchId ?? passedPatient.branchId ?? 1,
-        // ── Patient info ──
-        Patregdate:        raw?.Patregdate,
+        // ── User-edited patient info ──
         Age:               parseInt(age, 10),
         MDY:               mdy,
         intial:            initial,
@@ -176,56 +179,19 @@ export default function EditPatientScreen({ navigation, route }: any) {
         PatHistory:        patHistory.trim(),
         Comment:           comment.trim(),
         DateOfBirth:       dob || raw?.DateOfBirth,
-        AccDateofBirth:    raw?.AccDateofBirth ?? false,
         PatientCardNo:     cardNo.trim(),
         PatientCardExpNo:  cardExp.trim(),
-        DoctorCode:        raw?.DoctorCode,
-        CenterCode:        raw?.CenterCode,
-        Username:          raw?.Username ?? 'admin',
-        Usertype:          raw?.Usertype ?? 'Patient',
-        Drname:            raw?.Drname,
-        CenterName:        raw?.CenterName,
         Weights:           weight,
         Heights:           height,
         Disease:           disease.trim(),
-        RefDr:             raw?.RefDr,
-        LastPeriod:        lastPeriod,
         Symptoms:          symptoms.trim(),
         FSTime:            fsTime,
         Therapy:           therapy.trim(),
-        TestCharges:       raw?.TestCharges,
-        Isemergency:       isEmergency,
-        IsbillBH:          raw?.IsbillBH ?? false,
+        LastPeriod:        lastPeriod,
         HospitalNo:        hospitalNo || null,
         ReportType:        reportType,
-        FID:               raw?.FID,
-        Patauthicante:     raw?.Patauthicante,
-        TestList:          raw?.TestList ?? [],
-        // ── Billing (pass through unchanged) ──
-        RID:               raw?.RID,
-        billdate:          raw?.billdate,
-        transdate:         raw?.transdate,
-        PaymentType:       raw?.PaymentType,
-        OnlineTransType:   raw?.OnlineTransType,
-        OnlineTransID:     raw?.OnlineTransID,
-        BankName:          raw?.BankName ?? null,
-        ChqNo:             raw?.ChqNo ?? null,
-        ChqDate:           raw?.ChqDate ?? null,
-        CardNo:            raw?.CardNo ?? null,
-        CardName:          raw?.CardName ?? null,
-        Cardtype:          raw?.Cardtype ?? null,
-        CardExpiryDate:    raw?.CardExpiryDate ?? null,
-        CardTransactionID: raw?.CardTransactionID ?? null,
-        BillAmt:           raw?.BillAmt,
-        DisAmt:            raw?.DisAmt,
-        OtherCharges:      raw?.OtherCharges,
-        OtherChargeRemark: raw?.OtherChargeRemark ?? null,
-        DiscountRemark:    raw?.DiscountRemark,
-        TaxPer:            raw?.TaxPer,
-        TaxAmount:         raw?.TaxAmount,
-        AmtPaid:           raw?.AmtPaid,
-        BalAmt:            raw?.BalAmt,
-        // ── Files (pass through existing paths) ──
+        Isemergency:       isEmergency,
+        // ── Files (preserve existing paths) ──
         uploadPrescription: existingPrescription || raw?.uploadPrescription || '',
         ImagePath:          existingImage        || raw?.ImagePath          || '',
       };
