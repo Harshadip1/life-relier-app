@@ -172,13 +172,22 @@ export async function getPatient(pid: number): Promise<PatientDetail> {
   let record: any = null;
 
   if (raw?.PatientInfo && Array.isArray(raw.PatientInfo) && raw.PatientInfo.length > 0) {
-    // Merge PatientInfo + PaymentInfo into one flat object so the screen
-    // and UpdatePatient payload have access to RID, BillAmt, etc.
+    // Merge PatientInfo[0] + PaymentInfo[0] (first/primary payment) + Table1 tests
+    // PaymentInfo may have multiple entries; use [0] for the primary billing record
     const payment = (Array.isArray(raw.PaymentInfo) && raw.PaymentInfo.length > 0)
       ? raw.PaymentInfo[0]
       : {};
+    // Table1 is the test list — may be empty if no tests assigned yet
     const testList = Array.isArray(raw.Table1) ? raw.Table1 : [];
-    record = { ...raw.PatientInfo[0], ...payment, TestList: testList };
+    // Also preserve full PaymentInfo array in case screen needs it later
+    record = {
+      ...raw.PatientInfo[0],
+      ...payment,
+      TestList:    testList,
+      PaymentInfo: raw.PaymentInfo ?? [],
+    };
+    console.log('[EditPatient] Table1 (TestList) length:', testList.length,
+                '| PaymentInfo entries:', raw.PaymentInfo?.length ?? 0);
   } else if (Array.isArray(raw) && raw.length > 0) {
     record = raw[0];
   } else if (raw?.data && Array.isArray(raw.data) && raw.data.length > 0) {

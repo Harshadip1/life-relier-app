@@ -196,10 +196,10 @@ export default function EditPatientScreen({ navigation, route }: any) {
         // ── Preserve billing dates from PaymentInfo ──
         billdate:          raw?.billdate,
         transdate:         raw?.transdate,
-        // ── Preserve TestList — only include if non-empty so backend keeps existing tests ──
-        TestList:          (Array.isArray(raw?.TestList) && raw.TestList.length > 0)
-                             ? raw.TestList
-                             : undefined,
+        // ── TestList — send exactly what the backend returned in Table1 ──
+        // Table1 is the authoritative test list from GetPatient.
+        // If it's empty [], send [] — do not omit it (undefined causes stale data).
+        TestList:          Array.isArray(raw?.TestList) ? raw.TestList : [],
         // ── Files ──
         uploadPrescription: existingPrescription || raw?.uploadPrescription || '',
         ImagePath:          existingImage        || raw?.ImagePath          || '',
