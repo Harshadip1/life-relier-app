@@ -48,14 +48,14 @@ const MODULES = [
     screen:  'BillPayment',
   },
   {
-    title:   'Home Collection',
-    sub:     'Schedule home sample collection visits',
-    icon:    'home-city-outline',
+    title:   'Sample Collection',
+    sub:     'Schedule sample collection visits',
+    icon:    'eyedropper-variant',
     fam:     'material',
     color:   '#0891B2',
     bg:      '#ECFEFF',
     border:  '#A5F3FC',
-    screen:  'HomeCollection',
+    screen:  'SampleCollection',
     future:  true,
   },
 ];

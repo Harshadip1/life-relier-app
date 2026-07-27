@@ -110,21 +110,7 @@ export default function DashboardScreen({ navigation }: any) {
           ))}
         </View>
 
-        {/* ── Recent Activities ── */}
-        <View style={styles.sectionRow}>
-          <SectionTitle title="Recent Activities" />
-          <TouchableOpacity><Text style={styles.viewAll}>View All</Text></TouchableOpacity>
-        </View>
-        <View style={styles.activityCard}>
-          <ActivityRow icon="user-plus"         iconFam="feather"  color="#0D9488" bg="#F0FDFA" name="Rahul Sharma"  action="Patient Registered"  time="10:15 AM"
-            avatar="https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=100&auto=format&fit=crop" />
-          <ActivityRow icon="flask-outline"      iconFam="material" color="#0369A1" bg="#F0F9FF" name="Priya Patil"   action="Sample Collected"    time="10:05 AM"
-            avatar="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop" />
-          <ActivityRow icon="check-circle-outline" iconFam="material" color="#15803D" bg="#F0FDF4" name="Arjun Khan"  action="Report Approved"     time="09:45 AM"
-            avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop" />
-          <ActivityRow icon="cash-register"      iconFam="material" color="#7C3AED" bg="#F5F3FF" name="Sneha Joshi"  action="Payment Received"    time="09:20 AM"
-            avatar="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=100&auto=format&fit=crop" isLast />
-        </View>
+
 
         {/* ── Critical Alerts ── */}
         <SectionTitle title="Critical Alerts" style={{ marginTop: 24 }} />
@@ -162,25 +148,7 @@ function StatCard({ value, label, icon, color, bg, border, onPress }: any) {
   );
 }
 
-function ActivityRow({ icon, iconFam, color, bg, name, action, time, avatar, isLast }: any) {
-  return (
-    <View style={[styles.actRow, !isLast && styles.actBorder]}>
-      <View style={styles.actAvatarWrap}>
-        <Image source={{ uri: avatar }} style={styles.actAvatar} />
-        <View style={[styles.actIconBadge, { backgroundColor: bg }]}>
-          {iconFam === 'feather'
-            ? <Feather name={icon} size={9} color={color} />
-            : <MaterialCommunityIcons name={icon} size={10} color={color} />}
-        </View>
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.actName}>{name}</Text>
-        <Text style={styles.actAction}>{action}</Text>
-      </View>
-      <Text style={styles.actTime}>{time}</Text>
-    </View>
-  );
-}
+
 
 function AlertCard({ number, label, icon, color, bg, border, onPress }: any) {
   return (
@@ -277,26 +245,7 @@ const styles = StyleSheet.create({
     textAlign: 'center', lineHeight: 13,
   },
 
-  // Activity
-  activityCard: {
-    backgroundColor: T.card, borderRadius: 16, padding: 4,
-    borderWidth: 1, borderColor: T.border,
-    elevation: 1, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6,
-  },
-  actRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12 },
-  actBorder: { borderBottomWidth: 1, borderBottomColor: T.border },
-  actAvatarWrap: { position: 'relative', marginRight: 12 },
-  actAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E2E8F0' },
-  actIconBadge: {
-    position: 'absolute', bottom: -2, right: -4,
-    width: 17, height: 17, borderRadius: 9,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: T.card,
-  },
-  actName: { fontSize: 13, fontWeight: '700', color: T.text, marginBottom: 2 },
-  actAction: { fontSize: 11, color: T.sub },
-  actTime: { fontSize: 10, color: T.muted, fontWeight: '500' },
+
 
   // Alerts
   alertCard: {
