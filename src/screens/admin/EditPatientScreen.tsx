@@ -165,8 +165,8 @@ export default function EditPatientScreen({ navigation, route }: any) {
         // ── IDs (always explicit — these are required by the backend) ──
         PID:               pid,
         PPID:              raw?.PPID ?? pid,
-        RID:               raw?.RID  ?? 0,       // required by backend for billing record match
-        BranchId:          raw?.BranchId ?? passedPatient.branchId ?? 1,
+        RID:               raw?.RID,             // from PaymentInfo[0].RID — must not be 0 or undefined
+        BranchId:          raw?.BranchId ?? raw?.Branchid ?? passedPatient.branchId ?? 1,
         // ── User-edited patient info ──
         Age:               parseInt(age, 10),
         MDY:               mdy,
@@ -197,6 +197,8 @@ export default function EditPatientScreen({ navigation, route }: any) {
         ImagePath:          existingImage        || raw?.ImagePath          || '',
       };
 
+      console.log('[EditPatient] Update payload PID/PPID/RID/BranchId:',
+        payload.PID, payload.PPID, payload.RID, payload.BranchId);
       const msg = await updatePatient(payload);
       Alert.alert('✅ Update Successful', msg, [
         { text: 'OK', onPress: () => navigation.goBack() },

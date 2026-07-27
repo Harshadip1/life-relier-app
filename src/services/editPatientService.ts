@@ -165,11 +165,20 @@ export async function getPatient(pid: number): Promise<PatientDetail> {
 
   if (!res.ok) throw new Error(raw?.Message || raw?.message || `Server error (${res.status})`);
 
-  // API may return: array of records, nested object, or the record directly
+  // API returns { PatientInfo: [...], PaymentInfo: [...], Table1: [...] }
+  // PatientInfo[0] = patient demographics
+  // PaymentInfo[0] = billing record (contains RID, BillAmt, PaymentType, etc.)
+  // Table1         = test list
   let record: any = null;
+
   if (raw?.PatientInfo && Array.isArray(raw.PatientInfo) && raw.PatientInfo.length > 0) {
-    // Confirmed shape from logs: { "PatientInfo": [{...}] }
-    record = raw.PatientInfo[0];
+    // Merge PatientInfo + PaymentInfo into one flat object so the screen
+    // and UpdatePatient payload have access to RID, BillAmt, etc.
+    const payment = (Array.isArray(raw.PaymentInfo) && raw.PaymentInfo.length > 0)
+      ? raw.PaymentInfo[0]
+      : {};
+    const testList = Array.isArray(raw.Table1) ? raw.Table1 : [];
+    record = { ...raw.PatientInfo[0], ...payment, TestList: testList };
   } else if (Array.isArray(raw) && raw.length > 0) {
     record = raw[0];
   } else if (raw?.data && Array.isArray(raw.data) && raw.data.length > 0) {
@@ -181,7 +190,6 @@ export async function getPatient(pid: number): Promise<PatientDetail> {
   } else if (raw?.Result && Array.isArray(raw.Result) && raw.Result.length > 0) {
     record = raw.Result[0];
   } else if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-    // Plain object — accept if it has ANY recognisable patient field
     const hasPatientField =
       raw.PID != null || raw.Patname || raw.PatientName || raw.MobileNo ||
       raw.intial || raw.Patphoneno || raw.DateOfBirth || raw.BranchId;
