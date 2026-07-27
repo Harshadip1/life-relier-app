@@ -165,7 +165,7 @@ export async function getPatient(pid: number): Promise<PatientDetail> {
 
   if (!res.ok) throw new Error(raw?.Message || raw?.message || `Server error (${res.status})`);
 
-  // API may return array with one element, plain object, or nested data
+  // API may return: array of records, nested object, or the record directly
   let record: any = null;
   if (Array.isArray(raw) && raw.length > 0) {
     record = raw[0];
@@ -175,20 +175,22 @@ export async function getPatient(pid: number): Promise<PatientDetail> {
     record = raw.Data[0];
   } else if (raw?.PatientData && Array.isArray(raw.PatientData) && raw.PatientData.length > 0) {
     record = raw.PatientData[0];
-  } else if (raw && typeof raw === 'object' && !Array.isArray(raw) &&
-             (raw.PID || raw.Patname || raw.PatientName || raw.MobileNo || raw.intial)) {
-    record = raw;
+  } else if (raw?.Result && Array.isArray(raw.Result) && raw.Result.length > 0) {
+    record = raw.Result[0];
+  } else if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    // Plain object — accept if it has ANY recognisable patient field
+    const hasPatientField =
+      raw.PID != null || raw.Patname || raw.PatientName || raw.MobileNo ||
+      raw.intial || raw.Patphoneno || raw.DateOfBirth || raw.BranchId;
+    if (hasPatientField) record = raw;
   }
 
   console.log('[EditPatient] GetPatient resolved record:', JSON.stringify(record)?.substring(0, 300));
 
   if (!record) {
-    // API returned empty for this PID — return a minimal shell.
-    // EditPatientScreen will fill the form from route params (name/phone/age/gender)
-    // that were already passed from the patient list.
-    console.warn(`[EditPatient] GetPatient returned no data for PID ${pid} — using shell`);
-    return { PID: pid, PatRegID: 0, PatientName: '', MobileNo: '', Age: 0,
-             Gender: '', DOB: null, CenterName: '', Patregdate: '', BranchId: 1 } as PatientDetail;
+    // API returned empty/unrecognised shape — throw so the screen's catch block
+    // falls back to the route params (name/phone/age/gender) passed from the list.
+    throw new Error(`No patient data returned for PID ${pid}`);
   }
 
   return record as PatientDetail;

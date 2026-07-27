@@ -135,12 +135,16 @@ export default function EditPatientScreen({ navigation, route }: any) {
         setExistingImage(d.ImagePath ?? '');
       })
       .catch((e: any) => {
-        // Network error — fall back to route params silently
-        console.warn('[EditPatient] getPatient network error:', e.message);
+        // API returned no data or network error — fill form from route params
+        console.warn('[EditPatient] getPatient did not return data:', e.message);
         setName(passedPatient.name    ?? '');
         setMobile(passedPatient.phone ?? '');
         setAge(String(passedPatient.age ?? ''));
         setGender(passedPatient.gender ?? '');
+        // Only alert if it was a real network/server error, not a "no data" case
+        if (!e.message?.includes('No patient data')) {
+          Alert.alert('Warning', 'Could not load full patient details. Basic info pre-filled.');
+        }
       })
       .finally(() => setFetching(false));
   }, [pid]);
