@@ -284,11 +284,11 @@ export interface TestListItem {
 }
 
 /**
- * POST /api/EditPatient/UpdatePatient
+ * PATCH /api/EditPatient/UpdatePatient  ← server only accepts PATCH (Allow header confirmed)
  */
 export async function updatePatient(payload: UpdatePatientPayload): Promise<string> {
   const res = await fetch(`${API_BASE_URL}/api/EditPatient/UpdatePatient`, {
-    method:  'POST',
+    method:  'PATCH',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body:    JSON.stringify(payload),
   });
@@ -304,7 +304,7 @@ export async function updatePatient(payload: UpdatePatientPayload): Promise<stri
 }
 
 /**
- * POST /api/EditPatient/UpdateFiles
+ * PATCH /api/EditPatient/UpdateFiles  ← server only accepts PATCH (confirmed)
  * Body: { PID, BranchId, uploadPrescription, ImagePath }
  */
 export async function updatePatientFiles(params: {
@@ -320,7 +320,7 @@ export async function updatePatientFiles(params: {
     ImagePath:           params.ImagePath           ?? '',
   };
   const res = await fetch(`${API_BASE_URL}/api/EditPatient/UpdateFiles`, {
-    method:  'POST',
+    method:  'PATCH',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body:    JSON.stringify(body),
   });

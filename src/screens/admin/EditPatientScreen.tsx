@@ -295,7 +295,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
       }
 
       const res = await fetch(`${API_BASE_URL}/api/EditPatient/UpdateFiles`, {
-        method:  'POST',
+        method:  'PATCH',
         headers: { Accept: 'application/json' },
         body:    formData,
       });
