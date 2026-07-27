@@ -160,14 +160,15 @@ export default function EditPatientScreen({ navigation, route }: any) {
       // ── Spread the full raw API record first so no original field is lost ──
       // Then override only the fields the user can actually edit in the form.
       // This prevents the backend from receiving undefined for any required field.
+      // Build the full log-able payload
       const payload: UpdatePatientPayload = {
-        ...(raw ?? {}),                          // all original API fields as base
-        // ── IDs (always explicit — these are required by the backend) ──
+        ...(raw ?? {}),
+        // ── IDs ──
         PID:               pid,
         PPID:              raw?.PPID ?? pid,
-        RID:               raw?.RID,             // from PaymentInfo[0].RID — must not be 0 or undefined
+        RID:               raw?.RID,
         BranchId:          raw?.BranchId ?? raw?.Branchid ?? passedPatient.branchId ?? 1,
-        // ── User-edited patient info ──
+        // ── User-edited fields ──
         Age:               parseInt(age, 10),
         MDY:               mdy,
         intial:            initial,
@@ -192,13 +193,19 @@ export default function EditPatientScreen({ navigation, route }: any) {
         HospitalNo:        hospitalNo || null,
         ReportType:        reportType,
         Isemergency:       isEmergency,
-        // ── Files (preserve existing paths) ──
+        // ── Preserve billing dates from PaymentInfo ──
+        billdate:          raw?.billdate,
+        transdate:         raw?.transdate,
+        // ── Preserve TestList — only include if non-empty so backend keeps existing tests ──
+        TestList:          (Array.isArray(raw?.TestList) && raw.TestList.length > 0)
+                             ? raw.TestList
+                             : undefined,
+        // ── Files ──
         uploadPrescription: existingPrescription || raw?.uploadPrescription || '',
         ImagePath:          existingImage        || raw?.ImagePath          || '',
       };
 
-      console.log('[EditPatient] Update payload PID/PPID/RID/BranchId:',
-        payload.PID, payload.PPID, payload.RID, payload.BranchId);
+      console.log('[EditPatient] UpdatePayload:', JSON.stringify(payload));
       const msg = await updatePatient(payload);
       Alert.alert('✅ Update Successful', msg, [
         { text: 'OK', onPress: () => navigation.goBack() },
