@@ -250,7 +250,7 @@ export async function updateAppointment(payload: UpdateAppointmentPayload): Prom
 }
 
 export async function getAllAppointments(branchId: number = 1): Promise<AppointmentRecord[]> {
-  const data = await postAppt<any>('GetAllAppointment', { BranchId: branchId });
+  const data = await post<any>(APPT_BASE, 'GetAllAppointment', { BranchId: branchId });
   let list: any[] = [];
   if (Array.isArray(data))                              list = data;
   else if (data?.value && Array.isArray(data.value))    list = data.value;
@@ -281,12 +281,12 @@ export async function getAllAppointments(branchId: number = 1): Promise<Appointm
 }
 
 export async function getAppointmentById(appointmentId: number, branchId: number = 1): Promise<AppointmentRecord[]> {
-  const data = await postAppt<any>('GetAppointmentById', { AppointmentId: appointmentId, BranchId: branchId });
+  const data = await post<any>(APPT_BASE, 'GetAppointmentById', { AppointmentId: appointmentId, BranchId: branchId });
   if (Array.isArray(data)) return data;
   if (data?.AppointmentId) return [data];
   return [];
 }
 
 export async function deleteAppointment(appointmentId: number, branchId: number = 1): Promise<any> {
-  return postAppt('DeleteAppointment', { AppointmentId: appointmentId, BranchId: branchId });
+  return post(APPT_BASE, 'DeleteAppointment', { AppointmentId: appointmentId, BranchId: branchId });
 }
