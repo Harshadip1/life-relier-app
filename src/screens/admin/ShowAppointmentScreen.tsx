@@ -80,15 +80,29 @@ export default function ShowAppointmentScreen({ navigation }: any) {
 
   useFocusEffect(useCallback(() => { fetchAppointments(); }, [fetchAppointments]));
 
-  const filtered = appointments.filter(a => {
+  // Sort appointments by date descending (most recent first)
+  const sorted = [...appointments].sort((a, b) => {
+    const da = a.AppointmentDate ? new Date(a.AppointmentDate).getTime() : 0;
+    const db = b.AppointmentDate ? new Date(b.AppointmentDate).getTime() : 0;
+    return db - da;
+  });
+
+  const filtered = sorted.filter(a => {
     const q = search.toLowerCase();
     const matchesSearch =
-      String(a.DoctorName   ?? '').toLowerCase().includes(q) ||
-      String(a.Mobile       ?? '').toLowerCase().includes(q) ||
-      String(a.AppointmentId ?? '').toString().includes(q) ||
-      String(a.Status       ?? '').toLowerCase().includes(q);
+      String(a.DoctorName    ?? '').toLowerCase().includes(q) ||
+      String(a.Mobile        ?? '').toLowerCase().includes(q) ||
+      String(a.AppointmentId ?? '').toString().includes(q)    ||
+      String(a.Status        ?? '').toLowerCase().includes(q) ||
+      String(a.Name          ?? '').toLowerCase().includes(q);
     const matchesDoctor = selectedDrId == null || a.DrId === selectedDrId;
-    return matchesSearch && matchesDoctor;
+    // Date filter — compare "YYYY-MM-DD" strings
+    const matchesDate = date == null || (() => {
+      const selected = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+      const apptDate = String(a.AppointmentDate ?? '').substring(0, 10);
+      return apptDate === selected;
+    })();
+    return matchesSearch && matchesDoctor && matchesDate;
   });
 
   /** Robust date formatter — parses "YYYY-MM-DDT..." or "YYYY-MM-DD" without timezone shift */
@@ -170,11 +184,21 @@ export default function ShowAppointmentScreen({ navigation }: any) {
           <View style={styles.formBody}>
             {/* Date */}
             <Text style={styles.label}>Appointment Date</Text>
-            <TouchableOpacity style={styles.dateRow} onPress={() => setShowPicker(true)}>
-              <MaterialCommunityIcons name="calendar" size={18} color="#64748B" style={{ marginRight: 10 }} />
-              <Text style={styles.dateText}>{date ? formatDate(date) : 'All Dates'}</Text>
-              <MaterialCommunityIcons name="calendar-blank-outline" size={18} color="#64748B" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity style={[styles.dateRow, { flex: 1 }]} onPress={() => setShowPicker(true)}>
+                <MaterialCommunityIcons name="calendar" size={18} color="#64748B" style={{ marginRight: 10 }} />
+                <Text style={styles.dateText}>{date ? formatDate(date) : 'All Dates'}</Text>
+                <MaterialCommunityIcons name="calendar-blank-outline" size={18} color="#64748B" />
+              </TouchableOpacity>
+              {date && (
+                <TouchableOpacity
+                  style={{ width: 44, height: 50, borderRadius: 10, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', alignItems: 'center', justifyContent: 'center' }}
+                  onPress={() => setDate(null)}
+                >
+                  <Feather name="x" size={16} color="#EF4444" />
+                </TouchableOpacity>
+              )}
+            </View>
             {showPicker && (
               <DateTimePicker value={date ?? new Date()} mode="date"
                 display={Platform.OS === 'ios' ? 'inline' : 'default'}
