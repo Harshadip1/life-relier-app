@@ -168,7 +168,7 @@ export default function ReportsScreen({ navigation }: any) {
                     <Feather name="user-check" size={12} color={THEME.textSecondary} />
                     <Text style={styles.metaText}>{item.Drname?.trim() || '—'}</Text>
                     <Text style={[styles.metaText, { marginLeft: 10, color: THEME.primary, fontWeight: '700' }]}>
-                      ₹{item.PaidAmount}
+                      ₹{(item.PaidAmount ?? 0).toFixed(0)}
                     </Text>
                   </View>
                   <TouchableOpacity style={styles.enterBtn}>

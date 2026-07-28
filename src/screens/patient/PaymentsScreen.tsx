@@ -87,7 +87,7 @@ export default function PaymentsScreen({ navigation, route }: any) {
           </Text>
         </View>
         <View style={styles.amountBox}>
-          <Text style={styles.amountText}>₹{item.PaidAmount.toFixed(0)}</Text>
+          <Text style={styles.amountText}>₹{(item.PaidAmount ?? 0).toFixed(0)}</Text>
           <View style={styles.statusRow}>
             <View style={[styles.statusDot, { backgroundColor: item.OutstandingAmount > 0 ? '#F59E0B' : '#10B981' }]} />
             <Text style={[styles.statusText, { color: item.OutstandingAmount > 0 ? '#F59E0B' : '#10B981' }]}>
@@ -101,7 +101,7 @@ export default function PaymentsScreen({ navigation, route }: any) {
           PT{String(item.PatRegID).padStart(6, '0')}  •  Barcode: {item.BarcodeID}
         </Text>
         {item.OutstandingAmount > 0 && (
-          <Text style={styles.dueText}>Due: ₹{item.OutstandingAmount.toFixed(0)}</Text>
+          <Text style={styles.dueText}>Due: ₹{(item.OutstandingAmount ?? 0).toFixed(0)}</Text>
         )}
       </View>
     </View>

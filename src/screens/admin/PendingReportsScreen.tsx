@@ -192,11 +192,11 @@ export default function PendingReportsScreen({ navigation }: any) {
                   <View style={styles.billingRow}>
                     <View style={styles.billingItem}>
                       <Text style={styles.billingLabel}>Charges</Text>
-                      <Text style={styles.billingValue}>₹{item.TestCharges.toFixed(0)}</Text>
+                      <Text style={styles.billingValue}>₹{(item.TestCharges ?? 0).toFixed(0)}</Text>
                     </View>
                     <View style={styles.billingItem}>
                       <Text style={styles.billingLabel}>Paid</Text>
-                      <Text style={[styles.billingValue, { color: THEME.success }]}>₹{item.PaidAmount.toFixed(0)}</Text>
+                      <Text style={[styles.billingValue, { color: THEME.success }]}>₹{(item.PaidAmount ?? 0).toFixed(0)}</Text>
                     </View>
                     <View style={styles.billingItem}>
                       <Text style={styles.billingLabel}>Doctor</Text>

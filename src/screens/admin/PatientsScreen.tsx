@@ -176,11 +176,11 @@ function PatientCard({ item, onView, onEdit }: {
       <View style={s.billingRow}>
         <View style={s.billingItem}>
           <Text style={s.billingLabel}>Charges</Text>
-          <Text style={s.billingValue}>₹{item.TestCharges.toFixed(0)}</Text>
+          <Text style={s.billingValue}>₹{(item.TestCharges ?? 0).toFixed(0)}</Text>
         </View>
         <View style={s.billingItem}>
           <Text style={s.billingLabel}>Paid</Text>
-          <Text style={[s.billingValue, { color: T.green }]}>₹{item.PaidAmount.toFixed(0)}</Text>
+          <Text style={[s.billingValue, { color: T.green }]}>₹{(item.PaidAmount ?? 0).toFixed(0)}</Text>
         </View>
         <View style={s.billingItem}>
           <Text style={s.billingLabel}>Doctor</Text>
@@ -249,9 +249,9 @@ function DetailSheet({ item, onClose, onEdit }: {
             ['Doctor',    (item.Drname ?? '—').trim()],
             ['Reg Date',  fmtDate(item.Patregdate)],
             ['Tests',     item.tests.join(', ') || '—'],
-            ['Charges',   `₹${item.TestCharges.toFixed(2)}`],
-            ['Paid',      `₹${item.PaidAmount.toFixed(2)}`],
-            ['Due',       `₹${item.OutstandingAmount.toFixed(2)}`],
+            ['Charges',   `₹${(item.TestCharges ?? 0).toFixed(2)}`],
+            ['Paid',      `₹${(item.PaidAmount ?? 0).toFixed(2)}`],
+            ['Due',       `₹${(item.OutstandingAmount ?? 0).toFixed(2)}`],
             ['Remark',    item.Remark || '—'],
           ].map(([label, value]) => (
             <View key={label} style={s.detailRow}>

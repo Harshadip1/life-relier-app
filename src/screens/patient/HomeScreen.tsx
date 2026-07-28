@@ -161,8 +161,10 @@ export default function HomeScreen() {
     fetchPatientData().finally(() => setRefreshing(false));
   }
 
-  const greetingName = user?.name || 'Ubaid';
-  const displayDateStr = 'Tuesday, 20 May 2025';
+  const greetingName = user?.name || 'Patient';
+  const displayDateStr = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
 
   function getGreeting(): string {
     const hour = new Date().getHours();

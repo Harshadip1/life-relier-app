@@ -143,7 +143,7 @@ export default function CompletedReportsScreen({ navigation }: any) {
         <SummaryMini value={String(uniquePIDs.size)}  label="Patients"  color={T.primary}  bg="#F0FDFA" />
         <SummaryMini value={String(records.length)}   label="Tests"     color="#0369A1"    bg="#F0F9FF" />
         <SummaryMini
-          value={`₹${records.reduce((s, r) => s + r.PaidAmount, 0).toLocaleString('en-IN')}`}
+          value={`₹${records.reduce((s, r) => s + (r.PaidAmount ?? 0), 0).toLocaleString('en-IN')}`}
           label="Collected"
           color="#15803D"
           bg="#F0FDF4"
@@ -191,7 +191,7 @@ export default function CompletedReportsScreen({ navigation }: any) {
                     </View>
                   </View>
                   <View style={[styles.statusBadge, { backgroundColor: '#F0FDF4' }]}>
-                    <Text style={[styles.statusText, { color: T.success }]}>₹{r.PaidAmount.toFixed(0)}</Text>
+                    <Text style={[styles.statusText, { color: T.success }]}>₹{(r.PaidAmount ?? 0).toFixed(0)}</Text>
                   </View>
                 </View>
 
