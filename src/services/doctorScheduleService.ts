@@ -252,9 +252,24 @@ export async function updateAppointment(payload: UpdateAppointmentPayload): Prom
 export async function getAllAppointments(branchId: number = 1): Promise<AppointmentRecord[]> {
   const data = await postAppt<any>('GetAllAppointment', { BranchId: branchId });
   let list: any[] = [];
-  if (Array.isArray(data)) list = data;
-  else if (data?.data && Array.isArray(data.data)) list = data.data;
-  else if (data?.message || data?.Message) return [];
+  if (Array.isArray(data))                              list = data;
+  else if (data?.value && Array.isArray(data.value))    list = data.value;
+  else if (data?.data  && Array.isArray(data.data))     list = data.data;
+  else if (data?.message || data?.Message)              return [];
+
+  // Enrich DoctorName from dropdown for records where it's null
+  const nullDrIds = [...new Set(list.filter(a => !a.DoctorName).map(a => a.DrId))];
+  if (nullDrIds.length > 0) {
+    try {
+      const doctors = await getDoctorDropdown(1);
+      const map = new Map<number, string>(doctors.map(d => [d.Id, d.FullName]));
+      list = list.map(a => ({
+        ...a,
+        DoctorName: a.DoctorName || map.get(a.DrId) || `Doctor ID: ${a.DrId}`,
+      }));
+    } catch { /* enrichment failed — show without names */ }
+  }
+
   return list.map(a => ({
     ...a,
     Name: a.Name || [a.FirstName, a.LastName].filter(Boolean).join(' ').trim() || null,
@@ -266,12 +281,12 @@ export async function getAllAppointments(branchId: number = 1): Promise<Appointm
 }
 
 export async function getAppointmentById(appointmentId: number, branchId: number = 1): Promise<AppointmentRecord[]> {
-  const data = await post<any>(APPT_BASE, 'GetAppointmentById', { AppointmentId: appointmentId, BranchId: branchId });
+  const data = await postAppt<any>('GetAppointmentById', { AppointmentId: appointmentId, BranchId: branchId });
   if (Array.isArray(data)) return data;
   if (data?.AppointmentId) return [data];
   return [];
 }
 
 export async function deleteAppointment(appointmentId: number, branchId: number = 1): Promise<any> {
-  return post(APPT_BASE, 'DeleteAppointment', { AppointmentId: appointmentId, BranchId: branchId });
+  return postAppt('DeleteAppointment', { AppointmentId: appointmentId, BranchId: branchId });
 }
