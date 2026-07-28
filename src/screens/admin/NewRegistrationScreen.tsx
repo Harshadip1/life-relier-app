@@ -339,30 +339,28 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const handleTestSelect = (name: string) => {
     if (!addedTests.includes(name)) {
       setAddedTests(prev => [...prev, name]);
-      // Fetch price for this test
       if (!testPrices[name]) {
         const today = new Date().toISOString().split('T')[0];
-        fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({
-            BranchId: 1, FromDate: '2024-01-01', ToDate: today,
-            PatRegID: '', PatientName: '', DoctorName: '', TestName: name,
-            MobileNo: '', Barcode: '', CenterCode: '', SubDepartment: '', Status: 'All',
-          }),
-        })
-          .then(r => r.json())
-          .then(data => {
+        (async () => {
+          try {
+            const res = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+              body: JSON.stringify({
+                BranchId: 1, FromDate: '2024-01-01', ToDate: today,
+                PatRegID: '', PatientName: '', DoctorName: '', TestName: name,
+                MobileNo: '', Barcode: '', CenterCode: '', SubDepartment: '', Status: 'All',
+              }),
+            });
+            const data = await res.json();
             const rows: any[] = Array.isArray(data) ? data : (data?.value ?? []);
-            // Use the most recent TestCharges for this single test
             if (rows.length > 0) {
-              // Find the row where only this test is registered (TestCharges closest to per-test)
-              // Sort by TestCharges ascending and take the smallest (most likely single-test charge)
-              const sorted = [...rows].sort((a, b) => a.TestCharges - b.TestCharges);
-              setTestPrices(prev => ({ ...prev, [name]: sorted[0].TestCharges }));
+              const sorted = [...rows].sort((a, b) => (a.TestCharges ?? 0) - (b.TestCharges ?? 0));
+              const price = sorted[0]?.TestCharges ?? 0;
+              if (price > 0) setTestPrices(prev => ({ ...prev, [name]: price }));
             }
-          })
-          .catch(() => {});
+          } catch { /* silently ignore price fetch errors */ }
+        })();
       }
     }
     setTestSearch('');
