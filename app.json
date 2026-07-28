@@ -39,6 +39,12 @@
           "backgroundColor": "#0D9488"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "681cae89-7ac1-4068-8290-857ba236680b"
+      }
+    },
+    "owner": "nikhil123456789"
   }
 }
