@@ -33,6 +33,26 @@ const USERS_DB: DBUser[] = [
     phone: '+91 91234 56789',
     address: 'B-12, Satellite, Ahmedabad, Gujarat',
   },
+  {
+    id: 'refdoctor_001',
+    username: 'doctor',
+    password: '123',
+    name: 'Dr. Girish Patil',
+    email: 'doctor@liferelier.com',
+    role: 'refdoctor',
+    phone: '+91 99887 66554',
+    address: 'Life Relier Lab, Pune',
+  },
+  {
+    id: 'phlebotomist_001',
+    username: 'flibo',
+    password: '123',
+    name: 'Amit Kumar',
+    email: 'flibo@liferelier.com',
+    role: 'phlebotomist',
+    phone: '+91 99001 23456',
+    address: 'Life Relier Lab, Pune',
+  },
 ];
 
 export function authenticateUser(username: string, password: string): { user: User; token: string; role: UserRole } | null {

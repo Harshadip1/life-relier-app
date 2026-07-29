@@ -1,5 +1,6 @@
 import { LoginCredentials, AuthResponse, User, UserRole } from '../utils/types';
 import { API_BASE_URL } from '../utils/constants';
+import { authenticateUser } from './mockDatabase';
 
 /**
  * POST /api/ManageUser/Login
@@ -24,10 +25,10 @@ export async function loginUser(
       body: JSON.stringify(requestBody),
     });
   } catch (networkErr: any) {
-    // Device has no internet or DNS failed
-    throw new Error(
-      'Cannot reach the server. Please check your internet connection.',
-    );
+    // Network unreachable — try mock database
+    const mock = authenticateUser(credentials.username, credentials.password);
+    if (mock) return { user: mock.user, token: mock.token, role: mock.role };
+    throw new Error('Cannot reach the server. Please check your internet connection.');
   }
 
   // Parse body (guard against empty / non-JSON responses)
@@ -39,6 +40,11 @@ export async function loginUser(
   }
 
   if (!response.ok) {
+    // Try mock database as fallback (for dev/demo users)
+    const mock = authenticateUser(credentials.username, credentials.password);
+    if (mock) {
+      return { user: mock.user, token: mock.token, role: mock.role };
+    }
     const msg =
       data?.message ||
       data?.Message ||
