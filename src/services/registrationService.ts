@@ -202,3 +202,55 @@ export async function searchTests(searchText: string): Promise<TestResult[]> {
     };
   });
 }
+
+/**
+ * Search patients by mobile number.
+ * Requires exactly 10 digits and only returns exact matches.
+ */
+export async function searchPatientByMobile(mobileNo: string): Promise<SearchPatientItem[]> {
+  if (!mobileNo || mobileNo.trim().length !== 10) return [];
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        BranchId: 1, FromDate: '2024-01-01', ToDate: today,
+        PatRegID: '', PatientName: '', DoctorName: '', TestName: '', MobileNo: mobileNo.trim(),
+        Barcode: '', CenterCode: '', SubDepartment: '', Status: 'All',
+      }),
+    });
+    const data = await res.json();
+    const rows: any[] = Array.isArray(data) ? data : (data?.value ?? []);
+    
+    // We only want exact matches
+    const exactMatches = rows.filter(r => {
+      const p = (r.Patphoneno || r.MobileNo || '').toString().trim();
+      return p === mobileNo.trim();
+    });
+
+    // De-duplicate by PID
+    const seen = new Set<number>();
+    const result: SearchPatientItem[] = [];
+    for (const r of exactMatches) {
+      const pid = r.PatRegID ?? r.PID;
+      if (seen.has(pid)) continue;
+      seen.add(pid);
+      result.push({
+        PPID:             pid,
+        Patname:          r.Patname ?? r.PatientName ?? '',
+        intial:           '',
+        sex:              r.sex ?? '',
+        Age:              r.Age ?? 0,
+        MDY:              r.MDY ?? 'Year',
+        MobileNo:         (r.Patphoneno || r.MobileNo || '').toString().trim(),
+        Email:            r.Email ?? '',
+        Pataddress:       '',
+        PatientCardNo:    '',
+        PatientCardExpNo: '',
+        DateOfBirth:      null,
+      });
+    }
+    return result;
+  } catch { return []; }
+}

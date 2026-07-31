@@ -11,11 +11,12 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import {
   registerPatient, updatePatientFiles,
-  getInitials, searchPatient,
-  InitialItem, SearchPatientItem,
+  getInitials, searchPatient, searchPatientByMobile, searchTests,
+  InitialItem, SearchPatientItem, TestResult,
 } from '../../services/registrationService';
 import { getTestNames, TestNameItem } from '../../services/testChargesService';
 import { getAllReferingDoctors, ReferingDoctorRecord } from '../../services/referingDoctorService';
+import { API_BASE_URL } from '../../utils/constants';
 
 const T = {
   primary:    '#0D9488',
@@ -181,7 +182,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const [addedTests,    setAddedTests]   = useState<string[]>([]);
   const [testPrices,    setTestPrices]   = useState<Record<string, number>>({});
   const [allTests,      setAllTests]     = useState<TestNameItem[]>([]);
-  const [testResults,   setTestResults]  = useState<TestNameItem[]>([]);
+  const [testResults,   setTestResults]  = useState<TestResult[]>([]);
   const [searchingTest, setSearchingTest]= useState(false);
   const [showTestDrop,  setShowTestDrop] = useState(false);
   const testDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -224,9 +225,8 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const [showNameDrop, setShowNameDrop] = useState(false);
 
   // ── Autocomplete: Mobile field ─────────────────────────────────────────────
-  const [mobileResults,  setMobileResults]  = useState<SearchPatientItem[]>([]);
-  const [mobileSearching,setMobileSearching]= useState(false);
-  const [showMobileDrop, setShowMobileDrop] = useState(false);
+  const [mobileSearching, setMobileSearching] = useState(false);
+  const [mobileMessage, setMobileMessage] = useState<string | null>(null);
 
   useEffect(() => {
     getInitials().then(d => { if (d.length) setInitialsList(d); }).catch(() => {});
@@ -241,9 +241,8 @@ export default function NewRegistrationScreen({ navigation }: any) {
     setPatSearch('');
     setPatSearchResults([]);
     setShowNameDrop(false);
-    setShowMobileDrop(false);
     setNameResults([]);
-    setMobileResults([]);
+    setMobileMessage(null);
     setRegNo(String(p.PPID));
     if (p.intial)          setInitial(p.intial);
     if (p.Patname)         setPatName(p.Patname);
@@ -274,33 +273,67 @@ export default function NewRegistrationScreen({ navigation }: any) {
     finally { setNameSearching(false); }
   };
 
-  const searchByMobile = async (txt: string) => {
-    const clean = txt.replace(/\D/g, '').slice(0, 10);
-    setMobile(clean);
-    if (clean.length < 2) { setMobileResults([]); setShowMobileDrop(false); return; }
-    setMobileSearching(true);
-    setShowMobileDrop(true);
-    try {
-      const r = await searchPatient(clean);
-      setMobileResults(r);
-    } catch { setMobileResults([]); }
-    finally { setMobileSearching(false); }
+  const clearPatientInfo = () => {
+    setRegNo('—');
+    setInitial(''); setPatName(''); setGender('');
+    setAgeType('Year'); setAge(''); setDob(null);
+    setEmail(''); setAddress('');
+    setPatCardNo(''); setCardExp(''); setHospitalId('');
   };
 
-  // ── Local test search — filter from pre-loaded allTests ──────────────────
-  const searchByTest = (txt: string) => {
+  const searchByMobile = async (txt: string) => {
+    const clean = txt.replace(/\D/g, '').slice(0, 10);
+    const changed = mobile !== clean;
+    setMobile(clean);
+    
+    if (changed && regNo !== '—') {
+      clearPatientInfo();
+    }
+    
+    if (clean.length < 10) { 
+      setMobileMessage(null); 
+      return; 
+    }
+    
+    if (clean.length === 10) {
+      setMobileSearching(true);
+      setMobileMessage(null);
+      try {
+        const r = await searchPatientByMobile(clean);
+        if (r.length === 1) {
+          handlePatientSelect(r[0]);
+          setMobileMessage('Patient found and loaded.');
+        } else if (r.length > 1) {
+          setMobileMessage('Multiple patients found. Please search by name.');
+        } else {
+          setMobileMessage('No patient found with this mobile number.');
+        }
+      } catch {
+        setMobileMessage('Error searching patient.');
+      } finally {
+        setMobileSearching(false);
+      }
+    }
+  };
+
+  // ── API test search ────────────────────────────────────────────────────────
+  const searchByTest = async (txt: string) => {
     setTestSearch(txt);
-    if (txt.trim().length < 1) {
+    if (txt.trim().length < 2) {
       setTestResults([]);
       setShowTestDrop(false);
       return;
     }
-    const q = txt.toLowerCase();
-    const filtered = allTests.filter(t =>
-      t.MainTestName.toLowerCase().includes(q)
-    );
-    setTestResults(filtered);
-    setShowTestDrop(filtered.length > 0);
+    setSearchingTest(true);
+    setShowTestDrop(true);
+    try {
+      const r = await searchTests(txt.trim());
+      setTestResults(r);
+    } catch {
+      setTestResults([]);
+    } finally {
+      setSearchingTest(false);
+    }
   };
 
   const handleTestSelect = (name: string) => {
@@ -398,7 +431,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
     setRegNo('—');
     setPatSearch(''); setPatSearchResults([]);
     setNameResults([]); setShowNameDrop(false);
-    setMobileResults([]); setShowMobileDrop(false);
+    setMobileMessage(null);
   };
 
   const handleSave = async () => {
@@ -475,14 +508,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
             <SectionBar icon="account" title="Patient Information" />
             <View style={s.formCard}>
 
-              {/* Ref Doctor */}
-              <Field>
-                <InlineSelect value={refDoctor}
-                  options={['Self', ...doctorsList
-                    .filter(d => d.DoctorName?.toLowerCase() !== 'self')
-                    .map(d => d.DoctorName)]}
-                  onSelect={setRefDoctor} placeholder="Ref Doctor" />
-              </Field>
+
 
               {/* Initial | Name — with autocomplete */}
               <Field>
@@ -571,7 +597,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
                 {dob && <Text style={{ fontSize: 11, color: T.primary, marginTop: 3, marginLeft: 2 }}>Auto-calculated from DOB</Text>}
               </Field>
 
-              {/* Mobile — with autocomplete */}
+              {/* Mobile */}
               <Field>
                 <View style={[s.input, { flexDirection: 'row', alignItems: 'center', height: 44, paddingHorizontal: 12 }]}>
                   <Feather name="phone" size={15} color={T.sub} style={{ marginRight: 8 }} />
@@ -583,8 +609,6 @@ export default function NewRegistrationScreen({ navigation }: any) {
                     maxLength={10}
                     value={mobile}
                     onChangeText={searchByMobile}
-                    onBlur={() => setTimeout(() => setShowMobileDrop(false), 200)}
-                    onFocus={() => { if (mobileResults.length > 0) setShowMobileDrop(true); }}
                   />
                   {mobileSearching
                     ? <ActivityIndicator size="small" color={T.primary} />
@@ -594,42 +618,25 @@ export default function NewRegistrationScreen({ navigation }: any) {
                         </Text>
                       : null}
                 </View>
-                {showMobileDrop && (
-                  <View style={s.acDrop}>
-                    {mobileSearching && (
-                      <View style={s.acLoading}>
-                        <ActivityIndicator size="small" color={T.primary} />
-                        <Text style={s.acLoadingTxt}> Searching…</Text>
-                      </View>
-                    )}
-                    {!mobileSearching && mobileResults.length === 0 && (
-                      <View style={s.acEmpty}>
-                        <Feather name="user-x" size={13} color={T.muted} />
-                        <Text style={s.acEmptyTxt}>  No patient found</Text>
-                      </View>
-                    )}
-                    {!mobileSearching && mobileResults.slice(0, 5).map((p, i) => (
-                      <TouchableOpacity
-                        key={`m-${p.PPID}-${i}`}
-                        style={[s.acRow, i < Math.min(mobileResults.length, 5) - 1 && s.acRowBorder]}
-                        onPress={() => handlePatientSelect(p)}
-                        activeOpacity={0.75}
-                      >
-                        <MaterialCommunityIcons name="account-circle-outline" size={22} color={T.primary} style={{ marginRight: 8 }} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={s.acName}>{p.intial ? `${p.intial} ` : ''}{p.Patname ?? '—'}</Text>
-                          <Text style={s.acSub}>📱 {p.MobileNo ?? '—'}  •  Age {p.Age ?? '—'}  •  ID: {p.PPID}</Text>
-                        </View>
-                        <View style={s.acBadge}><Text style={s.acBadgeTxt}>Select</Text></View>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                {mobileMessage && !mobileSearching && (
+                  <Text style={{ fontSize: 12, color: mobileMessage.includes('loaded') ? T.green : T.danger, marginTop: 4, marginLeft: 2 }}>
+                    {mobileMessage}
+                  </Text>
                 )}
                 {mobile.length > 0 && mobile.length !== 10 && (
                   <Text style={{ fontSize: 11, color: T.danger, marginTop: 3, marginLeft: 2 }}>
                     Mobile must be exactly 10 digits
                   </Text>
                 )}
+              </Field>
+
+              {/* Ref Doctor */}
+              <Field>
+                <InlineSelect value={refDoctor}
+                  options={['Self', ...doctorsList
+                    .filter(d => d.DoctorName?.toLowerCase() !== 'self')
+                    .map(d => d.DoctorName)]}
+                  onSelect={setRefDoctor} placeholder="Ref Doctor" />
               </Field>
 
               {/* Address */}
@@ -691,16 +698,16 @@ export default function NewRegistrationScreen({ navigation }: any) {
                       </View>
                     )}
                     {!searchingTest && testResults.slice(0, 10).map((t, i) => {
-                      const alreadyAdded = addedTests.includes(t.MainTestName);
+                      const alreadyAdded = addedTests.includes(t.testName);
                       return (
                         <TouchableOpacity
-                          key={`t-${i}`}
+                          key={`t-${t.mainTestId}-${i}`}
                           style={[
                             s.acRow,
                             i < Math.min(testResults.length, 10) - 1 && s.acRowBorder,
                             alreadyAdded && { backgroundColor: T.tealBg },
                           ]}
-                          onPress={() => !alreadyAdded && handleTestSelect(t.MainTestName)}
+                          onPress={() => !alreadyAdded && handleTestSelect(t.testName)}
                           activeOpacity={alreadyAdded ? 1 : 0.75}
                         >
                           <View style={[s.testIconBox, { backgroundColor: alreadyAdded ? T.tealBorder : '#F0F9FF' }]}>
@@ -712,7 +719,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
                           </View>
                           <View style={{ flex: 1, marginLeft: 10 }}>
                             <Text style={[s.acName, alreadyAdded && { color: T.tealDark }]}>
-                              {t.MainTestName}
+                              {t.displayText || t.testName}
                             </Text>
                           </View>
                           {alreadyAdded

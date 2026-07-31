@@ -69,7 +69,9 @@ export async function loginUser(
       .toLowerCase();
 
   const role: UserRole =
-    rawRole === 'patient' ? 'patient' : 'admin';
+    rawRole === 'patient'      ? 'patient'
+    : rawRole === 'phlebotomist' ? 'phlebotomist'
+    : 'admin';
 
   // Resolve user fields (handle both flat and nested)
   const nested = raw.user || raw.User || {};
