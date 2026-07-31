@@ -27,7 +27,7 @@ const USERS_DB: DBUser[] = [
     id: 'patient_001',
     username: 'rudra',
     password: '123',
-    name: 'Rudra Patel',
+    name: 'Rudra Sheth',
     email: 'rudra@example.com',
     role: 'patient',
     phone: '+91 91234 56789',

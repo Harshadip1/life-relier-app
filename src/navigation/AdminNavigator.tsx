@@ -36,6 +36,7 @@ import PackagesScreen             from '../screens/admin/PackagesScreen';
 import ReferralDoctorScreen       from '../screens/admin/ReferralDoctorScreen';
 import CollectionCenterScreen     from '../screens/admin/CollectionCenterScreen';
 import EditPatientScreen          from '../screens/admin/EditPatientScreen';
+import SharedProfileScreen        from '../screens/shared/SharedProfileScreen';
 
 import { COLORS } from '../utils/constants';
 
@@ -169,6 +170,8 @@ function MasterStack() {
       <Stack.Screen name="StaffManagement"  component={PlaceholderScreen} initialParams={{ title: 'Staff', icon: 'account-multiple-outline' }} />
       <Stack.Screen name="Roles"            component={PlaceholderScreen} initialParams={{ title: 'Roles', icon: 'shield-account-outline' }} />
       <Stack.Screen name="Permissions"      component={PlaceholderScreen} initialParams={{ title: 'Permissions', icon: 'lock-outline' }} />
+      {/* Profile */}
+      <Stack.Screen name="AdminProfile"     component={SharedProfileScreen} />
     </Stack.Navigator>
   );
 }

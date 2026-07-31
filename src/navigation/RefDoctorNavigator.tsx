@@ -6,6 +6,7 @@ import RefDoctorHomeScreen from '../screens/refdoctor/RefDoctorHomeScreen';
 import BillsScreen         from '../screens/shared/BillsScreen';
 import SharedReportsScreen from '../screens/shared/SharedReportsScreen';
 import OffersScreen        from '../screens/shared/OffersScreen';
+import SharedProfileScreen from '../screens/shared/SharedProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -56,6 +57,14 @@ export default function RefDoctorNavigator() {
         options={{
           title: 'Offers',
           tabBarIcon: ({ color }) => <MaterialCommunityIcons name="tag-multiple-outline" size={24} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={SharedProfileScreen}
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} />,
         }}
       />
     </Tab.Navigator>

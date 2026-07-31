@@ -137,6 +137,16 @@ export default function MasterScreen({ navigation }: any) {
           </View>
         ))}
 
+        {/* Profile */}
+        <TouchableOpacity
+          style={styles.profileBtn}
+          onPress={() => navigation.navigate('AdminProfile')}
+          activeOpacity={0.8}
+        >
+          <Feather name="user" size={18} color={T.primary} />
+          <Text style={styles.profileBtnText}>My Profile</Text>
+        </TouchableOpacity>
+
         {/* Logout */}
         <TouchableOpacity
           style={styles.logoutBtn}
