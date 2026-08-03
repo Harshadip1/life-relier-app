@@ -1,30 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Image, RefreshControl,
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  TextInput, ActivityIndicator, RefreshControl, Alert, Modal, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../utils/constants';
 
 const T = {
-  primary:  '#0D9488',
-  tealDark: '#0F766E',
-  tealBg:   '#F0FDFA',
-  bg:       '#F8FAFC',
-  card:     '#FFFFFF',
-  text:     '#0F172A',
-  sub:      '#64748B',
-  muted:    '#94A3B8',
-  border:   '#E2E8F0',
-  danger:   '#EF4444',
-  amber:    '#F59E0B',
-  purple:   '#7C3AED',
-  blue:     '#3B82F6',
-  green:    '#10B981',
+  primary:   '#0D9488',
+  tealDark:  '#0F766E',
+  tealBg:    '#F0FDFA',
+  tealBorder:'#CCFBF1',
+  bg:        '#FFFFFF',
+  screenBg:  '#F8FAFC',
+  text:      '#0F172A',
+  sub:       '#64748B',
+  muted:     '#94A3B8',
+  border:    '#F1F5F9',
+  green:     '#10B981',
+  warning:   '#F59E0B',
+  danger:    '#EF4444',
 };
 
-function getGreeting() {
+function getGreeting(): string {
   const h = new Date().getHours();
   if (h >= 5  && h < 12) return 'Good Morning 🌅';
   if (h >= 12 && h < 17) return 'Good Afternoon ☀️';
@@ -32,290 +33,369 @@ function getGreeting() {
   return 'Good Night 🌙';
 }
 
-function formatDate(d: Date) {
-  return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+function fmtDate(iso: string) {
+  try { return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
+  catch { return iso; }
 }
 
-// ── Dummy data (replace with real API) ───────────────────────────────────────
-const STATS = [
-  { label: 'Appointments', value: '18', icon: 'calendar-check-outline',  color: T.blue,   bg: '#EFF6FF' },
-  { label: 'Registration', value: '2',  icon: 'account-plus-outline',     color: T.purple, bg: '#F5F3FF' },
-  { label: 'Bill Pending', value: '4',  icon: 'wallet-outline',           color: T.amber,  bg: '#FFFBEB' },
-  { label: 'Collected',    value: '11', icon: 'test-tube',                color: T.green,  bg: '#ECFDF5' },
-];
+function fmtTime(iso: string | null) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }); }
+  catch { return iso; }
+}
 
-const QUICK_ACTIONS = [
-  { label: 'Registration',     icon: 'account-plus-outline',  color: T.primary, bg: T.tealBg, screen: 'PhleboRegistration' },
-  { label: 'Sample\nCollection', icon: 'test-tube',           color: '#0369A1', bg: '#F0F9FF', screen: 'PhleboCollection'   },
-  { label: 'Appointments',     icon: 'calendar-month-outline',color: '#7C3AED', bg: '#F5F3FF', screen: 'PhleboAppointments' },
-  { label: 'Bill\nPayment',    icon: 'currency-rupee',        color: T.amber,   bg: '#FFFBEB', screen: 'PhleboBillPayment'  },
-];
+interface SampleRow {
+  PID: number; PatRegID: number; PatientName: string;
+  Patphoneno: string; Status: string; Patregdate: string;
+  BarcodeID: string; Drname: string; CenterName: string;
+  IspheboAccept: number; Isemergency: boolean;
+  TestCharges: number; tests: string[];
+}
 
-const NEXT_PATIENT = {
-  name:     'Rajesh Patil',
-  gender:   'Male',
-  age:      34,
-  time:     '09:40 AM',
-  tests:    ['CBC', 'LFT', 'HbA1c'],
-  doctor:   'Dr. Shah',
-  priority: 'High Priority',
-  status:   'Waiting',
-};
+const TABS = ['Pending', 'Collected', 'All'];
 
-export default function PhlebotomistHomeScreen({ navigation }: any) {
+export default function PhlebotomistHomeScreen() {
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
-  const [refreshing, setRefreshing] = useState(false);
+  const { user, logout } = useAuth();
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
-  };
+  const [samples,    setSamples]    = useState<SampleRow[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search,     setSearch]     = useState('');
+  const [activeTab,  setActiveTab]  = useState('Pending');
+  const [selected,   setSelected]   = useState<SampleRow | null>(null);
+
+  const load = useCallback(async (isRefresh = false) => {
+    isRefresh ? setRefreshing(true) : setLoading(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const res = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          BranchId: 1, FromDate: today, ToDate: today,
+          PatRegID: '', PatientName: '', DoctorName: '',
+          TestName: '', MobileNo: '', Barcode: '', CenterCode: '',
+          SubDepartment: '', Status: 'All',
+        }),
+      });
+      const data = await res.json();
+      const rows: any[] = Array.isArray(data) ? data : (data?.value ?? []);
+      const map = new Map<number, SampleRow>();
+      for (const r of rows) {
+        if (map.has(r.PID)) { map.get(r.PID)!.tests.push(r.MainTestName); }
+        else {
+          map.set(r.PID, {
+            PID:           r.PID,
+            PatRegID:      r.PatRegID,
+            PatientName:   r.PatientName  ?? r.Patname ?? '—',
+            Patphoneno:    r.Patphoneno   ?? '—',
+            Status:        r.Status       ?? 'Registered',
+            Patregdate:    r.Patregdate   ?? '',
+            BarcodeID:     r.BarcodeID    ?? '—',
+            Drname:        r.Drname       ?? '—',
+            CenterName:    r.CenterName   ?? '—',
+            IspheboAccept: r.IspheboAccept ?? 0,
+            Isemergency:   r.Isemergency  ?? false,
+            TestCharges:   r.TestCharges  ?? 0,
+            tests:         [r.MainTestName],
+          });
+        }
+      }
+      setSamples(Array.from(map.values()));
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to load samples.');
+    } finally { setLoading(false); setRefreshing(false); }
+  }, []);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const displayed = samples.filter(s => {
+    const q = search.toLowerCase();
+    const searchOk = s.PatientName.toLowerCase().includes(q) ||
+                     s.Patphoneno.includes(q) || s.BarcodeID.includes(q);
+    const tabOk = activeTab === 'All'       ? true
+                : activeTab === 'Pending'   ? s.IspheboAccept === 0
+                : activeTab === 'Collected' ? s.IspheboAccept === 2
+                : true;
+    return searchOk && tabOk;
+  });
+
+  const pending   = samples.filter(s => s.IspheboAccept === 0).length;
+  const collected = samples.filter(s => s.IspheboAccept === 2).length;
+  const urgent    = samples.filter(s => s.Isemergency).length;
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 0) }]}>
+    <View style={[s.root, { paddingTop: Math.max(insets.top, 0) }]}>
 
-      {/* ── Teal Header ── */}
-      <View style={styles.header}>
+      {/* ── Header Band ── */}
+      <View style={s.headerBand}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.greeting}>{getGreeting()}, {user?.name ?? 'Phlebotomist'} 👋</Text>
-          <Text style={styles.role}>Phlebotomist</Text>
-          <View style={styles.dateRow}>
-            <MaterialCommunityIcons name="calendar-outline" size={13} color="rgba(255,255,255,0.75)" />
-            <Text style={styles.dateText}>  {formatDate(new Date())}</Text>
+          <Text style={s.greeting}>{getGreeting()}</Text>
+          <Text style={s.userName}>{user?.name || 'Phlebotomist'}</Text>
+          <View style={s.labRow}>
+            <MaterialCommunityIcons name="check-decagram" size={14} color="rgba(255,255,255,0.8)" />
+            <Text style={s.labName}>  Sample Collection — Today</Text>
           </View>
         </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerBtn}>
-            <Feather name="bell" size={20} color="#FFF" />
-            <View style={styles.notifDot}><Text style={{ fontSize: 8, color: '#FFF', fontWeight: '800' }}>3</Text></View>
+        <View style={s.headerRight}>
+          <TouchableOpacity style={s.headerIconBtn} onPress={() => load(true)}>
+            <Feather name="refresh-cw" size={18} color="#FFF" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.avatarBtn} onPress={() => navigation.navigate('PhleboProfile')}>
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=100&auto=format&fit=crop' }}
-              style={styles.avatar}
-            />
+          <TouchableOpacity style={s.headerIconBtn} onPress={() => logout()}>
+            <Feather name="log-out" size={18} color="#FFF" />
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[T.primary]} tintColor={T.primary} />}
-      >
-        {/* ── Stats Grid ── */}
-        <View style={styles.statsGrid}>
-          {STATS.map(s => (
-            <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>
-              <View style={[styles.statIcon, { backgroundColor: '#FFF' }]}>
-                <MaterialCommunityIcons name={s.icon as any} size={22} color={s.color} />
-              </View>
-              <Text style={styles.statLabel}>{s.label}</Text>
-              <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
-            </View>
-          ))}
-        </View>
+      {/* ── Stats Grid ── */}
+      <View style={s.statsGrid}>
+        <StatCard value={String(pending)}   label="Pending Collection" icon="flask-outline"    color="#0369A1" bg="#F0F9FF" border="#BAE6FD" />
+        <StatCard value={String(collected)} label="Samples Received"   icon="check-circle-outline" color="#15803D" bg="#F0FDF4" border="#BBF7D0" />
+        <StatCard value={String(urgent)}    label="Urgent Samples"     icon="alarm-light-outline"  color={T.danger} bg="#FEF2F2" border="#FEE2E2" />
+        <StatCard value={String(samples.length)} label="Total Today"   icon="account-group-outline" color={T.tealDark} bg={T.tealBg} border={T.tealBorder} />
+      </View>
 
-        {/* ── Quick Actions ── */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickRow}>
-          {QUICK_ACTIONS.map(q => (
+      {/* ── Search ── */}
+      <View style={s.searchBar}>
+        <Feather name="search" size={16} color={T.muted} style={{ marginRight: 8 }} />
+        <TextInput style={s.searchInput} placeholder="Search name, barcode, mobile..."
+          placeholderTextColor={T.muted} value={search} onChangeText={setSearch} />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')}>
+            <Feather name="x" size={15} color={T.muted} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* ── Tabs ── */}
+      <View style={s.tabsWrap}>
+        <FlatList
+          data={TABS}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={t => t}
+          contentContainerStyle={{ paddingHorizontal: 16, gap: 8, alignItems: 'center' }}
+          style={{ height: 46 }}
+          renderItem={({ item: tab }) => (
             <TouchableOpacity
-              key={q.label}
-              style={styles.quickCard}
-              onPress={() => navigation.navigate(q.screen)}
-              activeOpacity={0.75}
+              style={[s.tabBtn, activeTab === tab && s.tabBtnActive]}
+              onPress={() => setActiveTab(tab)}
             >
-              <View style={[styles.quickIcon, { backgroundColor: q.bg }]}>
-                <MaterialCommunityIcons name={q.icon as any} size={26} color={q.color} />
-              </View>
-              <Text style={styles.quickLabel}>{q.label}</Text>
+              <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>{tab}</Text>
             </TouchableOpacity>
-          ))}
+          )}
+        />
+      </View>
+
+      {/* ── List ── */}
+      {loading ? (
+        <View style={s.centre}>
+          <ActivityIndicator size="large" color={T.primary} />
+          <Text style={s.centreText}>Loading samples…</Text>
         </View>
-
-        {/* ── Next Patient ── */}
-        <Text style={styles.sectionTitle}>Next Patient</Text>
-        <View style={styles.patientCard}>
-          {/* Time badge */}
-          <View style={styles.timeBadge}>
-            <Text style={styles.timeText}>{NEXT_PATIENT.time.split(' ')[0]}</Text>
-            <Text style={styles.timeAmpm}>{NEXT_PATIENT.time.split(' ')[1]}</Text>
-          </View>
-
-          {/* Patient info */}
-          <View style={styles.patientInfo}>
-            <View style={styles.patientNameRow}>
-              <Text style={styles.patientName}>{NEXT_PATIENT.name}</Text>
-              <View style={styles.priorityBadge}>
-                <Text style={styles.priorityText}>{NEXT_PATIENT.priority}</Text>
-                <MaterialCommunityIcons name="arrow-up-circle" size={12} color="#EF4444" style={{ marginLeft: 2 }} />
-              </View>
+      ) : (
+        <FlatList
+          data={displayed}
+          keyExtractor={(item, i) => `${item.PID}-${i}`}
+          contentContainerStyle={s.list}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} colors={[T.primary]} />}
+          ListEmptyComponent={
+            <View style={s.centre}>
+              <MaterialCommunityIcons name="flask-empty-outline" size={52} color={T.muted} />
+              <Text style={s.centreText}>No samples found</Text>
             </View>
+          }
+          renderItem={({ item }) => {
+            const isCollected = item.IspheboAccept === 2;
+            return (
+              <TouchableOpacity style={s.card} onPress={() => setSelected(item)} activeOpacity={0.8}>
+                {/* Header */}
+                <View style={s.cardTop}>
+                  <View style={s.avatar}>
+                    <Text style={s.avatarText}>{item.PatientName.charAt(0).toUpperCase()}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={s.name}>{item.PatientName}</Text>
+                      {item.Isemergency && (
+                        <View style={s.urgentBadge}>
+                          <Text style={s.urgentText}>URGENT</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={s.pid}>
+                      PID: <Text style={{ color: T.primary }}>PT{String(item.PatRegID).padStart(6,'0')}</Text>
+                      {'  ·  '}Barcode: {item.BarcodeID}
+                    </Text>
+                    <View style={s.metaRow}>
+                      <Feather name="phone" size={11} color={T.muted} />
+                      <Text style={s.metaText}>{item.Patphoneno}</Text>
+                      <Feather name="map-pin" size={11} color={T.muted} style={{ marginLeft: 8 }} />
+                      <Text style={s.metaText}>{item.CenterName}</Text>
+                    </View>
+                  </View>
+                  <View style={[s.statusBadge, { backgroundColor: isCollected ? '#ECFDF5' : '#FFFBEB' }]}>
+                    <View style={[s.statusDot, { backgroundColor: isCollected ? T.green : T.warning }]} />
+                    <Text style={[s.statusText, { color: isCollected ? T.green : T.warning }]}>
+                      {isCollected ? 'Collected' : 'Pending'}
+                    </Text>
+                  </View>
+                </View>
 
-            <Text style={styles.patientMeta}>{NEXT_PATIENT.gender}  •  {NEXT_PATIENT.age} Years</Text>
+                {/* Tests */}
+                <View style={s.testsRow}>
+                  <Feather name="activity" size={13} color={T.sub} style={{ marginRight: 6 }} />
+                  <Text style={s.testsText} numberOfLines={1}>{item.tests.join(' · ')}</Text>
+                </View>
 
-            <View style={styles.testsRow}>
-              {NEXT_PATIENT.tests.map(t => (
-                <View key={t} style={styles.testChip}>
-                  <Text style={styles.testChipText}>{t}</Text>
+                {/* Actions */}
+                <View style={s.actionsRow}>
+                  <TouchableOpacity style={s.actionBtn} onPress={() => setSelected(item)}>
+                    <Feather name="file-text" size={14} color={T.primary} />
+                    <Text style={s.actionText}>View Details</Text>
+                  </TouchableOpacity>
+                  <View style={s.actionDivider} />
+                  <TouchableOpacity
+                    style={s.actionBtn}
+                    onPress={() => Alert.alert(
+                      isCollected ? 'Already Collected' : 'Mark Collected',
+                      isCollected ? 'Sample already marked.' : `Mark ${item.PatientName}'s sample as collected?`,
+                      [{ text: 'Cancel', style: 'cancel' }, { text: 'Yes', onPress: () => {} }]
+                    )}
+                  >
+                    <Feather name={isCollected ? 'check-circle' : 'droplet'} size={14} color={isCollected ? T.green : T.primary} />
+                    <Text style={[s.actionText, isCollected && { color: T.green }]}>
+                      {isCollected ? 'Collected' : 'Collect'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      )}
+
+      {/* Detail Sheet */}
+      {selected && (
+        <Modal visible transparent animationType="slide">
+          <View style={s.overlay}>
+            <View style={s.sheet}>
+              <View style={s.drag} />
+              <TouchableOpacity style={s.closeBtn} onPress={() => setSelected(null)}>
+                <Feather name="x" size={22} color={T.sub} />
+              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                <View style={[s.avatar, { width: 50, height: 50, borderRadius: 25 }]}>
+                  <Text style={[s.avatarText, { fontSize: 20 }]}>{selected.PatientName.charAt(0).toUpperCase()}</Text>
+                </View>
+                <View style={{ marginLeft: 14 }}>
+                  <Text style={{ fontSize: 17, fontWeight: '800', color: T.text }}>{selected.PatientName}</Text>
+                  <Text style={{ fontSize: 12, color: T.primary, fontWeight: '600', marginTop: 2 }}>
+                    PT{String(selected.PatRegID).padStart(6,'0')}
+                  </Text>
+                </View>
+              </View>
+              {[
+                ['Barcode',  selected.BarcodeID],
+                ['Doctor',   (selected.Drname ?? '—').trim()],
+                ['Center',   selected.CenterName],
+                ['Mobile',   selected.Patphoneno],
+                ['Reg Date', fmtDate(selected.Patregdate)],
+                ['Tests',    selected.tests.join(', ')],
+                ['Charges',  `₹${(selected.TestCharges ?? 0).toFixed(0)}`],
+              ].map(([label, value]) => (
+                <View key={label} style={s.detailRow}>
+                  <Text style={s.detailLabel}>{label}</Text>
+                  <Text style={s.detailValue}>{value}</Text>
                 </View>
               ))}
-            </View>
-
-            <View style={styles.doctorRow}>
-              <MaterialCommunityIcons name="stethoscope" size={13} color={T.sub} />
-              <Text style={styles.doctorText}>  {NEXT_PATIENT.doctor}</Text>
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>{NEXT_PATIENT.status}</Text>
-                <MaterialCommunityIcons name="timer-sand" size={12} color={T.amber} style={{ marginLeft: 2 }} />
-              </View>
-            </View>
-
-            <View style={styles.actionBtns}>
-              <TouchableOpacity style={styles.viewBtn} activeOpacity={0.8}>
-                <Text style={styles.viewBtnText}>View Details</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.collectBtn} activeOpacity={0.8}>
-                <MaterialCommunityIcons name="test-tube" size={16} color="#FFF" style={{ marginRight: 6 }} />
-                <Text style={styles.collectBtnText}>Start Collection</Text>
+              <TouchableOpacity
+                style={[s.collectBtn, selected.IspheboAccept === 2 && { backgroundColor: '#64748B' }]}
+                onPress={() => {
+                  Alert.alert(
+                    selected.IspheboAccept === 2 ? 'Already Collected' : 'Mark as Collected',
+                    selected.IspheboAccept === 2 ? 'This sample is already marked as collected.' : `Mark sample for ${selected.PatientName} as collected?`,
+                    [{ text: 'Cancel', style: 'cancel' }, { text: 'Confirm', onPress: () => setSelected(null) }]
+                  );
+                }}
+              >
+                <Feather name={selected.IspheboAccept === 2 ? 'check-circle' : 'droplet'} size={16} color="#FFF" />
+                <Text style={s.collectBtnText}>
+                  {selected.IspheboAccept === 2 ? 'Already Collected' : 'Mark Collected'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
+        </Modal>
+      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: T.bg },
+function StatCard({ value, label, icon, color, bg, border }: any) {
+  return (
+    <View style={[s.statCard, { backgroundColor: bg, borderColor: border }]}>
+      <View style={[s.statIconBox, { backgroundColor: '#FFF' }]}>
+        <MaterialCommunityIcons name={icon} size={22} color={color} />
+      </View>
+      <Text style={[s.statValue, { color }]}>{value}</Text>
+      <Text style={s.statLabel}>{label}</Text>
+    </View>
+  );
+}
 
-  header:  {
-    flexDirection: 'row', alignItems: 'flex-start',
-    backgroundColor: T.tealDark,
-    paddingHorizontal: 20, paddingTop: 18, paddingBottom: 24,
-  },
-  greeting:{ fontSize: 16, fontWeight: '700', color: '#FFF' },
-  role:    { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2, fontWeight: '500' },
-  dateRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
-  dateText:{ fontSize: 12, color: 'rgba(255,255,255,0.75)' },
-
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
-  headerBtn:   {
-    width: 38, height: 38, borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center', justifyContent: 'center',
-    position: 'relative',
-  },
-  notifDot: {
-    position: 'absolute', top: 5, right: 5,
-    width: 14, height: 14, borderRadius: 7,
-    backgroundColor: '#EF4444',
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.5, borderColor: T.tealDark,
-  },
-  avatarBtn:{ width: 38, height: 38, borderRadius: 10, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' },
-  avatar:   { width: 38, height: 38 },
-
-  scroll:  { paddingHorizontal: 16, paddingTop: 20 },
-
-  // Stats
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 8 },
-  statCard:  {
-    width: '47%', borderRadius: 14,
-    padding: 14, alignItems: 'flex-start',
-  },
-  statIcon:  {
-    width: 40, height: 40, borderRadius: 10,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 10,
-    elevation: 1, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3,
-  },
-  statLabel: { fontSize: 12, color: T.sub, fontWeight: '500', marginBottom: 2 },
-  statValue: { fontSize: 24, fontWeight: '900' },
-
-  // Section
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: T.text, marginBottom: 14, marginTop: 20 },
-
-  // Quick Actions
-  quickRow:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  quickCard: { width: '23%', alignItems: 'center' },
-  quickIcon: {
-    width: 56, height: 56, borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 8,
-    elevation: 1, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4,
-  },
-  quickLabel: { fontSize: 11, fontWeight: '700', color: T.text, textAlign: 'center', lineHeight: 14 },
-
-  // Next Patient Card
-  patientCard: {
-    flexDirection: 'row',
-    backgroundColor: T.card, borderRadius: 16,
-    borderWidth: 1, borderColor: T.border,
-    padding: 16,
-    elevation: 2, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8,
-  },
-  timeBadge: {
-    backgroundColor: T.tealBg, borderRadius: 12,
-    paddingHorizontal: 10, paddingVertical: 8,
-    alignItems: 'center', justifyContent: 'center',
-    marginRight: 14, alignSelf: 'flex-start',
-    borderWidth: 1, borderColor: '#CCFBF1',
-    minWidth: 56,
-  },
-  timeText:  { fontSize: 16, fontWeight: '900', color: T.tealDark },
-  timeAmpm:  { fontSize: 10, fontWeight: '700', color: T.tealDark, marginTop: 1 },
-
-  patientInfo:    { flex: 1 },
-  patientNameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
-  patientName:    { fontSize: 15, fontWeight: '800', color: T.text },
-  priorityBadge:  {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FEF2F2', borderRadius: 8,
-    paddingHorizontal: 7, paddingVertical: 3,
-    borderWidth: 1, borderColor: '#FEE2E2',
-  },
-  priorityText: { fontSize: 10, fontWeight: '700', color: '#EF4444' },
-
-  patientMeta: { fontSize: 12, color: T.sub, marginBottom: 8, fontWeight: '500' },
-
-  testsRow:    { flexDirection: 'row', gap: 6, marginBottom: 8, flexWrap: 'wrap' },
-  testChip:    {
-    backgroundColor: '#EFF6FF', borderRadius: 6,
-    paddingHorizontal: 8, paddingVertical: 3,
-    borderWidth: 1, borderColor: '#DBEAFE',
-  },
-  testChipText:{ fontSize: 11, fontWeight: '700', color: '#1D4ED8' },
-
-  doctorRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  doctorText:  { fontSize: 12, color: T.sub, flex: 1 },
-  statusBadge: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFFBEB', borderRadius: 8,
-    paddingHorizontal: 7, paddingVertical: 3,
-    borderWidth: 1, borderColor: '#FDE68A',
-  },
-  statusText:  { fontSize: 10, fontWeight: '700', color: T.amber },
-
-  actionBtns:  { flexDirection: 'row', gap: 8 },
-  viewBtn:     {
-    flex: 1, height: 38, borderRadius: 10,
-    borderWidth: 1.5, borderColor: T.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  viewBtnText: { fontSize: 12, fontWeight: '700', color: T.text },
-  collectBtn:  {
-    flex: 1.6, height: 38, borderRadius: 10,
-    backgroundColor: T.tealDark,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-  },
-  collectBtnText: { fontSize: 12, fontWeight: '700', color: '#FFF' },
+const s = StyleSheet.create({
+  root:        { flex: 1, backgroundColor: T.screenBg },
+  headerBand:  { backgroundColor: T.primary, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 24, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  greeting:    { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
+  userName:    { fontSize: 22, fontWeight: '800', color: '#FFF', marginTop: 2 },
+  labRow:      { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
+  labName:     { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: '500' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  headerIconBtn:{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  statsGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: 10, padding: 16, paddingBottom: 0 },
+  statCard:    { width: '47.5%', borderRadius: 14, borderWidth: 1, padding: 14, alignItems: 'flex-start' },
+  statIconBox: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 10, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 },
+  statValue:   { fontSize: 22, fontWeight: '800' },
+  statLabel:   { fontSize: 11, color: T.sub, fontWeight: '500', marginTop: 2 },
+  searchBar:   { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 14, marginBottom: 4, backgroundColor: T.bg, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, paddingHorizontal: 12, height: 44 },
+  searchInput: { flex: 1, fontSize: 14, color: T.text },
+  tabsWrap:    { backgroundColor: T.bg, paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  tabBtn:      { height: 34, paddingHorizontal: 16, borderRadius: 17, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: T.bg, justifyContent: 'center', alignItems: 'center' },
+  tabBtnActive:{ backgroundColor: T.primary, borderColor: T.primary },
+  tabText:     { fontSize: 13, color: T.sub, fontWeight: '500' },
+  tabTextActive:{ color: '#FFF', fontWeight: '700' },
+  list:        { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 100 },
+  centre:      { alignItems: 'center', paddingTop: 60 },
+  centreText:  { fontSize: 14, color: T.sub, marginTop: 10 },
+  card:        { backgroundColor: T.bg, borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 12, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  cardTop:     { flexDirection: 'row', alignItems: 'flex-start', padding: 14, borderBottomWidth: 1, borderBottomColor: T.border },
+  avatar:      { width: 44, height: 44, borderRadius: 22, backgroundColor: T.tealBg, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  avatarText:  { fontSize: 18, fontWeight: '800', color: T.tealDark },
+  name:        { fontSize: 14, fontWeight: '700', color: T.text, marginBottom: 2 },
+  pid:         { fontSize: 11.5, color: T.sub, marginBottom: 3 },
+  metaRow:     { flexDirection: 'row', alignItems: 'center' },
+  metaText:    { fontSize: 11, color: T.muted, marginLeft: 3 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  statusDot:   { width: 7, height: 7, borderRadius: 4, marginRight: 5 },
+  statusText:  { fontSize: 10, fontWeight: '700' },
+  urgentBadge: { backgroundColor: '#FEE2E2', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 5 },
+  urgentText:  { fontSize: 9, fontWeight: '800', color: T.danger },
+  testsRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: T.border },
+  testsText:   { flex: 1, fontSize: 12, color: T.sub },
+  actionsRow:  { flexDirection: 'row', alignItems: 'center' },
+  actionBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 11 },
+  actionText:  { fontSize: 12, fontWeight: '600', color: T.primary },
+  actionDivider:{ width: 1, height: 18, backgroundColor: '#E2E8F0' },
+  overlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheet:       { backgroundColor: T.bg, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 20, maxHeight: '88%' },
+  drag:        { width: 36, height: 4, backgroundColor: '#E2E8F0', borderRadius: 2, alignSelf: 'center', marginBottom: 18 },
+  closeBtn:    { position: 'absolute', top: 18, right: 18, zIndex: 1 },
+  detailRow:   { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
+  detailLabel: { width: 72, fontSize: 12, color: T.sub, fontWeight: '600' },
+  detailValue: { flex: 1, fontSize: 13, color: T.text, fontWeight: '600' },
+  collectBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: T.primary, borderRadius: 12, paddingVertical: 14, marginTop: 18, gap: 8 },
+  collectBtnText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
 });

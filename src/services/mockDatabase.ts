@@ -32,6 +32,7 @@ const USERS_DB: DBUser[] = [
     role: 'patient',
     phone: '+91 91234 56789',
     address: 'B-12, Satellite, Ahmedabad, Gujarat',
+
   },
   {
     id: 'refdoctor_001',
