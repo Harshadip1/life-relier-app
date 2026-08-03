@@ -15,8 +15,7 @@ import {
 import { TestCharge } from '../../utils/types';
 import { useTheme } from '../../theme';
 
-const colors.primary = '#0D9488';
-const TEAL_DARK = '#0F766E';
+// colors.primary and colors.primaryDark are now provided via useTheme() inside the component
 
 interface DropItem { id: number; label: string }
 
@@ -525,7 +524,7 @@ const s = StyleSheet.create({
   resultsSection: { flex: 1 },
   resultBar: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: TEAL_DARK,
+    backgroundColor: colors.primaryDark,
     paddingHorizontal: 16, paddingVertical: 10,
   },
   resultBarTxt: { fontSize: 13, fontWeight: '700', color: '#FFF' },
@@ -536,7 +535,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 9,
     borderBottomWidth: 1, borderBottomColor: '#CCFBF1',
   },
-  headCell: { fontSize: 11, fontWeight: '800', color: TEAL_DARK },
+  headCell: { fontSize: 11, fontWeight: '800', color: colors.primaryDark },
   tableRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 12, paddingVertical: 12,
