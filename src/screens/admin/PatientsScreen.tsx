@@ -9,6 +9,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import { API_BASE_URL } from '../../utils/constants';
+import { useTheme } from '../../theme';
 
 const T = {
   primary:    '#0D9488',

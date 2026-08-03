@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert,
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
+import { useTheme } from '../../theme';
 
 export default function PersonalInfoScreen({ navigation }: any) {
   const { colors } = useTheme();

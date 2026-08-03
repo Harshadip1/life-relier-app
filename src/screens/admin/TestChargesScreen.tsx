@@ -14,6 +14,7 @@ import {
   SubDeptItem, RateTypeItem, PackageItem, TestNameItem,
 } from '../../services/testChargesService';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../theme';
 
 // colors.primary is now colors.primary (set inside component)
 const TEST_TYPES = [{ id: 'T', label: 'Test' }, { id: 'P', label: 'Profile' }];

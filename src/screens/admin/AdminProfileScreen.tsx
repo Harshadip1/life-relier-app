@@ -7,6 +7,7 @@ import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
+import { useTheme } from '../../theme';
 
 const ADMIN_SECTIONS = [
   {

@@ -22,6 +22,7 @@ import ReportCard from '../../components/ReportCard';
 import { COLORS, SPACING, BORDER_RADIUS, API_BASE_URL } from '../../utils/constants';
 import { ReportItem } from '../../utils/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../theme';
 
 const QUICK_ACTIONS = [
   { id: 'reports', icon: 'file-document-plus', label: 'View\nReports', color: '#0D9488', bg: '#E0F2F1' },

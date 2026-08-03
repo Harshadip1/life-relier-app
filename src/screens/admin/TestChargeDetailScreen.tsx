@@ -13,6 +13,7 @@ import {
   deleteTestCharge,
 } from '../../services/testChargesService';
 import { TestCharge } from '../../utils/types';
+import { useTheme } from '../../theme';
 
 const colors.primary = '#0D9488';
 const TEAL_DARK = '#0F766E';

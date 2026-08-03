@@ -8,6 +8,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { API_BASE_URL } from '../../utils/constants';
 import { getPatient, updatePatient, updatePatientFiles, PatientDetail, UpdatePatientPayload } from '../../services/editPatientService';
+import { useTheme } from '../../theme';
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const T = {

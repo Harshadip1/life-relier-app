@@ -17,6 +17,7 @@ import {
 import { getTestNames, TestNameItem } from '../../services/testChargesService';
 import { getAllReferingDoctors, ReferingDoctorRecord } from '../../services/referingDoctorService';
 import { API_BASE_URL } from '../../utils/constants';
+import { useTheme } from '../../theme';
 
 const T = {
   primary:    '#0D9488',

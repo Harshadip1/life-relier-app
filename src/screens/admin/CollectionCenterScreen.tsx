@@ -8,6 +8,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../../utils/constants';
 import { getCenters, CenterItem } from '../../services/testChargesService';
+import { useTheme } from '../../theme';
 
 // colors.primary is now colors.primary (set inside component)
 

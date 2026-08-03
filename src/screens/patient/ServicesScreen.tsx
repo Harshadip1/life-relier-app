@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
+import { useTheme } from '../../theme';
 
 const SERVICES = [
   { id: 'book_test', title: 'Book Test', subtitle: 'Schedule a new lab test', icon: 'flask-plus-outline', color: '#0D9488', bg: '#CCFBF1' },

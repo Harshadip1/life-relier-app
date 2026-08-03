@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../theme';
 
 const T = { primary:'#0D9488', tealDark:'#0F766E', tealBg:'#F0FDFA', tealBorder:'#CCFBF1', bg:'#F8FAFC', card:'#FFF', text:'#0F172A', sub:'#64748B', muted:'#94A3B8', border:'#E2E8F0', danger:'#EF4444' };
 

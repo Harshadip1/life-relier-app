@@ -9,6 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../utils/constants';
+import { useTheme } from '../../theme';
 
 interface BillingRow {
   PID:               number;

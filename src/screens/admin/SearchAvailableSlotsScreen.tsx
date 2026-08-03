@@ -21,6 +21,7 @@ import {
 } from '../../services/doctorScheduleService';
 import { getReferingDoctorPro, ReferingDoctorProItem } from '../../services/referingDoctorService';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../theme';
 
 // colors.primary is now colors.primary (set inside component)
 const INITIALS = [{ id: 1, label: 'Mr' }, { id: 2, label: 'Mrs' }, { id: 3, label: 'Ms' }, { id: 4, label: 'Dr' }];
