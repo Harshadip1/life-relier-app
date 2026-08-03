@@ -9,7 +9,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
 import {
-import { useTheme } from '../../theme';
   getAllReferingDoctors,
   saveReferingDoctor,
   updateReferingDoctor,
