@@ -15,10 +15,10 @@ import {
   Image,
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../theme';
 
 const { height } = Dimensions.get('window');
 
-const TEAL = '#0D9488';
 const BLUE = '#2563EB';
 const NAVY = '#1E3A8A';
 const RED  = '#DC2626';
@@ -38,6 +38,7 @@ const companyLogo = require('../../../assets/splash.png');
 
 export default function LoginScreen() {
   const { login } = useAuth();
+  const { colors } = useTheme();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -65,9 +66,11 @@ export default function LoginScreen() {
     }
   }
 
+  const s = makeStyles(colors);
+
   return (
     <View style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor={TEAL} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <View style={s.bg} />
 
       {/* Decorative crosses */}
@@ -167,12 +170,12 @@ export default function LoginScreen() {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   root: { flex: 1 },
 
   bg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: TEAL,
+    backgroundColor: colors.primary,
   },
 
   cross: {
@@ -202,13 +205,13 @@ const s = StyleSheet.create({
   // ── White card ──
   card: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     paddingHorizontal: 24,
     paddingTop: 28,
     paddingBottom: 36,
     elevation: 10,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 18,
@@ -240,18 +243,18 @@ const s = StyleSheet.create({
     alignItems: 'center',
     marginTop: 5,
     gap: 6,
-    alignSelf: 'stretch',   // match width of nameBlock (same as companyName line)
+    alignSelf: 'stretch',
   },
   redLine: {
     flex: 1,
     height: 1.5,
     backgroundColor: RED,
-    maxWidth: 32,           // cap so right line doesn't overshoot the text above
+    maxWidth: 32,
   },
   privateLtd: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.textPrimary,
     letterSpacing: 0.2,
   },
 
@@ -261,22 +264,22 @@ const s = StyleSheet.create({
   },
   inputBox: {
     borderWidth: 1.5,
-    borderColor: '#D1D5DB',
+    borderColor: colors.inputBorder,
     borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingHorizontal: 16,
     height: 54,
     justifyContent: 'center',
   },
   inputBoxError: {
-    borderColor: '#EF4444',
+    borderColor: colors.danger,
   },
   input: {
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
   },
   errorText: {
-    color: '#EF4444',
+    color: colors.danger,
     fontSize: 12,
     marginTop: 4,
     marginLeft: 2,

@@ -4,6 +4,7 @@ import {
   TextInput, ActivityIndicator, RefreshControl, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../theme';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { API_BASE_URL } from '../../utils/constants';
@@ -65,6 +66,8 @@ async function fetchReports(status: string): Promise<ReportRow[]> {
 
 export default function PendingReportsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [activeTab,  setActiveTab]  = useState('Pending Approval');
   const [records,    setRecords]    = useState<ReportRow[]>([]);
   const [loading,    setLoading]    = useState(false);
@@ -230,7 +233,7 @@ function SummaryCard({ icon, label, value, color, bg }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   root:        { flex: 1, backgroundColor: THEME.screenBg },
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 },
   backBtn:     { padding: 4, marginLeft: -4 },
@@ -250,8 +253,8 @@ const styles = StyleSheet.create({
   summaryLabel:{ fontSize: 10, fontWeight: '600', marginTop: 4, textAlign: 'center' },
   centre:      { alignItems: 'center', paddingVertical: 40 },
   centreText:  { fontSize: 14, color: THEME.textSecondary, marginTop: 10 },
-  card:        { backgroundColor: THEME.bg, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, marginBottom: 14, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6 },
-  cardTop:     { flexDirection: 'row', alignItems: 'flex-start', padding: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  card:        { backgroundColor: THEME.bg, borderRadius: 14, borderWidth: 1, borderColor: THEME.border, marginBottom: 14, elevation: 1, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6 },
+  cardTop:     { flexDirection: 'row', alignItems: 'flex-start', padding: 14, borderBottomWidth: 1, borderBottomColor: colors.divider },
   avatarBox:   { width: 42, height: 42, borderRadius: 21, backgroundColor: THEME.warningBg, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   avatarText:  { fontSize: 17, fontWeight: '800', color: THEME.warning },
   name:        { fontSize: 14, fontWeight: '700', color: THEME.textPrimary, marginBottom: 2 },
@@ -261,9 +264,9 @@ const styles = StyleSheet.create({
   statusText:  { fontSize: 9, fontWeight: '700' },
   urgentBadge: { backgroundColor: THEME.dangerBg, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   urgentText:  { fontSize: 9, fontWeight: '800', color: THEME.danger },
-  testsRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  testsRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.divider },
   testsText:   { flex: 1, fontSize: 12, color: THEME.textSecondary },
-  billingRow:  { flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', gap: 16 },
+  billingRow:  { flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.divider, gap: 16 },
   billingItem: { flex: 1 },
   billingLabel:{ fontSize: 10, color: THEME.textSecondary, fontWeight: '500', marginBottom: 2 },
   billingValue:{ fontSize: 13, color: THEME.textPrimary, fontWeight: '700' },

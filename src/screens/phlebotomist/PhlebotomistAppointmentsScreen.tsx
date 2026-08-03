@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../../theme';
 
 const T = {
   primary:  '#0D9488',
@@ -99,11 +100,13 @@ const APPOINTMENTS: Appt[] = [
 const STATUS_CFG: Record<AppStatus, { bg: string; color: string; icon: string; btnLabel: string; btnStyle: 'primary' | 'outline' | 'grey' }> = {
   Waiting:   { bg: '#FFFBEB', color: T.amber,   icon: 'timer-sand',          btnLabel: 'Start Collection', btnStyle: 'primary' },
   Confirmed: { bg: '#EFF6FF', color: T.blue,    icon: 'check-circle-outline', btnLabel: 'Start Collection', btnStyle: 'primary' },
-  Collected: { bg: '#ECFDF5', color: T.green,   icon: 'check-circle',        btnLabel: 'View Details',     btnStyle: 'outline' },
-  Missed:    { bg: '#FEF2F2', color: T.danger,  icon: 'close-circle',        btnLabel: 'Reschedule',       btnStyle: 'grey'    },
+  Collected: { bg: '#ECFDF5', color: colors.success,   icon: 'check-circle',        btnLabel: 'View Details',     btnStyle: 'outline' },
+  Missed:    { bg: '#FEF2F2', color: colors.danger,  icon: 'close-circle',        btnLabel: 'Reschedule',       btnStyle: 'grey'    },
 };
 
 export default function PhlebotomistAppointmentsScreen({ navigation }: any) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
   const [activeTab,  setActiveTab]  = useState(0);
   const [activeDate, setActiveDate] = useState(0);
@@ -168,7 +171,7 @@ export default function PhlebotomistAppointmentsScreen({ navigation }: any) {
 
           {/* Mobile */}
           <View style={s.mobileRow}>
-            <Feather name="phone" size={11} color={T.sub} />
+            <Feather name="phone" size={11} color={colors.textSecondary} />
             <Text style={s.mobileText}>  {item.mobile}</Text>
           </View>
 
@@ -187,7 +190,7 @@ export default function PhlebotomistAppointmentsScreen({ navigation }: any) {
               <MaterialCommunityIcons
                 name={isHome ? 'home-outline' : 'map-marker-outline'}
                 size={13}
-                color={T.sub}
+                color={colors.textSecondary}
               />
               <Text style={s.locationText}>  {item.location}</Text>
             </View>
@@ -204,8 +207,8 @@ export default function PhlebotomistAppointmentsScreen({ navigation }: any) {
               <Text style={[
                 s.actionBtnTxt,
                 cfg.btnStyle === 'primary' && { color: '#FFF' },
-                cfg.btnStyle === 'outline' && { color: T.tealDark },
-                cfg.btnStyle === 'grey'    && { color: T.sub },
+                cfg.btnStyle === 'outline' && { color: colors.primaryDark },
+                cfg.btnStyle === 'grey'    && { color: colors.textSecondary },
               ]}>
                 {cfg.btnLabel}
               </Text>
@@ -234,7 +237,7 @@ export default function PhlebotomistAppointmentsScreen({ navigation }: any) {
       {/* ── Date Strip ── */}
       <View style={s.dateStrip}>
         <TouchableOpacity style={s.calIcon}>
-          <MaterialCommunityIcons name="calendar-month-outline" size={22} color={T.sub} />
+          <MaterialCommunityIcons name="calendar-month-outline" size={22} color={colors.textSecondary} />
         </TouchableOpacity>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
           {DATES.map((d, i) => (
@@ -250,7 +253,7 @@ export default function PhlebotomistAppointmentsScreen({ navigation }: any) {
           ))}
         </ScrollView>
         <TouchableOpacity style={s.calIcon}>
-          <MaterialCommunityIcons name="calendar-blank-outline" size={22} color={T.sub} />
+          <MaterialCommunityIcons name="calendar-blank-outline" size={22} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -277,7 +280,7 @@ export default function PhlebotomistAppointmentsScreen({ navigation }: any) {
         contentContainerStyle={{ paddingBottom: 20 }}
         ListFooterComponent={
           <View style={s.footer}>
-            <MaterialCommunityIcons name="calendar-clock-outline" size={16} color={T.tealDark} />
+            <MaterialCommunityIcons name="calendar-clock-outline" size={16} color={colors.primaryDark} />
             <View style={{ marginLeft: 10 }}>
               <Text style={s.footerTitle}>You have 7 appointments remaining today</Text>
               <Text style={s.footerSub}>Keep going! You're doing great.</Text>
@@ -290,71 +293,71 @@ export default function PhlebotomistAppointmentsScreen({ navigation }: any) {
 }
 
 const s = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: T.bg },
+  root:    { flex: 1, backgroundColor: colors.background },
 
   // Header
-  header:      { flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealDark, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14, gap: 12 },
+  header:      { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryDark, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14, gap: 12 },
   backBtn:     { padding: 4 },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#FFF' },
 
   // Date strip
-  dateStrip:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 10, backgroundColor: T.bg, borderBottomWidth: 1, borderBottomColor: T.border },
+  dateStrip:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 10, backgroundColor: colors.background, borderBottomWidth: 1, borderBottomColor: colors.cardBorder },
   calIcon:        { padding: 6 },
   dateBtn:        { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10, marginHorizontal: 4, alignItems: 'center' },
-  dateBtnActive:  { backgroundColor: T.tealDark, borderRadius: 10 },
-  dateBtnLabel:   { fontSize: 12, fontWeight: '700', color: T.sub },
+  dateBtnActive:  { backgroundColor: colors.primaryDark, borderRadius: 10 },
+  dateBtnLabel:   { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
   dateBtnLabelActive: { color: '#FFF' },
-  dateBtnSub:     { fontSize: 11, color: T.muted, marginTop: 1 },
+  dateBtnSub:     { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   dateBtnSubActive: { color: 'rgba(255,255,255,0.75)' },
 
   // Tabs
-  tabBar:    { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: T.border, backgroundColor: T.bg },
+  tabBar:    { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.cardBorder, backgroundColor: colors.background },
   tab:       { flex: 1, paddingVertical: 11, alignItems: 'center' },
-  tabActive: { borderBottomWidth: 2.5, borderBottomColor: T.primary },
-  tabText:   { fontSize: 11, fontWeight: '600', color: T.muted },
-  tabTextActive: { color: T.primary, fontWeight: '800' },
+  tabActive: { borderBottomWidth: 2.5, borderBottomcolor: colors.primary },
+  tabText:   { fontSize: 11, fontWeight: '600', color: colors.textMuted },
+  tabTextActive: { color: colors.primary, fontWeight: '800' },
 
   // Cards
-  card:       { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: T.bg, alignItems: 'flex-start' },
-  cardBorder: { borderBottomWidth: 1, borderBottomColor: T.border },
+  card:       { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: colors.background, alignItems: 'flex-start' },
+  cardBorder: { borderBottomWidth: 1, borderBottomColor: colors.cardBorder },
 
   // Time column
   timeCol:      { width: 52, alignItems: 'center', marginRight: 10, paddingTop: 2 },
-  timeText:     { fontSize: 12, fontWeight: '800', color: T.text, textAlign: 'center', lineHeight: 17 },
+  timeText:     { fontSize: 12, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', lineHeight: 17 },
   durationRow:  { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   durationText: { fontSize: 10, color: T.amber, fontWeight: '600' },
 
   // Avatar
-  avatar: { width: 44, height: 44, borderRadius: 22, marginRight: 10, backgroundColor: T.border },
+  avatar: { width: 44, height: 44, borderRadius: 22, marginRight: 10, backgroundColor: colors.cardBorder },
 
   // Info
   info:       { flex: 1 },
   nameRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
-  name:       { fontSize: 14, fontWeight: '800', color: T.text, flex: 1, marginRight: 6 },
+  name:       { fontSize: 14, fontWeight: '800', color: colors.textPrimary, flex: 1, marginRight: 6 },
   statusBadge:{ flexDirection: 'row', alignItems: 'center', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
   statusText: { fontSize: 10, fontWeight: '700' },
 
-  meta:       { fontSize: 11, color: T.sub, marginBottom: 3 },
+  meta:       { fontSize: 11, color: colors.textSecondary, marginBottom: 3 },
   mobileRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  mobileText: { fontSize: 11, color: T.sub },
+  mobileText: { fontSize: 11, color: colors.textSecondary },
 
   testsRow:   { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  testChip:   { backgroundColor: T.screenBg ?? '#F8FAFC', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: T.border },
-  testChipTxt:{ fontSize: 11, fontWeight: '600', color: T.text },
+  testChip:   { backgroundColor: colors.background ?? '#F8FAFC', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: colors.cardBorder },
+  testChipTxt:{ fontSize: 11, fontWeight: '600', color: colors.textPrimary },
 
   bottomRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   locationRow:  { flexDirection: 'row', alignItems: 'center' },
-  locationText: { fontSize: 11, color: T.sub },
+  locationText: { fontSize: 11, color: colors.textSecondary },
 
   // Action buttons
   actionBtn:        { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, minWidth: 110, alignItems: 'center' },
-  actionBtnPrimary: { backgroundColor: T.tealDark },
-  actionBtnOutline: { borderWidth: 1.5, borderColor: T.tealDark },
-  actionBtnGrey:    { borderWidth: 1.5, borderColor: T.border },
+  actionBtnPrimary: { backgroundColor: colors.primaryDark },
+  actionBtnOutline: { borderWidth: 1.5, borderColor: colors.primaryDark },
+  actionBtnGrey:    { borderWidth: 1.5, borderColor: colors.cardBorder },
   actionBtnTxt:     { fontSize: 12, fontWeight: '700' },
 
   // Footer
-  footer:      { flexDirection: 'row', alignItems: 'center', margin: 16, backgroundColor: T.tealBg, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#CCFBF1' },
-  footerTitle: { fontSize: 13, fontWeight: '700', color: T.tealDark },
-  footerSub:   { fontSize: 11, color: T.sub, marginTop: 2 },
+  footer:      { flexDirection: 'row', alignItems: 'center', margin: 16, backgroundColor: colors.primaryLight, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#CCFBF1' },
+  footerTitle: { fontSize: 13, fontWeight: '700', color: colors.primaryDark },
+  footerSub:   { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
 });

@@ -4,15 +4,18 @@ import {
   ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../theme';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../utils/constants';
 import { getDoctorDropdown, saveSlot, DoctorDropdownItem } from '../../services/doctorScheduleService';
 import { useAuth } from '../../context/AuthContext';
 
-const TEAL = COLORS.primary;
+// colors.primary is now colors.primary (set inside component)
 
 export default function AddDoctorSlotScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { user } = useAuth();
 
   const [doctors, setDoctors] = useState<DoctorDropdownItem[]>([]);
@@ -75,7 +78,7 @@ export default function AddDoctorSlotScreen({ navigation }: any) {
       {/* ── Header ── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={22} color={TEAL} />
+          <Feather name="arrow-left" size={22} color={colors.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Doctor Slot</Text>
         <View style={{ width: 22 }} />
@@ -83,12 +86,12 @@ export default function AddDoctorSlotScreen({ navigation }: any) {
 
       {/* ── Breadcrumb ── */}
       <View style={styles.breadcrumb}>
-        <MaterialCommunityIcons name="clock-outline" size={13} color={TEAL} />
+        <MaterialCommunityIcons name="clock-outline" size={13} color={colors.primary} />
         <Text style={styles.breadcrumbLink}> DrAppointment</Text>
         <Feather name="chevron-right" size={13} color="#94A3B8" style={{ marginHorizontal: 2 }} />
         <Text style={styles.breadcrumbLink}>DrSlot</Text>
         <Feather name="chevron-right" size={13} color="#94A3B8" style={{ marginHorizontal: 2 }} />
-        <Text style={[styles.breadcrumbLink, { color: TEAL, fontWeight: '700' }]}>Add New</Text>
+        <Text style={[styles.breadcrumbLink, { color: colors.primary, fontWeight: '700' }]}>Add New</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
@@ -129,9 +132,9 @@ export default function AddDoctorSlotScreen({ navigation }: any) {
               disabled={loadingDr || saving}
             >
               {loadingDr ? (
-                <ActivityIndicator size={16} color={TEAL} style={{ marginRight: 8 }} />
+                <ActivityIndicator size={16} color={colors.primary} style={{ marginRight: 8 }} />
               ) : null}
-              <Text style={[styles.dropdownText, !selectedDrName && { color: '#94A3B8' }]}>
+              <Text style={[styles.dropdownText, !selectedDrName && { color: colors.textMuted }]}>
                 {loadingDr ? 'Loading doctors…' : (selectedDrName || 'Select...')}
               </Text>
               <Feather name="chevron-down" size={18} color="#64748B" />
@@ -140,7 +143,7 @@ export default function AddDoctorSlotScreen({ navigation }: any) {
               <View style={styles.dropdownMenu}>
                 {doctors.length === 0 ? (
                   <View style={styles.dropdownItem}>
-                    <Text style={{ color: '#94A3B8' }}>No doctors found</Text>
+                    <Text style={{ color: colors.textMuted }}>No doctors found</Text>
                   </View>
                 ) : doctors.map((p) => (
                   <TouchableOpacity
@@ -166,7 +169,7 @@ export default function AddDoctorSlotScreen({ navigation }: any) {
               <TextInput
                 style={styles.textInput}
                 placeholder="Enter minutes (e.g. 15)"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 keyboardType="numeric"
                 value={slotMins}
                 onChangeText={setSlotMins}
@@ -185,8 +188,8 @@ export default function AddDoctorSlotScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F1F5F9' },
+const makeStyles = (colors: any) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.surfaceVariant },
 
   // Header
   header: {
@@ -194,25 +197,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingBottom: 12,
   },
   backBtn: { padding: 4 },
-  headerTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: '#0F172A', textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
 
   // Breadcrumb
   breadcrumb: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#E8F5F4', paddingHorizontal: 16, paddingVertical: 8,
   },
-  breadcrumbLink: { fontSize: 12, color: '#64748B' },
+  breadcrumbLink: { fontSize: 12, color: colors.textSecondary },
 
   scroll: { padding: 16, paddingBottom: 120 },
 
   // Card
   card: {
-    backgroundColor: '#FFF', borderRadius: 14, overflow: 'hidden',
-    elevation: 2, shadowColor: '#000',
+    backgroundColor: colors.card, borderRadius: 14, overflow: 'hidden',
+    elevation: 2, shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
   },
   cardHeader: {
-    backgroundColor: TEAL, padding: 14,
+    backgroundColor: colors.primary, padding: 14,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center' },
@@ -225,7 +228,7 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#64748B', borderRadius: 20,
+    backgroundcolor: colors.textSecondary, borderRadius: 20,
     paddingHorizontal: 14, paddingVertical: 7,
   },
   btnText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
@@ -238,26 +241,26 @@ const styles = StyleSheet.create({
   // Dropdown
   dropdown: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10,
-    backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 50,
+    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10,
+    backgroundColor: colors.background, paddingHorizontal: 14, height: 50,
   },
-  dropdownText: { fontSize: 14, color: '#0F172A', flex: 1 },
+  dropdownText: { fontSize: 14, color: colors.textPrimary, flex: 1 },
   dropdownMenu: {
-    borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10,
-    backgroundColor: '#FFF', marginTop: 4, overflow: 'hidden',
+    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10,
+    backgroundColor: colors.card, marginTop: 4, overflow: 'hidden',
   },
-  dropdownItem: { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  dropdownItemText: { fontSize: 14, color: '#0F172A' },
+  dropdownItem: { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  dropdownItemText: { fontSize: 14, color: colors.textPrimary },
 
   // Text Input
   textInputWrap: {
-    borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10,
-    backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 50,
+    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10,
+    backgroundColor: colors.background, paddingHorizontal: 14, height: 50,
     justifyContent: 'center',
   },
-  textInput: { fontSize: 14, color: '#0F172A' },
+  textInput: { fontSize: 14, color: colors.textPrimary },
 
   // Footer
-  footer: { backgroundColor: TEAL, paddingVertical: 12, alignItems: 'center' },
+  footer: { backgroundColor: colors.primary, paddingVertical: 12, alignItems: 'center' },
   footerText: { fontSize: 12, color: '#FFF', fontWeight: '500' },
 });

@@ -11,8 +11,9 @@ import {
   getAllDoctorSchedules,
   DoctorScheduleRecord,
 } from '../../services/doctorScheduleService';
+import { useTheme } from '../../theme';
 
-const TEAL = COLORS.primary;
+// TEAL is now colors.primary (set inside component)
 
 /** Convert ISO date string → "DD-MM-YYYY" for display — regex avoids timezone shifts */
 function fmtDate(iso: string): string {
@@ -34,6 +35,8 @@ function fmtTime(t: string | null): string {
 
 export default function DrAppointmentScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const TEAL = colors.primary;
 
   const [schedules, setSchedules] = useState<DoctorScheduleRecord[]>([]);
   const [loading, setLoading]     = useState(false);
@@ -188,7 +191,7 @@ export default function DrAppointmentScreen({ navigation }: any) {
           <TextInput
             style={styles.searchInput}
             placeholder="Search by doctor or date..."
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textMuted}
             value={search}
             onChangeText={setSearch}
           />
@@ -253,26 +256,26 @@ export default function DrAppointmentScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F1F5F9' },
+const makeStyles = (colors: any) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.surfaceVariant },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingBottom: 12,
   },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
 
   breadcrumb: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#E8F5F4', paddingHorizontal: 16, paddingVertical: 8,
   },
-  bcText: { fontSize: 12, color: '#64748B' },
+  bcText: { fontSize: 12, color: colors.textSecondary },
 
   card: {
-    margin: 16, backgroundColor: '#FFF',
+    margin: 16, backgroundColor: colors.card,
     borderRadius: 14, overflow: 'hidden',
-    elevation: 2, shadowColor: '#000',
+    elevation: 2, shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
     flex: 1,
   },
@@ -299,16 +302,16 @@ const styles = StyleSheet.create({
 
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
-    margin: 14, backgroundColor: '#F8FAFC',
-    borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0',
+    margin: 14, backgroundColor: colors.background,
+    borderRadius: 10, borderWidth: 1, borderColor: colors.cardBorder,
     paddingHorizontal: 12, height: 44,
   },
-  searchInput: { flex: 1, fontSize: 14, color: '#0F172A' },
+  searchInput: { flex: 1, fontSize: 14, color: colors.textPrimary },
 
   centreBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: 24 },
-  centreText: { marginTop: 12, fontSize: 14, color: '#64748B' },
+  centreText: { marginTop: 12, fontSize: 14, color: colors.textSecondary },
   emptyTitle: { fontSize: 17, fontWeight: '700', color: '#334155', marginTop: 16 },
-  emptySubtitle: { fontSize: 13, color: '#94A3B8', marginTop: 6, textAlign: 'center' },
+  emptySubtitle: { fontSize: 13, color: colors.textMuted, marginTop: 6, textAlign: 'center' },
   retryBtn: {
     flexDirection: 'row', alignItems: 'center',
     marginTop: 20, borderWidth: 1.5, borderColor: TEAL,
@@ -319,7 +322,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
+    borderBottomWidth: 1, borderBottomColor: colors.divider,
   },
   rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 },
   rowAvatar: {
@@ -327,9 +330,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDFA',
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  rowDoctor: { fontSize: 14, fontWeight: '700', color: '#0F172A', marginBottom: 2 },
-  rowTime:   { fontSize: 11, color: '#64748B' },
-  rowDate:   { fontSize: 11, color: '#94A3B8', marginTop: 2 },
+  rowDoctor: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  rowTime:   { fontSize: 11, color: colors.textSecondary },
+  rowDate:   { fontSize: 11, color: colors.textMuted, marginTop: 2 },
   statusPill: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
@@ -357,7 +360,7 @@ const styles = StyleSheet.create({
     position: 'absolute', bottom: 50, right: 20,
     backgroundColor: TEAL, width: 64, height: 64, borderRadius: 32,
     alignItems: 'center', justifyContent: 'center',
-    elevation: 6, shadowColor: '#000',
+    elevation: 6, shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8,
   },
   scanLabel: { fontSize: 9, color: '#FFF', fontWeight: '700', marginTop: 2 },

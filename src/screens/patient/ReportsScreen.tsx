@@ -4,6 +4,7 @@ import {
   TextInput, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../theme';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
@@ -37,6 +38,8 @@ function formatDate(iso: string) {
 
 export default function ReportsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { user } = useAuth();
 
   const [search,     setSearch]     = useState('');
@@ -235,7 +238,7 @@ export default function ReportsScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   root:        { flex: 1, backgroundColor: THEME.screenBg },
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 },
   headerTitle: { fontSize: 24, fontWeight: '800', color: THEME.textPrimary },
@@ -245,13 +248,13 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, color: THEME.textPrimary },
   tabContainer:{ flexDirection: 'row', marginHorizontal: 20, backgroundColor: '#E2E8F0', borderRadius: 12, padding: 4, marginBottom: 16 },
   tabBtn:      { flex: 1, flexDirection: 'row', paddingVertical: 10, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
-  tabBtnActive:{ backgroundColor: THEME.bg, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
+  tabBtnActive:{ backgroundColor: THEME.bg, elevation: 2, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
   tabText:     { fontSize: 13, fontWeight: '600', color: THEME.textSecondary },
   tabTextActive:{ color: THEME.primary },
   scrollContent:{ paddingHorizontal: 20 },
   centre:      { alignItems: 'center', paddingVertical: 48 },
   centreText:  { fontSize: 14, color: THEME.textSecondary, marginTop: 12 },
-  card:        { backgroundColor: THEME.bg, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: THEME.border, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  card:        { backgroundColor: THEME.bg, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: THEME.border, elevation: 1, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
   cardHeaderFlex: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   dateBox:     { width: 54, height: 64, backgroundColor: THEME.primaryLight, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 14, borderWidth: 1, borderColor: '#CCFBF1' },
   dateMonth:   { fontSize: 10, fontWeight: '700', color: THEME.primary, textTransform: 'uppercase' },
@@ -262,11 +265,11 @@ const styles = StyleSheet.create({
   newBadge:    { backgroundColor: '#EF4444', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 8 },
   newBadgeText:{ fontSize: 8, fontWeight: '800', color: '#FFF' },
   reportLab:   { fontSize: 13, color: THEME.textSecondary, marginBottom: 2 },
-  reportId:    { fontSize: 11, color: '#94A3B8', fontWeight: '500' },
+  reportId:    { fontSize: 11, color: colors.textMuted, fontWeight: '500' },
   statusPill:  { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
   statusText:  { fontSize: 10, fontWeight: '700' },
   actionRow:   { flexDirection: 'row', gap: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 16 },
-  secondaryBtn:{ flex: 1, flexDirection: 'row', height: 40, borderRadius: 10, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: THEME.border },
+  secondaryBtn:{ flex: 1, flexDirection: 'row', height: 40, borderRadius: 10, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: THEME.border },
   secondaryBtnText:{ color: THEME.textSecondary, fontSize: 13, fontWeight: '600' },
   primaryBtn:  { flex: 1.5, flexDirection: 'row', height: 40, borderRadius: 10, backgroundColor: THEME.primary, alignItems: 'center', justifyContent: 'center' },
   primaryBtnText:{ color: '#FFF', fontSize: 13, fontWeight: '700' },

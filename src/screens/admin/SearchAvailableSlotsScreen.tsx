@@ -21,8 +21,9 @@ import {
 } from '../../services/doctorScheduleService';
 import { getReferingDoctorPro, ReferingDoctorProItem } from '../../services/referingDoctorService';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../theme';
 
-const TEAL = COLORS.primary;
+// colors.primary is now colors.primary (set inside component)
 const INITIALS = [{ id: 1, label: 'Mr' }, { id: 2, label: 'Mrs' }, { id: 3, label: 'Ms' }, { id: 4, label: 'Dr' }];
 const GENDERS  = [{ id: 1, label: 'Male' }, { id: 2, label: 'Female' }, { id: 3, label: 'Other' }];
 
@@ -87,7 +88,7 @@ function InlineDropdown({ label, required, value, options, onSelect, placeholder
     <View style={{ marginBottom: 14 }}>
       {label ? <Text style={s.label}>{label}{required && <Text style={{ color: '#EF4444' }}> *</Text>}</Text> : null}
       <TouchableOpacity style={s.dd} onPress={() => setOpen(!open)}>
-        <Text style={[s.ddText, !value && { color: '#94A3B8' }]}>{value || placeholder}</Text>
+        <Text style={[s.ddText, !value && { color: colors.textMuted }]}>{value || placeholder}</Text>
         <Feather name="chevron-down" size={16} color="#64748B" />
       </TouchableOpacity>
       {open && (
@@ -105,6 +106,8 @@ function InlineDropdown({ label, required, value, options, onSelect, placeholder
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export default function SearchAvailableSlotsScreen({ navigation }: any) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
@@ -316,7 +319,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Feather name="arrow-left" size={22} color={TEAL} />
+          <Feather name="arrow-left" size={22} color={colors.primary} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Appointment Desk</Text>
         <View style={{ width: 28 }} />
@@ -324,7 +327,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
 
       {/* Breadcrumb */}
       <View style={s.breadcrumb}>
-        <MaterialCommunityIcons name="calendar-clock" size={13} color={TEAL} />
+        <MaterialCommunityIcons name="calendar-clock" size={13} color={colors.primary} />
         <Text style={s.bcText}> Dr Appointment</Text>
         <Feather name="chevron-right" size={12} color="#94A3B8" style={{ marginHorizontal: 2 }} />
         <Text style={s.bcText}>Appointment Desk</Text>
@@ -349,8 +352,8 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
             {/* Doctor dropdown */}
             <Text style={s.label}>Collection Person <Text style={s.req}>*</Text></Text>
             <TouchableOpacity style={s.dd} onPress={() => setShowDrDrop(!showDrDrop)} disabled={loadingDr}>
-              {loadingDr ? <ActivityIndicator size={14} color={TEAL} style={{ marginRight: 8 }} /> : null}
-              <Text style={[s.ddText, !selectedDr && { color: '#94A3B8' }]}>
+              {loadingDr ? <ActivityIndicator size={14} color={colors.primary} style={{ marginRight: 8 }} /> : null}
+              <Text style={[s.ddText, !selectedDr && { color: colors.textMuted }]}>
                 {loadingDr ? 'Loading…' : (selectedDr?.FullName || 'Select...')}
               </Text>
               <Feather name="chevron-down" size={16} color="#64748B" />
@@ -393,9 +396,9 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
           <View style={[s.card, { marginTop: 16 }]}>
             {/* Legend */}
             <View style={s.legend}>
-              <View style={s.legendItem}><View style={[s.dot, { backgroundColor: TEAL }]} /><Text style={s.legendTxt}>Available</Text></View>
+              <View style={s.legendItem}><View style={[s.dot, { backgroundColor: colors.primary }]} /><Text style={s.legendTxt}>Available</Text></View>
               <View style={s.legendItem}><View style={[s.dot, { backgroundColor: '#EF4444' }]} /><Text style={s.legendTxt}>Booked</Text></View>
-              <View style={s.legendItem}><View style={[s.dot, { backgroundColor: '#94A3B8' }]} /><Text style={s.legendTxt}>Past</Text></View>
+              <View style={s.legendItem}><View style={[s.dot, { backgroundcolor: colors.textMuted }]} /><Text style={s.legendTxt}>Past</Text></View>
             </View>
 
             {generatedSlots.length === 0 ? (
@@ -471,7 +474,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
               {/* Name */}
               <Field label="Name" required>
                 <View style={s.inputWrap}>
-                  <TextInput style={s.input} placeholder="Enter Name" placeholderTextColor="#94A3B8"
+                  <TextInput style={s.input} placeholder="Enter Name" placeholderTextColor={colors.textMuted}
                     value={name} onChangeText={setName} />
                 </View>
               </Field>
@@ -493,7 +496,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
               {/* Age */}
               <Field label="Age">
                 <View style={s.inputWrap}>
-                  <TextInput style={s.input} placeholder="Age" placeholderTextColor="#94A3B8"
+                  <TextInput style={s.input} placeholder="Age" placeholderTextColor={colors.textMuted}
                     value={age} onChangeText={setAge} keyboardType="numeric" />
                 </View>
               </Field>
@@ -506,7 +509,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
               {/* Mobile */}
               <Field label="Mobile No" required>
                 <View style={s.inputWrap}>
-                  <TextInput style={s.input} placeholder="Enter Mobile No" placeholderTextColor="#94A3B8"
+                  <TextInput style={s.input} placeholder="Enter Mobile No" placeholderTextColor={colors.textMuted}
                     value={mobile} onChangeText={setMobile} keyboardType="phone-pad" maxLength={10} />
                 </View>
               </Field>
@@ -529,7 +532,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
               {/* Email */}
               <Field label="Email">
                 <View style={s.inputWrap}>
-                  <TextInput style={s.input} placeholder="Enter Email" placeholderTextColor="#94A3B8"
+                  <TextInput style={s.input} placeholder="Enter Email" placeholderTextColor={colors.textMuted}
                     value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
                 </View>
               </Field>
@@ -537,7 +540,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
               {/* Address */}
               <Field label="Address">
                 <View style={[s.inputWrap, { height: 60, alignItems: 'flex-start', paddingTop: 8 }]}>
-                  <TextInput style={[s.input, { height: 44 }]} placeholder="Enter Address" placeholderTextColor="#94A3B8"
+                  <TextInput style={[s.input, { height: 44 }]} placeholder="Enter Address" placeholderTextColor={colors.textMuted}
                     value={address} onChangeText={setAddress} multiline />
                 </View>
               </Field>
@@ -545,7 +548,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
               {/* Remark */}
               <Field label="Remark">
                 <View style={[s.inputWrap, { height: 60, alignItems: 'flex-start', paddingTop: 8 }]}>
-                  <TextInput style={[s.input, { height: 44 }]} placeholder="Enter Remark" placeholderTextColor="#94A3B8"
+                  <TextInput style={[s.input, { height: 44 }]} placeholder="Enter Remark" placeholderTextColor={colors.textMuted}
                     value={remark} onChangeText={setRemark} multiline />
                 </View>
               </Field>
@@ -570,21 +573,21 @@ function Field({ label, required, children }: any) {
 
 const s = StyleSheet.create({
   // ── Root / layout
-  root:           { flex: 1, backgroundColor: '#F1F5F9' },
+  root:           { flex: 1, backgroundColor: colors.surfaceVariant },
   header:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 12 },
   backBtn:        { padding: 4 },
-  headerTitle:    { fontSize: 18, fontWeight: '700', color: '#0F172A' },
+  headerTitle:    { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   breadcrumb:     { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5F4', paddingHorizontal: 16, paddingVertical: 8 },
-  bcText:         { fontSize: 12, color: '#64748B' },
-  bcBadge:        { backgroundColor: TEAL, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  bcText:         { fontSize: 12, color: colors.textSecondary },
+  bcBadge:        { backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
   bcBadgeText:    { fontSize: 11, color: '#FFF', fontWeight: '600' },
   scroll:         { padding: 16, paddingBottom: 20 },
-  footer:         { backgroundColor: TEAL, paddingVertical: 12, alignItems: 'center' },
+  footer:         { backgroundColor: colors.primary, paddingVertical: 12, alignItems: 'center' },
   footerTxt:      { fontSize: 12, color: '#FFF', fontWeight: '500' },
 
   // ── Search card
-  card:           { backgroundColor: '#FFF', borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
-  cardHeader:     { backgroundColor: TEAL, padding: 14, flexDirection: 'row', alignItems: 'center' },
+  card:           { backgroundColor: colors.card, borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+  cardHeader:     { backgroundColor: colors.primary, padding: 14, flexDirection: 'row', alignItems: 'center' },
   cardTitle:      { flex: 1, fontSize: 15, fontWeight: '700', color: '#FFF' },
   backSmall:      { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5 },
   backSmallTxt:   { fontSize: 12, color: '#FFF', fontWeight: '600' },
@@ -593,42 +596,42 @@ const s = StyleSheet.create({
   // ── Form elements
   label:          { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 6 },
   req:            { color: '#EF4444' },
-  dd:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 48 },
-  ddText:         { flex: 1, fontSize: 14, color: '#0F172A' },
-  ddMenu:         { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#FFF', marginTop: 4, overflow: 'hidden', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
-  ddItem:         { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  ddItemText:     { fontSize: 14, color: '#0F172A' },
-  dateRow:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 48 },
-  dateText:       { flex: 1, fontSize: 14, color: '#0F172A' },
-  searchBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: TEAL, borderRadius: 10, paddingVertical: 13, marginTop: 16 },
+  dd:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.background, paddingHorizontal: 14, height: 48 },
+  ddText:         { flex: 1, fontSize: 14, color: colors.textPrimary },
+  ddMenu:         { borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.card, marginTop: 4, overflow: 'hidden', elevation: 4, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
+  ddItem:         { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  ddItemText:     { fontSize: 14, color: colors.textPrimary },
+  dateRow:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.background, paddingHorizontal: 14, height: 48 },
+  dateText:       { flex: 1, fontSize: 14, color: colors.textPrimary },
+  searchBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 13, marginTop: 16 },
   searchBtnTxt:   { fontSize: 15, fontWeight: '700', color: '#FFF', marginLeft: 6 },
-  inputWrap:      { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 48 },
-  input:          { flex: 1, fontSize: 14, color: '#0F172A' },
-  readOnly:       { fontSize: 14, color: '#0F172A', fontWeight: '600' },
+  inputWrap:      { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.background, paddingHorizontal: 14, height: 48 },
+  input:          { flex: 1, fontSize: 14, color: colors.textPrimary },
+  readOnly:       { fontSize: 14, color: colors.textPrimary, fontWeight: '600' },
 
   // ── Slot grid
-  legend:         { flexDirection: 'row', gap: 16, padding: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  legend:         { flexDirection: 'row', gap: 16, padding: 14, borderBottomWidth: 1, borderBottomColor: colors.divider },
   legendItem:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot:            { width: 10, height: 10, borderRadius: 5 },
-  legendTxt:      { fontSize: 12, color: '#64748B' },
-  noSlots:        { textAlign: 'center', color: '#94A3B8', fontSize: 14, paddingVertical: 24 },
-  slotsHeading:   { fontSize: 11, fontWeight: '700', color: '#64748B', letterSpacing: 0.8, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 8 },
+  legendTxt:      { fontSize: 12, color: colors.textSecondary },
+  noSlots:        { textAlign: 'center', color: colors.textMuted, fontSize: 14, paddingVertical: 24 },
+  slotsHeading:   { fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.8, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 8 },
   slotsGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10, padding: 14 },
-  slotBtn:        { width: '30%', backgroundColor: '#F0FDFA', borderWidth: 1.5, borderColor: TEAL, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  slotBtn:        { width: '30%', backgroundColor: '#F0FDFA', borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   slotBooked:     { backgroundColor: '#FEF2F2', borderColor: '#EF4444' },
-  slotPast:       { backgroundColor: '#F8FAFC', borderColor: '#CBD5E1' },
-  slotBtnTxt:     { fontSize: 13, fontWeight: '700', color: TEAL },
+  slotPast:       { backgroundColor: colors.background, borderColor: '#CBD5E1' },
+  slotBtnTxt:     { fontSize: 13, fontWeight: '700', color: colors.primary },
   slotBookedTxt:  { color: '#EF4444' },
-  slotPastTxt:    { color: '#94A3B8' },
+  slotPastTxt:    { color: colors.textMuted },
 
   // ── Modal
   modalOverlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  modalCard:      { backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '92%' },
-  modalHeader:    { flexDirection: 'row', alignItems: 'center', backgroundColor: TEAL, paddingHorizontal: 16, paddingVertical: 14, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  modalCard:      { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '92%' },
+  modalHeader:    { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 14, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
   modalTitle:     { fontSize: 15, fontWeight: '700', color: '#FFF' },
-  modalActions:   { flexDirection: 'row', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  modalActions:   { flexDirection: 'row', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
   modalScroll:    { padding: 16 },
-  bookBtn:        { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: TEAL, borderRadius: 10, paddingVertical: 11 },
-  cancelBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#64748B', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 11 },
+  bookBtn:        { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 11 },
+  cancelBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundcolor: colors.textSecondary, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 11 },
   btnTxt:         { fontSize: 13, fontWeight: '700', color: '#FFF' },
 });

@@ -4,6 +4,7 @@ import {
   Modal, Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../theme';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import {
   getDoctorDropdown,
@@ -43,6 +44,8 @@ function getNextDates(count = 5) {
 }
 
 export default function BookAppointmentScreen({ navigation }: any) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const insets   = useSafeAreaInsets();
   const { user } = useAuth();
   const DATES    = getNextDates(5);
@@ -334,7 +337,7 @@ export default function BookAppointmentScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   root:        { flex: 1, backgroundColor: THEME.screenBg },
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 },
   backBtn:     { padding: 4, marginLeft: -4 },
@@ -350,14 +353,14 @@ const styles = StyleSheet.create({
   centreText: { fontSize: 14, color: THEME.textSecondary, marginTop: 12 },
 
   // Doctor card
-  docCard:      { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.bg, borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: THEME.border, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  docCard:      { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.bg, borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: THEME.border, elevation: 1, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
   docCardActive:{ borderColor: THEME.primary, borderWidth: 1.5, backgroundColor: THEME.primaryLight },
   docAvatarBox: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   docInfo:      { flex: 1 },
   docName:      { fontSize: 15, fontWeight: '700', color: THEME.textPrimary, marginBottom: 2 },
   docSpec:      { fontSize: 12, color: THEME.textSecondary, marginBottom: 6 },
   docMetaRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  docMetaItem:  { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  docMetaItem:  { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceVariant, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   docMetaText:  { fontSize: 11, fontWeight: '600', color: THEME.textPrimary, marginLeft: 4 },
   radioOuter:   { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: THEME.border, alignItems: 'center', justifyContent: 'center' },
   radioInner:   { width: 10, height: 10, borderRadius: 5, backgroundColor: THEME.primary },
@@ -388,7 +391,7 @@ const styles = StyleSheet.create({
   bottomBar:      { backgroundColor: THEME.bg, paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: THEME.border, paddingBottom: Platform.OS === 'ios' ? 30 : 14 },
   primaryBtn:     { backgroundColor: THEME.primary, height: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   primaryBtnText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  btnDisabled:    { backgroundColor: '#94A3B8' },
+  btnDisabled:    { backgroundcolor: colors.textMuted },
 
   // Modal
   modalOverlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },

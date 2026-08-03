@@ -17,6 +17,7 @@ import {
 import { getTestNames, TestNameItem } from '../../services/testChargesService';
 import { getAllReferingDoctors, ReferingDoctorRecord } from '../../services/referingDoctorService';
 import { API_BASE_URL } from '../../utils/constants';
+import { useTheme } from '../../theme';
 
 const T = {
   primary:    '#0D9488',
@@ -63,10 +64,10 @@ function InlineSelect({ value, options, onSelect, placeholder }: any) {
   return (
     <View style={{ flex: 1 }}>
       <TouchableOpacity style={s.inlineSelect} onPress={() => setOpen(!open)} activeOpacity={0.8}>
-        <Text style={[s.inlineSelectText, !value && { color: T.muted }]} numberOfLines={1}>
+        <Text style={[s.inlineSelectText, !value && { color: colors.textMuted }]} numberOfLines={1}>
           {value || placeholder}
         </Text>
-        <Feather name="chevron-down" size={14} color={T.sub} />
+        <Feather name="chevron-down" size={14} color={colors.textSecondary} />
       </TouchableOpacity>
       {open && (
         <View style={s.ddMenu}>
@@ -100,9 +101,9 @@ function DateField({ value, onChange }: { value: Date | null; onChange: (d: Date
   return (
     <>
       <TouchableOpacity style={s.datePicker} onPress={() => setShow(true)} activeOpacity={0.8}>
-        <MaterialCommunityIcons name="calendar-month-outline" size={18} color={T.sub} style={{ marginRight: 8 }} />
-        <Text style={[s.datePickerText, !value && { color: T.muted }]}>{display || 'dd-mm-yyyy'}</Text>
-        <MaterialCommunityIcons name="calendar-blank-outline" size={18} color={T.sub} />
+        <MaterialCommunityIcons name="calendar-month-outline" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
+        <Text style={[s.datePickerText, !value && { color: colors.textMuted }]}>{display || 'dd-mm-yyyy'}</Text>
+        <MaterialCommunityIcons name="calendar-blank-outline" size={18} color={colors.textSecondary} />
       </TouchableOpacity>
       {show && (
         <DateTimePicker
@@ -131,9 +132,9 @@ function StepIndicator({ current }: { current: number }) {
               <View style={[s.stepCircle, done && s.stepCircleDone, active && s.stepCircleActive]}>
                 {done
                   ? <Feather name="check" size={14} color="#FFF" />
-                  : <MaterialCommunityIcons name={step.icon as any} size={16} color={active ? '#FFF' : T.muted} />}
+                  : <MaterialCommunityIcons name={step.icon as any} size={16} color={active ? '#FFF' : colors.textMuted} />}
               </View>
-              <Text style={[s.stepLabel, active && { color: T.tealDark, fontWeight: '700' }, done && { color: T.green }]}>
+              <Text style={[s.stepLabel, active && { color: colors.primaryDark, fontWeight: '700' }, done && { color: colors.success }]}>
                 {step.label}
               </Text>
             </View>
@@ -146,6 +147,8 @@ function StepIndicator({ current }: { current: number }) {
 }
 
 export default function NewRegistrationScreen({ navigation }: any) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const [step, setStep] = useState(1);
@@ -491,7 +494,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
     <KeyboardAvoidingView style={[s.root, { paddingTop: Math.max(insets.top, 0) }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Feather name="arrow-left" size={22} color={T.text} />
+          <Feather name="arrow-left" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>New Registration</Text>
         <View style={s.regNoBadge}><Text style={s.regNoBadgeTxt}>Reg: {regNo}</Text></View>
@@ -523,7 +526,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
                     <TextInput
                       style={s.input}
                       placeholder="Enter Name"
-                      placeholderTextColor={T.muted}
+                      placeholderTextColor={colors.textMuted}
                       value={patName}
                       onChangeText={searchByName}
                       onBlur={() => setTimeout(() => setShowNameDrop(false), 200)}
@@ -533,13 +536,13 @@ export default function NewRegistrationScreen({ navigation }: any) {
                       <View style={s.acDrop}>
                         {nameSearching && (
                           <View style={s.acLoading}>
-                            <ActivityIndicator size="small" color={T.primary} />
+                            <ActivityIndicator size="small" color={colors.primary} />
                             <Text style={s.acLoadingTxt}> Searching…</Text>
                           </View>
                         )}
                         {!nameSearching && nameResults.length === 0 && (
                           <View style={s.acEmpty}>
-                            <Feather name="user-x" size={13} color={T.muted} />
+                            <Feather name="user-x" size={13} color={colors.textMuted} />
                             <Text style={s.acEmptyTxt}>  No patient found</Text>
                           </View>
                         )}
@@ -550,7 +553,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
                             onPress={() => handlePatientSelect(p)}
                             activeOpacity={0.75}
                           >
-                            <MaterialCommunityIcons name="account-circle-outline" size={22} color={T.primary} style={{ marginRight: 8 }} />
+                            <MaterialCommunityIcons name="account-circle-outline" size={22} color={colors.primary} style={{ marginRight: 8 }} />
                             <View style={{ flex: 1 }}>
                               <Text style={s.acName}>{p.intial ? `${p.intial} ` : ''}{p.Patname ?? '—'}</Text>
                               <Text style={s.acSub}>📱 {p.MobileNo ?? '—'}  •  Age {p.Age ?? '—'}  •  ID: {p.PPID}</Text>
@@ -586,43 +589,43 @@ export default function NewRegistrationScreen({ navigation }: any) {
                   <TextInput
                     style={[s.input, { flex: 1, marginLeft: 8 }]}
                     placeholder="Age"
-                    placeholderTextColor={T.muted}
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="numeric"
                     value={age}
                     onChangeText={setAge}
                   />
                 </View>
-                {dob && <Text style={{ fontSize: 11, color: T.primary, marginTop: 3, marginLeft: 2 }}>Auto-calculated from DOB</Text>}
+                {dob && <Text style={{ fontSize: 11, color: colors.primary, marginTop: 3, marginLeft: 2 }}>Auto-calculated from DOB</Text>}
               </Field>
 
               {/* Mobile */}
               <Field>
                 <View style={[s.input, { flexDirection: 'row', alignItems: 'center', height: 44, paddingHorizontal: 12 }]}>
-                  <Feather name="phone" size={15} color={T.sub} style={{ marginRight: 8 }} />
+                  <Feather name="phone" size={15} color={colors.textSecondary} style={{ marginRight: 8 }} />
                   <TextInput
-                    style={{ flex: 1, fontSize: 13, color: T.text }}
+                    style={{ flex: 1, fontSize: 13, color: colors.textPrimary }}
                     placeholder="Mobile (10 digits)"
-                    placeholderTextColor={T.muted}
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="phone-pad"
                     maxLength={10}
                     value={mobile}
                     onChangeText={searchByMobile}
                   />
                   {mobileSearching
-                    ? <ActivityIndicator size="small" color={T.primary} />
+                    ? <ActivityIndicator size="small" color={colors.primary} />
                     : mobile.length > 0
-                      ? <Text style={{ fontSize: 11, fontWeight: '700', color: mobile.length === 10 ? '#15803D' : T.danger }}>
+                      ? <Text style={{ fontSize: 11, fontWeight: '700', color: mobile.length === 10 ? '#15803D' : colors.danger }}>
                           {mobile.length}/10
                         </Text>
                       : null}
                 </View>
                 {mobileMessage && !mobileSearching && (
-                  <Text style={{ fontSize: 12, color: mobileMessage.includes('loaded') ? T.green : T.danger, marginTop: 4, marginLeft: 2 }}>
+                  <Text style={{ fontSize: 12, color: mobileMessage.includes('loaded') ? colors.success : colors.danger, marginTop: 4, marginLeft: 2 }}>
                     {mobileMessage}
                   </Text>
                 )}
                 {mobile.length > 0 && mobile.length !== 10 && (
-                  <Text style={{ fontSize: 11, color: T.danger, marginTop: 3, marginLeft: 2 }}>
+                  <Text style={{ fontSize: 11, color: colors.danger, marginTop: 3, marginLeft: 2 }}>
                     Mobile must be exactly 10 digits
                   </Text>
                 )}
@@ -642,7 +645,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
                 <TextInput
                   style={[s.input, { height: 72, textAlignVertical: 'top', paddingTop: 8 }]}
                   placeholder="Enter Address"
-                  placeholderTextColor={T.muted}
+                  placeholderTextColor={colors.textMuted}
                   multiline
                   value={address}
                   onChangeText={setAddress}
@@ -660,11 +663,11 @@ export default function NewRegistrationScreen({ navigation }: any) {
               <Field>
                 <Text style={s.fieldHint}>Type at least 2 characters to search tests from database</Text>
                 <View style={s.testSearchBox}>
-                  <Feather name="search" size={16} color={T.sub} style={{ marginRight: 8 }} />
+                  <Feather name="search" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
                   <TextInput
-                    style={{ flex: 1, fontSize: 13, color: T.text }}
+                    style={{ flex: 1, fontSize: 13, color: colors.textPrimary }}
                     placeholder="Type test name or code (e.g. CBC, Blood)..."
-                    placeholderTextColor={T.muted}
+                    placeholderTextColor={colors.textMuted}
                     value={testSearch}
                     onChangeText={searchByTest}
                     onBlur={() => setTimeout(() => setShowTestDrop(false), 200)}
@@ -672,10 +675,10 @@ export default function NewRegistrationScreen({ navigation }: any) {
                     returnKeyType="search"
                   />
                   {searchingTest
-                    ? <ActivityIndicator size="small" color={T.primary} />
+                    ? <ActivityIndicator size="small" color={colors.primary} />
                     : testSearch.length > 0
                       ? <TouchableOpacity onPress={() => { setTestSearch(''); setTestResults([]); setShowTestDrop(false); }}>
-                          <Feather name="x" size={16} color={T.muted} />
+                          <Feather name="x" size={16} color={colors.textMuted} />
                         </TouchableOpacity>
                       : null}
                 </View>
@@ -685,13 +688,13 @@ export default function NewRegistrationScreen({ navigation }: any) {
                   <View style={s.acDrop}>
                     {searchingTest && (
                       <View style={s.acLoading}>
-                        <ActivityIndicator size="small" color={T.primary} />
+                        <ActivityIndicator size="small" color={colors.primary} />
                         <Text style={s.acLoadingTxt}> Searching tests…</Text>
                       </View>
                     )}
                     {!searchingTest && testResults.length === 0 && (
                       <View style={s.acEmpty}>
-                        <MaterialCommunityIcons name="flask-off-outline" size={14} color={T.muted} />
+                        <MaterialCommunityIcons name="flask-off-outline" size={14} color={colors.textMuted} />
                         <Text style={s.acEmptyTxt}>  No test found</Text>
                       </View>
                     )}
@@ -703,25 +706,25 @@ export default function NewRegistrationScreen({ navigation }: any) {
                           style={[
                             s.acRow,
                             i < Math.min(testResults.length, 10) - 1 && s.acRowBorder,
-                            alreadyAdded && { backgroundColor: T.tealBg },
+                            alreadyAdded && { backgroundColor: colors.primaryLight },
                           ]}
                           onPress={() => !alreadyAdded && handleTestSelect(t.testName)}
                           activeOpacity={alreadyAdded ? 1 : 0.75}
                         >
-                          <View style={[s.testIconBox, { backgroundColor: alreadyAdded ? T.tealBorder : '#F0F9FF' }]}>
+                          <View style={[s.testIconBox, { backgroundColor: alreadyAdded ? colors.primaryLight : '#F0F9FF' }]}>
                             <MaterialCommunityIcons
                               name="flask-outline"
                               size={16}
-                              color={alreadyAdded ? T.tealDark : '#0369A1'}
+                              color={alreadyAdded ? colors.primaryDark : '#0369A1'}
                             />
                           </View>
                           <View style={{ flex: 1, marginLeft: 10 }}>
-                            <Text style={[s.acName, alreadyAdded && { color: T.tealDark }]}>
+                            <Text style={[s.acName, alreadyAdded && { color: colors.primaryDark }]}>
                               {t.displayText || t.testName}
                             </Text>
                           </View>
                           {alreadyAdded
-                            ? <View style={[s.acBadge, { backgroundColor: T.tealDark }]}>
+                            ? <View style={[s.acBadge, { backgroundColor: colors.primaryDark }]}>
                                 <Text style={s.acBadgeTxt}>Added ✓</Text>
                               </View>
                             : <View style={s.acBadge}>
@@ -737,9 +740,9 @@ export default function NewRegistrationScreen({ navigation }: any) {
               {/* Added tests chips */}
               {addedTests.length === 0
                 ? <View style={s.noTestsBox}>
-                    <MaterialCommunityIcons name="flask-outline" size={40} color={T.primary} />
+                    <MaterialCommunityIcons name="flask-outline" size={40} color={colors.primary} />
                     <Text style={s.noTestsText}>No tests added yet</Text>
-                    <Text style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>Search and select tests above</Text>
+                    <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 4 }}>Search and select tests above</Text>
                   </View>
                 : <View style={{ padding: 8 }}>
                     <Text style={[s.fieldHint, { marginBottom: 8 }]}>
@@ -749,14 +752,14 @@ export default function NewRegistrationScreen({ navigation }: any) {
                       {addedTests.map((t, i) => (
                         <TouchableOpacity
                           key={i}
-                          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.tealBorder }}
+                          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryLight, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: colors.primaryLight }}
                           onPress={() => {
                             setAddedTests(prev => prev.filter((_, idx) => idx !== i));
                           }}
                         >
-                          <MaterialCommunityIcons name="flask-outline" size={13} color={T.tealDark} style={{ marginRight: 4 }} />
-                          <Text style={{ fontSize: 12, color: T.tealDark, fontWeight: '600' }}>{t}</Text>
-                          <Feather name="x" size={13} color={T.tealDark} style={{ marginLeft: 4 }} />
+                          <MaterialCommunityIcons name="flask-outline" size={13} color={colors.primaryDark} style={{ marginRight: 4 }} />
+                          <Text style={{ fontSize: 12, color: colors.primaryDark, fontWeight: '600' }}>{t}</Text>
+                          <Feather name="x" size={13} color={colors.primaryDark} style={{ marginLeft: 4 }} />
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -792,11 +795,11 @@ export default function NewRegistrationScreen({ navigation }: any) {
               <View style={s.rowWrap2}>
                 <View style={{ flex: 1, marginRight: 8 }}>
                   <Text style={s.fieldLabel}>Other Charge</Text>
-                  <TextInput style={s.input} value={otherCharge} onChangeText={setOtherCharge} keyboardType="numeric" placeholderTextColor={T.muted} />
+                  <TextInput style={s.input} value={otherCharge} onChangeText={setOtherCharge} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
                 </View>
                 <View style={{ flex: 1.5 }}>
                   <Text style={s.fieldLabel}>Other Charge Remark</Text>
-                  <TextInput style={s.input} value={otherRemark} onChangeText={setOtherRemark} placeholderTextColor={T.muted} />
+                  <TextInput style={s.input} value={otherRemark} onChangeText={setOtherRemark} placeholderTextColor={colors.textMuted} />
                 </View>
               </View>
               <View style={s.discRow}>
@@ -812,7 +815,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
                 <View style={{ flex: 1 }} />
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={s.fieldLabel}>Disc Amt</Text>
-                  <TextInput style={[s.input, { width: 80, textAlign: 'right' }]} value={discAmt} onChangeText={setDiscAmt} keyboardType="numeric" placeholderTextColor={T.muted} />
+                  <TextInput style={[s.input, { width: 80, textAlign: 'right' }]} value={discAmt} onChangeText={setDiscAmt} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
                 </View>
               </View>
               <View style={s.netAmtRow}>
@@ -821,11 +824,11 @@ export default function NewRegistrationScreen({ navigation }: any) {
               </View>
               <View style={s.rowWrap2}>
                 <View style={{ flex: 1, marginRight: 8 }}>
-                  <Text style={s.fieldLabel}>Paid Amt <Text style={{ color: T.danger }}>*</Text></Text>
-                  <TextInput style={s.input} value={paidAmt} onChangeText={setPaidAmt} keyboardType="numeric" placeholderTextColor={T.muted} />
+                  <Text style={s.fieldLabel}>Paid Amt <Text style={{ color: colors.danger }}>*</Text></Text>
+                  <TextInput style={s.input} value={paidAmt} onChangeText={setPaidAmt} keyboardType="numeric" placeholderTextColor={colors.textMuted} />
                 </View>
                 <View style={{ flex: 1.5 }}>
-                  <Text style={s.fieldLabel}>Balance <Text style={{ color: T.danger }}>*</Text></Text>
+                  <Text style={s.fieldLabel}>Balance <Text style={{ color: colors.danger }}>*</Text></Text>
                   <View style={s.balanceBox}>
                     <Text style={[s.balanceText, { color: balance < 0 ? '#EF4444' : '#92400E' }]}>
                       {balance.toFixed(2)}
@@ -834,13 +837,13 @@ export default function NewRegistrationScreen({ navigation }: any) {
                 </View>
               </View>
               <View style={s.remarkRow}>
-                <Text style={s.fieldLabel}>Remark <Text style={{ color: T.danger }}>*</Text></Text>
-                <TextInput style={[s.input, { marginTop: 4 }]} placeholder="Remark" placeholderTextColor={T.muted} value={remark} onChangeText={setRemark} />
+                <Text style={s.fieldLabel}>Remark <Text style={{ color: colors.danger }}>*</Text></Text>
+                <TextInput style={[s.input, { marginTop: 4 }]} placeholder="Remark" placeholderTextColor={colors.textMuted} value={remark} onChangeText={setRemark} />
               </View>
               <View style={s.uploadRow}>
                 <Text style={s.uploadLabel}>Upload Prescription</Text>
                 <TouchableOpacity style={s.chooseFileBtn} onPress={handleChoosePrescription} activeOpacity={0.8}>
-                  <MaterialCommunityIcons name="paperclip" size={14} color={T.tealDark} />
+                  <MaterialCommunityIcons name="paperclip" size={14} color={colors.primaryDark} />
                   <Text style={s.chooseFileTxt}> {prescriptionFile ?? 'Choose File'}</Text>
                 </TouchableOpacity>
                 <View style={{ width: 12 }} />
@@ -849,10 +852,10 @@ export default function NewRegistrationScreen({ navigation }: any) {
               <View style={[s.uploadRow, { marginBottom: 14 }]}>
                 <Text style={s.uploadLabel}>Upload Photo</Text>
                 <TouchableOpacity style={s.chooseFileBtn} onPress={handleChoosePhoto} activeOpacity={0.8}>
-                  <MaterialCommunityIcons name="image-outline" size={14} color={T.tealDark} />
+                  <MaterialCommunityIcons name="image-outline" size={14} color={colors.primaryDark} />
                   <Text style={s.chooseFileTxt}> {photoFile ? 'Change Photo' : 'Choose File'}</Text>
                 </TouchableOpacity>
-                {photoFile && <Image source={{ uri: photoFile }} style={{ width: 48, height: 48, borderRadius: 8, marginLeft: 10, borderWidth: 1, borderColor: T.tealBorder }} />}
+                {photoFile && <Image source={{ uri: photoFile }} style={{ width: 48, height: 48, borderRadius: 8, marginLeft: 10, borderWidth: 1, borderColor: colors.primaryLight }} />}
               </View>
               <View style={s.footerBtns}>
                 <TouchableOpacity style={s.clearBtn} onPress={handleClear} activeOpacity={0.8}><MaterialCommunityIcons name="refresh" size={16} color="#FFF" /><Text style={s.saveBtnText}> Clear</Text></TouchableOpacity>
@@ -870,7 +873,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
               <View style={s.bottomBar}>
                 <TouchableOpacity style={s.bottomBarBtn} onPress={handleDeptBarcode} activeOpacity={0.8}><MaterialCommunityIcons name="barcode-scan" size={16} color="#FFF" /><Text style={s.bottomBarTxt}> Dept Barcode</Text></TouchableOpacity>
                 <TouchableOpacity style={[s.bottomBarBtn,{backgroundColor:'#334155'}]} onPress={handleCard} activeOpacity={0.8}><MaterialCommunityIcons name="credit-card-outline" size={16} color="#FFF" /><Text style={s.bottomBarTxt}> Card</Text></TouchableOpacity>
-                <TouchableOpacity style={[s.bottomBarBtn,{backgroundColor:T.tealDark}]} onPress={handleSampleBarcode} activeOpacity={0.8}><MaterialCommunityIcons name="qrcode-scan" size={16} color="#FFF" /><Text style={s.bottomBarTxt}> Sample Barcode</Text></TouchableOpacity>
+                <TouchableOpacity style={[s.bottomBarBtn,{backgroundColor:colors.primaryDark}]} onPress={handleSampleBarcode} activeOpacity={0.8}><MaterialCommunityIcons name="qrcode-scan" size={16} color="#FFF" /><Text style={s.bottomBarTxt}> Sample Barcode</Text></TouchableOpacity>
                 <TouchableOpacity style={[s.bottomBarBtn,{backgroundColor:'#1D4ED8'}]} onPress={handleCapturePhoto} activeOpacity={0.8}><MaterialCommunityIcons name="camera-outline" size={16} color="#FFF" /><Text style={s.bottomBarTxt}> Capture Photo</Text></TouchableOpacity>
               </View>
             </View>
@@ -880,7 +883,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
         <View style={s.wizardNav}>
           {step > 1 && (
             <TouchableOpacity style={s.backNavBtn} onPress={handleBack} activeOpacity={0.8}>
-              <Feather name="arrow-left" size={16} color={T.tealDark} />
+              <Feather name="arrow-left" size={16} color={colors.primaryDark} />
               <Text style={s.backNavTxt}> Back</Text>
             </TouchableOpacity>
           )}
@@ -899,121 +902,121 @@ export default function NewRegistrationScreen({ navigation }: any) {
 }
 
 const s = StyleSheet.create({
-  root:        { flex: 1, backgroundColor: T.screenBg },
-  header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12, backgroundColor: T.bg, borderBottomWidth: 1, borderBottomColor: T.border, gap: 12 },
+  root:        { flex: 1, backgroundColor: colors.background },
+  header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12, backgroundColor: colors.background, borderBottomWidth: 1, borderBottomColor: colors.cardBorder, gap: 12 },
   backBtn:     { padding: 4 },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: T.text },
-  regNoBadge:  { backgroundColor: T.tealBg, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: T.tealBorder },
-  regNoBadgeTxt:{ fontSize: 11, fontWeight: '700', color: T.tealDark },
-  stepBar:     { flexDirection: 'row', alignItems: 'center', backgroundColor: T.bg, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: T.border },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: colors.textPrimary },
+  regNoBadge:  { backgroundColor: colors.primaryLight, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: colors.primaryLight },
+  regNoBadgeTxt:{ fontSize: 11, fontWeight: '700', color: colors.primaryDark },
+  stepBar:     { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.cardBorder },
   stepItem:    { alignItems: 'center', width: 64 },
-  stepCircle:  { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: T.border, marginBottom: 4 },
-  stepCircleActive: { backgroundColor: T.primary, borderColor: T.primary },
-  stepCircleDone:   { backgroundColor: T.green,   borderColor: T.green   },
-  stepLabel:   { fontSize: 10, color: T.muted, textAlign: 'center', lineHeight: 13 },
-  stepLine:    { flex: 1, height: 2, backgroundColor: T.border, marginBottom: 14 },
-  stepLineDone:{ backgroundColor: T.green },
+  stepCircle:  { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surfaceVariant, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.cardBorder, marginBottom: 4 },
+  stepCircleActive: { backgroundcolor: colors.primary, bordercolor: colors.primary },
+  stepCircleDone:   { backgroundcolor: colors.success,   bordercolor: colors.success   },
+  stepLabel:   { fontSize: 10, color: colors.textMuted, textAlign: 'center', lineHeight: 13 },
+  stepLine:    { flex: 1, height: 2, backgroundColor: colors.cardBorder, marginBottom: 14 },
+  stepLineDone:{ backgroundcolor: colors.success },
   scroll:      { paddingBottom: 20 },
-  sectionBar:  { flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealDark, paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
+  sectionBar:  { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryDark, paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
   sectionBarText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
-  formCard:    { backgroundColor: T.bg, paddingHorizontal: 12, paddingTop: 8, marginBottom: 2 },
+  formCard:    { backgroundColor: colors.background, paddingHorizontal: 12, paddingTop: 8, marginBottom: 2 },
   fieldWrap:   { marginBottom: 8 },
   rowWrap:     { flexDirection: 'row', alignItems: 'center' },
   rowWrap2:    { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
-  input:       { borderWidth: 1, borderColor: T.border, borderRadius: 6, paddingHorizontal: 10, height: 40, fontSize: 13, color: T.text, backgroundColor: T.bg },
-  inputHighlight: { borderColor: T.primary, borderWidth: 1.5 },
-  inputLabel:  { fontSize: 11, color: T.sub, fontWeight: '600' },
-  fieldLabel:  { fontSize: 11, color: T.sub, fontWeight: '600', marginBottom: 4 },
-  datePicker:     { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: T.border, borderRadius: 6, paddingHorizontal: 10, height: 40, backgroundColor: T.bg },
-  datePickerText: { flex: 1, fontSize: 13, color: T.text },
-  inlineSelect: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: T.border, borderRadius: 6, paddingHorizontal: 8, height: 40, backgroundColor: T.bg },
-  inlineSelectText: { flex: 1, fontSize: 13, color: T.text },
-  ddMenu:      { borderWidth: 1, borderColor: T.border, borderRadius: 6, backgroundColor: T.bg, zIndex: 999, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 6 },
+  input:       { borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 6, paddingHorizontal: 10, height: 40, fontSize: 13, color: colors.textPrimary, backgroundColor: colors.background },
+  inputHighlight: { bordercolor: colors.primary, borderWidth: 1.5 },
+  inputLabel:  { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+  fieldLabel:  { fontSize: 11, color: colors.textSecondary, fontWeight: '600', marginBottom: 4 },
+  datePicker:     { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 6, paddingHorizontal: 10, height: 40, backgroundColor: colors.background },
+  datePickerText: { flex: 1, fontSize: 13, color: colors.textPrimary },
+  inlineSelect: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 6, paddingHorizontal: 8, height: 40, backgroundColor: colors.background },
+  inlineSelectText: { flex: 1, fontSize: 13, color: colors.textPrimary },
+  ddMenu:      { borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 6, backgroundColor: colors.background, zIndex: 999, elevation: 8, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 6 },
   ddItem:      { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F8FAFC' },
-  ddItemText:  { fontSize: 13, color: T.text },
+  ddItemText:  { fontSize: 13, color: colors.textPrimary },
   checkRow:    { flexDirection: 'row', alignItems: 'center', marginRight: 16 },
-  checkBox:    { width: 16, height: 16, borderRadius: 3, borderWidth: 1.5, borderColor: T.border, backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center', marginRight: 5 },
-  checkBoxOn:  { backgroundColor: T.primary, borderColor: T.primary },
-  checkLabel:  { fontSize: 12, color: T.text, fontWeight: '500' },
-  reportTypeRow:   { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.border },
+  checkBox:    { width: 16, height: 16, borderRadius: 3, borderWidth: 1.5, borderColor: colors.cardBorder, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', marginRight: 5 },
+  checkBoxOn:  { backgroundcolor: colors.primary, bordercolor: colors.primary },
+  checkLabel:  { fontSize: 12, color: colors.textPrimary, fontWeight: '500' },
+  reportTypeRow:   { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.cardBorder },
   reportTypeLabel: { flexDirection: 'row', alignItems: 'center', marginRight: 12 },
-  reportTypeLabelText: { fontSize: 11, fontWeight: '800', color: T.tealDark, letterSpacing: 0.4 },
+  reportTypeLabelText: { fontSize: 11, fontWeight: '800', color: colors.primaryDark, letterSpacing: 0.4 },
   noTestsBox:  { alignItems: 'center', paddingVertical: 32 },
-  noTestsText: { fontSize: 13, color: T.muted, marginTop: 8 },
+  noTestsText: { fontSize: 13, color: colors.textMuted, marginTop: 8 },
   payTypeRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  payTypeLabel: { fontSize: 13, fontWeight: '600', color: T.text, marginRight: 12, width: 90 },
+  payTypeLabel: { fontSize: 13, fontWeight: '600', color: colors.textPrimary, marginRight: 12, width: 90 },
   payTypeBtns:  { flexDirection: 'row', gap: 6 },
-  payTypeBtn:   { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: T.border, backgroundColor: T.bg },
-  payTypeBtnActive:     { backgroundColor: T.primary, borderColor: T.primary },
-  payTypeBtnText:       { fontSize: 12, color: T.sub, fontWeight: '600' },
+  payTypeBtn:   { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.background },
+  payTypeBtnActive:     { backgroundcolor: colors.primary, bordercolor: colors.primary },
+  payTypeBtnText:       { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
   payTypeBtnTextActive: { color: '#FFF' },
   amountRow:     { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  amountLabel:   { fontSize: 13, color: T.text, fontWeight: '600', width: 100 },
-  amountValueBox:{ flex: 1, borderWidth: 1, borderColor: T.border, borderRadius: 6, paddingHorizontal: 10, height: 38, justifyContent: 'center', backgroundColor: '#F0FDFA' },
-  amountValue:   { fontSize: 15, fontWeight: '800', color: T.primary },
+  amountLabel:   { fontSize: 13, color: colors.textPrimary, fontWeight: '600', width: 100 },
+  amountValueBox:{ flex: 1, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 6, paddingHorizontal: 10, height: 38, justifyContent: 'center', backgroundColor: '#F0FDFA' },
+  amountValue:   { fontSize: 15, fontWeight: '800', color: colors.primary },
   discRow:     { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
   radioRow:    { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  radioOuter:  { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: T.border, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
-  radioOuterOn:{ borderColor: T.primary },
-  radioInner:  { width: 8, height: 8, borderRadius: 4, backgroundColor: T.primary },
-  radioLabel:  { fontSize: 13, color: T.text },
-  netAmtRow:   { flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealBg, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 12, borderWidth: 1, borderColor: T.tealBorder },
-  netAmtLabel: { flex: 1, fontSize: 15, fontWeight: '800', color: T.tealDark },
-  netAmtValue: { fontSize: 18, fontWeight: '900', color: T.tealDark },
+  radioOuter:  { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: colors.cardBorder, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
+  radioOuterOn:{ bordercolor: colors.primary },
+  radioInner:  { width: 8, height: 8, borderRadius: 4, backgroundcolor: colors.primary },
+  radioLabel:  { fontSize: 13, color: colors.textPrimary },
+  netAmtRow:   { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryLight, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 12, borderWidth: 1, borderColor: colors.primaryLight },
+  netAmtLabel: { flex: 1, fontSize: 15, fontWeight: '800', color: colors.primaryDark },
+  netAmtValue: { fontSize: 18, fontWeight: '900', color: colors.primaryDark },
   balanceBox:  { borderWidth: 1, borderColor: '#FDE68A', borderRadius: 6, paddingHorizontal: 10, height: 40, justifyContent: 'center', backgroundColor: '#FFFBEB' },
   balanceText: { fontSize: 14, fontWeight: '700', color: '#92400E' },
   remarkRow:   { marginBottom: 10 },
   uploadRow:    { flexDirection: 'row', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 6 },
-  uploadLabel:  { fontSize: 12, color: T.text, fontWeight: '600', width: 130 },
-  chooseFileBtn:{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: T.tealBorder, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: T.tealBg },
-  chooseFileTxt:{ fontSize: 12, color: T.tealDark, fontWeight: '600' },
+  uploadLabel:  { fontSize: 12, color: colors.textPrimary, fontWeight: '600', width: 130 },
+  chooseFileBtn:{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.primaryLight, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: colors.primaryLight },
+  chooseFileTxt:{ fontSize: 12, color: colors.primaryDark, fontWeight: '600' },
   footerBtns:  { flexDirection: 'row', gap: 8, paddingVertical: 12, flexWrap: 'wrap' },
-  clearBtn:    { flexDirection: 'row', alignItems: 'center', backgroundColor: '#64748B', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 11 },
+  clearBtn:    { flexDirection: 'row', alignItems: 'center', backgroundcolor: colors.textSecondary, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 11 },
   saveBtn:     { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2563EB', borderRadius: 20, paddingHorizontal: 18, paddingVertical: 11 },
   updateBtn:   { flexDirection: 'row', alignItems: 'center', backgroundColor: '#D97706', borderRadius: 20, paddingHorizontal: 18, paddingVertical: 11 },
-  saveBillBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.tealDark, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 11 },
+  saveBillBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryDark, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 11 },
   waBtn:       { flexDirection: 'row', alignItems: 'center', backgroundColor: '#16A34A', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 11 },
   saveBtnText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
   bottomBar:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 10 },
   bottomBarBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#475569', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9 },
   bottomBarTxt: { fontSize: 12, fontWeight: '700', color: '#FFF' },
   wizardNav:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
-  backNavBtn:  { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: T.tealDark, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 10 },
-  backNavTxt:  { fontSize: 14, fontWeight: '700', color: T.tealDark },
-  nextNavBtn:  { flexDirection: 'row', alignItems: 'center', backgroundColor: T.primary, borderRadius: 20, paddingHorizontal: 22, paddingVertical: 10 },
+  backNavBtn:  { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: colors.primaryDark, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 10 },
+  backNavTxt:  { fontSize: 14, fontWeight: '700', color: colors.primaryDark },
+  nextNavBtn:  { flexDirection: 'row', alignItems: 'center', backgroundcolor: colors.primary, borderRadius: 20, paddingHorizontal: 22, paddingVertical: 10 },
   nextNavTxt:  { fontSize: 14, fontWeight: '700', color: '#FFF' },
 
   // Patient search
-  searchHint:    { fontSize: 11, color: T.primary, fontWeight: '600', marginBottom: 6 },
+  searchHint:    { fontSize: 11, color: colors.primary, fontWeight: '600', marginBottom: 6 },
   patSearchBar:  {
     flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1.5, borderColor: T.tealBorder, borderRadius: 10,
+    borderWidth: 1.5, borderColor: colors.primaryLight, borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 10,
-    backgroundColor: T.tealBg,
+    backgroundColor: colors.primaryLight,
   },
   patResultsBox: {
-    borderWidth: 1, borderColor: T.tealBorder, borderRadius: 10,
-    backgroundColor: T.bg, marginTop: 4,
-    elevation: 6, shadowColor: '#000',
+    borderWidth: 1, borderColor: colors.primaryLight, borderRadius: 10,
+    backgroundColor: colors.background, marginTop: 4,
+    elevation: 6, shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 8,
   },
   patResultsHeader: {
-    fontSize: 11, fontWeight: '700', color: T.tealDark,
+    fontSize: 11, fontWeight: '700', color: colors.primaryDark,
     paddingHorizontal: 14, paddingVertical: 8,
-    backgroundColor: T.tealBg, borderTopLeftRadius: 10, borderTopRightRadius: 10,
-    borderBottomWidth: 1, borderBottomColor: T.tealBorder,
+    backgroundColor: colors.primaryLight, borderTopLeftRadius: 10, borderTopRightRadius: 10,
+    borderBottomWidth: 1, borderBottomColor: colors.primaryLight,
   },
   patResultRow:  {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: T.bg,
+    backgroundColor: colors.background,
   },
   patResultAvatar: { marginRight: 10 },
-  patResultName: { fontSize: 14, fontWeight: '700', color: T.text },
-  patResultSub:  { fontSize: 11, color: T.sub, marginTop: 2 },
-  patResultAddr: { fontSize: 11, color: T.muted, marginTop: 1 },
+  patResultName: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  patResultSub:  { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  patResultAddr: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   patResultFillBtn: {
-    backgroundColor: T.primary, borderRadius: 8,
+    backgroundcolor: colors.primary, borderRadius: 8,
     paddingHorizontal: 10, paddingVertical: 5, marginLeft: 8,
   },
   patResultFillTxt: { fontSize: 11, fontWeight: '800', color: '#FFF' },
@@ -1026,12 +1029,12 @@ const s = StyleSheet.create({
   noPatResultTxt:{ fontSize: 12, color: '#92400E', flex: 1 },
 
   // Test search
-  fieldHint:    { fontSize: 11, color: T.sub, marginBottom: 6 },
+  fieldHint:    { fontSize: 11, color: colors.textSecondary, marginBottom: 6 },
   testSearchBox:{
     flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1.5, borderColor: T.border, borderRadius: 8,
+    borderWidth: 1.5, borderColor: colors.cardBorder, borderRadius: 8,
     paddingHorizontal: 12, paddingVertical: 10,
-    backgroundColor: T.bg,
+    backgroundColor: colors.background,
   },
   testIconBox:  {
     width: 30, height: 30, borderRadius: 8,
@@ -1040,20 +1043,20 @@ const s = StyleSheet.create({
 
   // Autocomplete dropdown
   acDrop: {
-    borderWidth: 1, borderColor: T.border, borderRadius: 8,
-    backgroundColor: T.bg, marginTop: 2,
-    elevation: 10, shadowColor: '#000',
+    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 8,
+    backgroundColor: colors.background, marginTop: 2,
+    elevation: 10, shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8,
     zIndex: 9999,
   },
   acLoading: { flexDirection: 'row', alignItems: 'center', padding: 12 },
-  acLoadingTxt: { fontSize: 12, color: T.sub },
+  acLoadingTxt: { fontSize: 12, color: colors.textSecondary },
   acEmpty:  { flexDirection: 'row', alignItems: 'center', padding: 12 },
-  acEmptyTxt: { fontSize: 12, color: T.muted },
-  acRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 11, backgroundColor: T.bg },
-  acRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  acName:   { fontSize: 13, fontWeight: '700', color: T.text },
-  acSub:    { fontSize: 11, color: T.sub, marginTop: 2 },
-  acBadge:  { backgroundColor: T.primary, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginLeft: 6 },
+  acEmptyTxt: { fontSize: 12, color: colors.textMuted },
+  acRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 11, backgroundColor: colors.background },
+  acRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.divider },
+  acName:   { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  acSub:    { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  acBadge:  { backgroundcolor: colors.primary, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginLeft: 6 },
   acBadgeTxt: { fontSize: 10, fontWeight: '800', color: '#FFF' },
 });
