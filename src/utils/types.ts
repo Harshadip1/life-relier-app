@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'patient' | 'phlebotomist';
+export type UserRole = 'admin' | 'patient' | 'phlebotomist' | 'refdoctor' | 'doctor';
 
 export interface User {
   id: string;
@@ -98,4 +98,31 @@ export interface TestCharge {
 export interface Package {
   PackageId: number;
   PackageName: string;
+}
+
+export interface PrescriptionItem {
+  id: string;
+  name: string;
+  dose: string;
+  duration: string;
+  timing?: string;
+}
+
+export interface RecommendedTestItem {
+  id: string;
+  testName: string;
+  recommendedOn: string;
+  isRequestedOnly: boolean;
+}
+
+export interface ConsultationRecord {
+  appointmentId: number;
+  doctorName: string;
+  patientName: string;
+  diagnosis: string;
+  clinicalNotes: string;
+  prescriptions: PrescriptionItem[];
+  recommendedTests: RecommendedTestItem[];
+  completedAt?: string;
+  status: 'Pending' | 'Completed';
 }

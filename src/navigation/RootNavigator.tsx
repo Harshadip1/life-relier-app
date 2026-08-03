@@ -5,6 +5,7 @@ import AuthNavigator         from './AuthNavigator';
 import AdminNavigator        from './AdminNavigator';
 import PatientNavigator      from './PatientNavigator';
 import PhlebotomistNavigator from './PhlebotomistNavigator';
+import RefDoctorNavigator    from './RefDoctorNavigator';
 import LoadingScreen         from '../components/LoadingScreen';
 
 export default function RootNavigator() {
@@ -22,6 +23,8 @@ export default function RootNavigator() {
         ? <AdminNavigator />
         : role === 'phlebotomist'
         ? <PhlebotomistNavigator />
+        : role === 'refdoctor' || role === 'doctor'
+        ? <RefDoctorNavigator />
         : <PatientNavigator />}
     </NavigationContainer>
   );
