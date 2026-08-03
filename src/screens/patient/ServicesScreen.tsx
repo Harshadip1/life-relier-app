@@ -13,6 +13,8 @@ const SERVICES = [
 ];
 
 export default function ServicesScreen() {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <ScrollView
       style={styles.root}
@@ -47,7 +49,7 @@ export default function ServicesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: SPACING.md },
   pageTitle: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary },
@@ -60,7 +62,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,

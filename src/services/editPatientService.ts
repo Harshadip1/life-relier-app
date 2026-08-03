@@ -163,22 +163,36 @@ export async function getPatient(pid: number): Promise<PatientDetail> {
   let raw: any = null;
   try { raw = text ? JSON.parse(text) : null; } catch { raw = null; }
 
+  if (raw && typeof raw === 'object') {
+    console.log("Raw Response Keys:", Object.keys(raw));
+  }
+
   if (!res.ok) throw new Error(raw?.Message || raw?.message || `Server error (${res.status})`);
 
-  // API returns { PatientInfo: [...], PaymentInfo: [...], Table1: [...] }
+  // API returns { PatientInfo: [...], PaymentInfo: [...], TestList: [...] } (or Table1 instead of TestList)
   // PatientInfo[0] = patient demographics
   // PaymentInfo[0] = billing record (contains RID, BillAmt, PaymentType, etc.)
-  // Table1         = test list
   let record: any = null;
 
   if (raw?.PatientInfo && Array.isArray(raw.PatientInfo) && raw.PatientInfo.length > 0) {
-    // Merge PatientInfo[0] + PaymentInfo[0] (first/primary payment) + Table1 tests
+    // Merge PatientInfo[0] + PaymentInfo[0] (first/primary payment) + tests
     // PaymentInfo may have multiple entries; use [0] for the primary billing record
     const payment = (Array.isArray(raw.PaymentInfo) && raw.PaymentInfo.length > 0)
       ? raw.PaymentInfo[0]
       : {};
-    // Table1 is the test list — may be empty if no tests assigned yet
-    const testList = Array.isArray(raw.Table1) ? raw.Table1 : [];
+    
+    // Check both TestList and Table1
+    let testList: any[] | undefined = undefined;
+    if (Array.isArray(raw.TestList)) {
+      testList = raw.TestList;
+    } else if (Array.isArray(raw.Table1)) {
+      testList = raw.Table1;
+    }
+
+    if (!testList) {
+      console.warn("⚠️⚠️⚠️ WARNING: TestList extraction failed! Could not find Table1 or TestList as an array in response raw keys:", Object.keys(raw));
+    }
+
     // Also preserve full PaymentInfo array in case screen needs it later
     record = {
       ...raw.PatientInfo[0],
@@ -186,7 +200,7 @@ export async function getPatient(pid: number): Promise<PatientDetail> {
       TestList:    testList,
       PaymentInfo: raw.PaymentInfo ?? [],
     };
-    console.log('[EditPatient] Table1 (TestList) length:', testList.length,
+    console.log('[EditPatient] TestList length:', testList?.length ?? 'undefined',
                 '| PaymentInfo entries:', raw.PaymentInfo?.length ?? 0);
   } else if (Array.isArray(raw) && raw.length > 0) {
     record = raw[0];

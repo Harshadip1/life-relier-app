@@ -37,6 +37,8 @@ const ADMIN_SECTIONS = [
 ];
 
 export default function AdminProfileScreen({ navigation }: any) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { user, logout } = useAuth();
 
   async function handleLogout() {
@@ -159,7 +161,7 @@ export default function AdminProfileScreen({ navigation }: any) {
                   // 👇 Triggering the new navigation handler here
                   onPress={() => handleMenuPress(item)}
                 >
-                  <View style={[styles.menuIconContainer, { backgroundColor: '#F8FAFC' }]}>
+                  <View style={[styles.menuIconContainer, { backgroundColor: colors.background }]}>
                     {renderIcon(item.icon, item.type, '#4F46E5')}
                   </View>
                   <View style={styles.menuTextContainer}>
@@ -197,7 +199,7 @@ function SummaryCard({ icon, count, label, color, bgColor }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F8F9FF' },
   header: {
     flexDirection: 'row',
@@ -209,9 +211,9 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 24, fontWeight: '800', color: '#1E1B4B' },
   settingsBtn: {
     width: 44, height: 44, borderRadius: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
-    elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8,
+    elevation: 2, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8,
   },
   badge: { position: 'absolute', top: 12, right: 12, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.danger, borderWidth: 1.5, borderColor: '#fff' },
   scrollContent: { paddingHorizontal: SPACING.lg },
@@ -224,7 +226,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E0E7FF',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     elevation: 3,
     shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.08, shadowRadius: 20,
   },
@@ -266,13 +268,13 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.md,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#EEF2FF',
-    elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5,
+    elevation: 2, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5,
   },
   summaryIconBox: {
     width: 44, height: 44, borderRadius: 12,
@@ -285,10 +287,10 @@ const styles = StyleSheet.create({
   // Menu List
   sectionContainer: { marginBottom: SPACING.xl },
   menuCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.cardBorder,
     overflow: 'hidden',
   },
   menuItem: {
@@ -296,7 +298,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.divider,
   },
   menuIconContainer: {
     width: 40, height: 40, borderRadius: 10,

@@ -15,7 +15,7 @@ import {
 } from '../../services/testChargesService';
 import { useAuth } from '../../context/AuthContext';
 
-const TEAL = COLORS.primary;
+// colors.primary is now colors.primary (set inside component)
 const TEST_TYPES = [{ id: 'T', label: 'Test' }, { id: 'P', label: 'Profile' }];
 
 // ─── Inline dropdown ──────────────────────────────────────────────────────────
@@ -25,7 +25,7 @@ function DD({ label, required, value, options, onSelect, placeholder = 'Select..
     <View style={{ marginBottom: 14 }}>
       {label ? <Text style={st.label}>{label}{required && <Text style={{ color: '#EF4444' }}> *</Text>}</Text> : null}
       <TouchableOpacity style={st.dd} onPress={() => setOpen(!open)}>
-        <Text style={[st.ddText, !value && { color: '#94A3B8' }]}>{value || placeholder}</Text>
+        <Text style={[st.ddText, !value && { color: colors.textMuted }]}>{value || placeholder}</Text>
         <Feather name="chevron-down" size={16} color="#64748B" />
       </TouchableOpacity>
       {open && (
@@ -53,6 +53,8 @@ function Field({ label, required, children }: any) {
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function TestChargesScreen({ navigation }: any) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
@@ -236,10 +238,10 @@ export default function TestChargesScreen({ navigation }: any) {
       </View>
 
       <View style={st.breadcrumb}>
-        <MaterialCommunityIcons name="currency-usd" size={13} color={TEAL} />
+        <MaterialCommunityIcons name="currency-usd" size={13} color={colors.primary} />
         <Text style={st.bcText}> Test Management</Text>
         <Feather name="chevron-right" size={12} color="#94A3B8" style={{ marginHorizontal: 2 }} />
-        <Text style={[st.bcText, { color: TEAL, fontWeight: '700' }]}>Test Charges</Text>
+        <Text style={[st.bcText, { color: colors.primary, fontWeight: '700' }]}>Test Charges</Text>
       </View>
 
       <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -292,7 +294,7 @@ export default function TestChargesScreen({ navigation }: any) {
             <View style={st.listBody}>
               <View style={st.searchBar}>
                 <Feather name="search" size={14} color="#94A3B8" style={{ marginRight: 8 }} />
-                <TextInput style={st.searchInput} placeholder="Search table..." placeholderTextColor="#94A3B8"
+                <TextInput style={st.searchInput} placeholder="Search table..." placeholderTextColor={colors.textMuted}
                   value={search} onChangeText={setSearch} />
               </View>
 
@@ -312,7 +314,7 @@ export default function TestChargesScreen({ navigation }: any) {
                 filtered.map((item, idx) => (
                   <View key={String(item.TestChargeId ?? idx)} style={st.row}>
                     <View style={st.rowIcon}>
-                      <MaterialCommunityIcons name="flask-outline" size={18} color={TEAL} />
+                      <MaterialCommunityIcons name="flask-outline" size={18} color={colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={st.rowName}>{item.TestName}</Text>
@@ -373,12 +375,12 @@ export default function TestChargesScreen({ navigation }: any) {
                 placeholder="Select Sub Department" />
 
               <Field label="Main Test ID" required>
-                <View style={st.inputWrap}><TextInput style={st.input} placeholder="e.g. 1001" placeholderTextColor="#94A3B8"
+                <View style={st.inputWrap}><TextInput style={st.input} placeholder="e.g. 1001" placeholderTextColor={colors.textMuted}
                   value={mainTestId} onChangeText={setMainTestId} keyboardType="numeric" /></View>
               </Field>
 
               <Field label="MT Code" required>
-                <View style={st.inputWrap}><TextInput style={st.input} placeholder="e.g. MT0001" placeholderTextColor="#94A3B8"
+                <View style={st.inputWrap}><TextInput style={st.input} placeholder="e.g. MT0001" placeholderTextColor={colors.textMuted}
                   value={mtCode} onChangeText={setMtCode} autoCapitalize="characters" /></View>
               </Field>
 
@@ -388,7 +390,7 @@ export default function TestChargesScreen({ navigation }: any) {
                     <TextInput
                       style={st.input}
                       placeholder="Search test name..."
-                      placeholderTextColor="#94A3B8"
+                      placeholderTextColor={colors.textMuted}
                       value={testNameSearch}
                       onChangeText={v => { setTestNameSearch(v); setTestName(''); setTestNameOpen(true); }}
                       onFocus={() => setTestNameOpen(true)}
@@ -415,7 +417,7 @@ export default function TestChargesScreen({ navigation }: any) {
                         ))}
                       {testNames.filter(t => t.MainTestName.toLowerCase().includes(testNameSearch.toLowerCase())).length === 0 && (
                         <View style={st.ddItem}>
-                          <Text style={[st.ddItemText, { color: '#94A3B8' }]}>No matches</Text>
+                          <Text style={[st.ddItemText, { color: colors.textMuted }]}>No matches</Text>
                         </View>
                       )}
                     </View>
@@ -434,17 +436,17 @@ export default function TestChargesScreen({ navigation }: any) {
                 placeholder="Select Package" />
 
               <Field label="Amount (₹)" required>
-                <View style={st.inputWrap}><TextInput style={st.input} placeholder="e.g. 500" placeholderTextColor="#94A3B8"
+                <View style={st.inputWrap}><TextInput style={st.input} placeholder="e.g. 500" placeholderTextColor={colors.textMuted}
                   value={amount} onChangeText={setAmount} keyboardType="decimal-pad" /></View>
               </Field>
 
               <Field label="Percentage (%)">
-                <View style={st.inputWrap}><TextInput style={st.input} placeholder="e.g. 10" placeholderTextColor="#94A3B8"
+                <View style={st.inputWrap}><TextInput style={st.input} placeholder="e.g. 10" placeholderTextColor={colors.textMuted}
                   value={percentage} onChangeText={setPercentage} keyboardType="decimal-pad" /></View>
               </Field>
 
               <Field label="Emergency Charge (₹)">
-                <View style={st.inputWrap}><TextInput style={st.input} placeholder="e.g. 50" placeholderTextColor="#94A3B8"
+                <View style={st.inputWrap}><TextInput style={st.input} placeholder="e.g. 50" placeholderTextColor={colors.textMuted}
                   value={emergency} onChangeText={setEmergency} keyboardType="decimal-pad" /></View>
               </Field>
               <View style={{ height: 24 }} />
@@ -457,66 +459,66 @@ export default function TestChargesScreen({ navigation }: any) {
 }
 
 const st = StyleSheet.create({
-  root:         { flex: 1, backgroundColor: '#F1F5F9' },
+  root:         { flex: 1, backgroundColor: colors.surfaceVariant },
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 12 },
   backBtn:      { padding: 4 },
-  headerTitle:  { fontSize: 18, fontWeight: '700', color: '#0F172A' },
+  headerTitle:  { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   breadcrumb:   { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5F4', paddingHorizontal: 16, paddingVertical: 8 },
-  bcText:       { fontSize: 12, color: '#64748B' },
+  bcText:       { fontSize: 12, color: colors.textSecondary },
   scroll:       { padding: 16, paddingBottom: 20 },
-  footer:       { backgroundColor: TEAL, paddingVertical: 12, alignItems: 'center' },
+  footer:       { backgroundColor: colors.primary, paddingVertical: 12, alignItems: 'center' },
   footerTxt:    { fontSize: 12, color: '#FFF', fontWeight: '500' },
 
-  card:         { backgroundColor: '#FFF', borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
-  cardHeader:   { backgroundColor: TEAL, padding: 14, flexDirection: 'row', alignItems: 'center' },
+  card:         { backgroundColor: colors.card, borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+  cardHeader:   { backgroundColor: colors.primary, padding: 14, flexDirection: 'row', alignItems: 'center' },
   cardTitle:    { flex: 1, fontSize: 15, fontWeight: '700', color: '#FFF' },
   addBtn:       { flexDirection: 'row', alignItems: 'center', backgroundColor: '#15803D', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
   addBtnTxt:    { fontSize: 13, fontWeight: '700', color: '#FFF' },
   filterBody:   { padding: 16 },
   filterBtns:   { flexDirection: 'row', gap: 10, marginTop: 4 },
-  searchBtn:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: TEAL, borderRadius: 10, paddingVertical: 11 },
+  searchBtn:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 11 },
   searchBtnTxt: { fontSize: 14, fontWeight: '700', color: '#FFF', marginLeft: 6 },
-  clearBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#64748B', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 11 },
+  clearBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundcolor: colors.textSecondary, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 11 },
   clearBtnTxt:  { fontSize: 14, fontWeight: '700', color: '#FFF', marginLeft: 4 },
 
-  resultsHeader:{ flexDirection: 'row', alignItems: 'center', backgroundColor: TEAL, padding: 14 },
+  resultsHeader:{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, padding: 14 },
   resultsTitle: { fontSize: 14, fontWeight: '700', color: '#FFF', marginRight: 8 },
   badge:        { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
   badgeTxt:     { fontSize: 11, color: '#FFF', fontWeight: '600' },
   listBody:     { padding: 16 },
-  searchBar:    { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 12, height: 44, marginBottom: 12 },
-  searchInput:  { flex: 1, fontSize: 14, color: '#0F172A' },
+  searchBar:    { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, borderRadius: 10, borderWidth: 1, borderColor: colors.cardBorder, paddingHorizontal: 12, height: 44, marginBottom: 12 },
+  searchInput:  { flex: 1, fontSize: 14, color: colors.textPrimary },
 
   centre:       { alignItems: 'center', paddingVertical: 32 },
   emptyTitle:   { fontSize: 14, fontWeight: '700', color: '#334155', marginTop: 10 },
-  emptySub:     { fontSize: 12, color: '#94A3B8', marginTop: 4, textAlign: 'center' },
+  emptySub:     { fontSize: 12, color: colors.textMuted, marginTop: 4, textAlign: 'center' },
 
-  row:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  row:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
   rowIcon:      { width: 34, height: 34, borderRadius: 8, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  rowName:      { fontSize: 13, fontWeight: '700', color: '#0F172A', marginBottom: 2 },
-  rowSub:       { fontSize: 11, color: '#64748B', marginTop: 1 },
+  rowName:      { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  rowSub:       { fontSize: 11, color: colors.textSecondary, marginTop: 1 },
   rowActions:   { alignItems: 'flex-end', gap: 5 },
   rateTag:      { backgroundColor: '#F0FDFA', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
-  rateTagTxt:   { fontSize: 12, fontWeight: '700', color: TEAL },
+  rateTagTxt:   { fontSize: 12, fontWeight: '700', color: colors.primary },
   editBtn:      { width: 28, height: 28, borderRadius: 8, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#BFDBFE' },
   delBtn:       { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA' },
 
   label:        { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 6 },
-  dd:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 48 },
-  ddText:       { flex: 1, fontSize: 14, color: '#0F172A' },
-  ddMenu:       { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#FFF', marginTop: 4, overflow: 'hidden', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
-  ddItem:       { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  ddItemText:   { fontSize: 14, color: '#0F172A' },
-  inputWrap:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 48 },
-  input:        { flex: 1, fontSize: 14, color: '#0F172A' },
+  dd:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.background, paddingHorizontal: 14, height: 48 },
+  ddText:       { flex: 1, fontSize: 14, color: colors.textPrimary },
+  ddMenu:       { borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.card, marginTop: 4, overflow: 'hidden', elevation: 4, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
+  ddItem:       { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  ddItemText:   { fontSize: 14, color: colors.textPrimary },
+  inputWrap:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.background, paddingHorizontal: 14, height: 48 },
+  input:        { flex: 1, fontSize: 14, color: colors.textPrimary },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  modalCard:    { backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '92%' },
-  modalHeader:  { flexDirection: 'row', alignItems: 'center', backgroundColor: TEAL, paddingHorizontal: 16, paddingVertical: 14, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  modalCard:    { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '92%' },
+  modalHeader:  { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 14, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
   modalTitle:   { fontSize: 15, fontWeight: '700', color: '#FFF' },
-  modalActions: { flexDirection: 'row', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  modalActions: { flexDirection: 'row', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
   modalScroll:  { padding: 16 },
   saveBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#15803D', borderRadius: 10, paddingVertical: 11 },
-  cancelBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#64748B', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 11 },
+  cancelBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundcolor: colors.textSecondary, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 11 },
   btnTxt:       { fontSize: 13, fontWeight: '700', color: '#FFF' },
 });

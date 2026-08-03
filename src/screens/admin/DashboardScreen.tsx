@@ -6,18 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-
-const T = {
-  primary:   '#0D9488',
-  bg:        '#F8FAFC',
-  card:      '#FFFFFF',
-  text:      '#0F172A',
-  sub:       '#64748B',
-  muted:     '#94A3B8',
-  border:    '#F1F5F9',
-  danger:    '#EF4444',
-  dangerBg:  '#FEF2F2',
-};
+import { useTheme } from '../../theme';
 
 // ─── Quick Actions ────────────────────────────────────────────────────────────
 const QUICK = [
@@ -39,6 +28,21 @@ function getGreeting(): string {
 export default function DashboardScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { colors } = useTheme();
+
+  const T = {
+    primary:   colors.primary,
+    bg:        colors.background,
+    card:      colors.card,
+    text:      colors.textPrimary,
+    sub:       colors.textSecondary,
+    muted:     colors.textMuted,
+    border:    colors.cardBorder,
+    danger:    colors.danger,
+    dangerBg:  colors.dangerBg,
+  };
+
+  const styles = makeStyles(colors);
 
   const displayName = user?.name || 'Admin';
   const greeting = getGreeting();
@@ -46,7 +50,7 @@ export default function DashboardScreen({ navigation }: any) {
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 0) }]}>
 
-      {/* ── Teal Header Band ── */}
+      {/* ── colors.primary Header Band ── */}
       <View style={styles.headerBand}>
         <View style={styles.headerLeft}>
           <Text style={styles.greeting}>{greeting}</Text>
@@ -92,7 +96,7 @@ export default function DashboardScreen({ navigation }: any) {
         </View>
 
         {/* ── Quick Actions ── */}
-        <SectionTitle title="Quick Actions" />
+        <SectionTitle title="Quick Actions" colors={colors} />
         <View style={styles.quickRow}>
           {QUICK.map(q => (
             <TouchableOpacity
@@ -110,10 +114,8 @@ export default function DashboardScreen({ navigation }: any) {
           ))}
         </View>
 
-
-
         {/* ── Critical Alerts ── */}
-        <SectionTitle title="Critical Alerts" style={{ marginTop: 24 }} />
+        <SectionTitle title="Critical Alerts" colors={colors} style={{ marginTop: 24 }} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
           <AlertCard number="3"  label="Critical Results"  icon="alert-circle-outline" color="#DC2626" bg="#FEF2F2" border="#FEE2E2" />
           <AlertCard number="14" label="Pending Reports"   icon="file-alert-outline"   color="#F59E0B" bg="#FFFBEB" border="#FDE68A"
@@ -129,49 +131,47 @@ export default function DashboardScreen({ navigation }: any) {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function SectionTitle({ title, style }: any) {
-  return <Text style={[styles.sectionTitle, style]}>{title}</Text>;
+function SectionTitle({ title, style, colors }: any) {
+  return <Text style={[{ fontSize: 15, fontWeight: '800', color: colors.textPrimary, marginBottom: 14, marginTop: 24 }, style]}>{title}</Text>;
 }
 
 function StatCard({ value, label, icon, color, bg, border, onPress }: any) {
   return (
     <TouchableOpacity
-      style={[styles.statCard, { backgroundColor: bg, borderColor: border }]}
+      style={[{ width: '47.5%', borderRadius: 14, borderWidth: 1, padding: 14, alignItems: 'flex-start', elevation: 0 }, { backgroundColor: bg, borderColor: border }]}
       activeOpacity={0.8} onPress={onPress}
     >
-      <View style={[styles.statIconBox, { backgroundColor: '#FFFFFF' }]}>
+      <View style={[{ width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 10, elevation: 1, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }, { backgroundColor: colors.card }]}>
         <MaterialCommunityIcons name={icon} size={22} color={color} />
       </View>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={[{ fontSize: 22, fontWeight: '800' }, { color }]}>{value}</Text>
+      <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '500', marginTop: 2 }}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
-
-
 function AlertCard({ number, label, icon, color, bg, border, onPress }: any) {
   return (
     <TouchableOpacity
-      style={[styles.alertCard, { backgroundColor: bg, borderColor: border }]}
+      style={[{ width: 120, borderRadius: 14, borderWidth: 1, padding: 14, marginRight: 12, alignItems: 'center', elevation: 0 }, { backgroundColor: bg, borderColor: border }]}
       activeOpacity={0.8} onPress={onPress}
     >
-      <View style={[styles.alertIconBox, { backgroundColor: '#FFF' }]}>
+      <View style={[{ width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10, elevation: 1, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }, { backgroundColor: colors.card }]}>
         <MaterialCommunityIcons name={icon} size={24} color={color} />
       </View>
-      <Text style={[styles.alertNum, { color }]}>{number}</Text>
-      <Text style={styles.alertLabel}>{label}</Text>
+      <Text style={[{ fontSize: 26, fontWeight: '900', marginBottom: 2 }, { color }]}>{number}</Text>
+      <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: T.bg },
+const makeStyles = (colors: any) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
 
   // Header band
   headerBand: {
-    backgroundColor: T.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: 20, paddingTop: 18, paddingBottom: 26,
     flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
     borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   notifDot: {
     position: 'absolute', top: 7, right: 7,
     width: 8, height: 8, borderRadius: 4,
-    backgroundColor: '#FCD34D', borderWidth: 1.5, borderColor: T.primary,
+    backgroundColor: '#FCD34D', borderWidth: 1.5, borderColor: colors.primary,
   },
   avatarBtn: {
     width: 38, height: 38, borderRadius: 10,
@@ -207,25 +207,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row', flexWrap: 'wrap',
     gap: 10, marginBottom: 8,
   },
-  statCard: {
-    width: '47.5%', borderRadius: 14, borderWidth: 1,
-    padding: 14, alignItems: 'flex-start',
-    elevation: 0,
-  },
-  statIconBox: {
-    width: 38, height: 38, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 10,
-    elevation: 1, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3,
-  },
-  statValue: { fontSize: 22, fontWeight: '800' },
-  statLabel: { fontSize: 11, color: T.sub, fontWeight: '500', marginTop: 2 },
-
-  // Section title
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: T.text, marginBottom: 14, marginTop: 24 },
-  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, marginBottom: 14 },
-  viewAll: { fontSize: 12, fontWeight: '700', color: T.primary },
 
   // Quick Actions
   quickRow: { flexDirection: 'row', justifyContent: 'space-between' },
@@ -237,28 +218,11 @@ const styles = StyleSheet.create({
     width: 52, height: 52, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 8,
-    elevation: 1, shadowColor: '#000',
+    elevation: 1, shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4,
   },
   quickLabel: {
-    fontSize: 10, fontWeight: '700', color: T.text,
+    fontSize: 10, fontWeight: '700', color: colors.textPrimary,
     textAlign: 'center', lineHeight: 13,
   },
-
-
-
-  // Alerts
-  alertCard: {
-    width: 120, borderRadius: 14, borderWidth: 1,
-    padding: 14, marginRight: 12, alignItems: 'center',
-    elevation: 0,
-  },
-  alertIconBox: {
-    width: 44, height: 44, borderRadius: 10,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 10,
-    elevation: 1, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3,
-  },
-  alertNum: { fontSize: 26, fontWeight: '900', marginBottom: 2 },
-  alertLabel: { fontSize: 11, color: T.sub, fontWeight: '600', textAlign: 'center' },
 });

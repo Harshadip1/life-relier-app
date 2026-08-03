@@ -14,7 +14,7 @@ import {
 } from '../../services/testChargesService';
 import { TestCharge } from '../../utils/types';
 
-const TEAL = '#0D9488';
+const colors.primary = '#0D9488';
 const TEAL_DARK = '#0F766E';
 
 interface DropItem { id: number; label: string }
@@ -35,7 +35,7 @@ function ModalDropdown({
       <Text style={s.fieldLabel}>
         {label}
         {required && <Text style={{ color: '#EF4444' }}> *</Text>}
-        {optional && <Text style={{ color: '#94A3B8', fontWeight: '400' }}> (Optional)</Text>}
+        {optional && <Text style={{ color: colors.textMuted, fontWeight: '400' }}> (Optional)</Text>}
       </Text>
       <TouchableOpacity
         style={s.ddTrigger}
@@ -43,9 +43,9 @@ function ModalDropdown({
         activeOpacity={0.8}
       >
         {loading
-          ? <ActivityIndicator size={14} color={TEAL} style={{ marginRight: 8 }} />
+          ? <ActivityIndicator size={14} color={colors.primary} style={{ marginRight: 8 }} />
           : null}
-        <Text style={[s.ddTriggerText, !value && { color: '#94A3B8' }]} numberOfLines={1}>
+        <Text style={[s.ddTriggerText, !value && { color: colors.textMuted }]} numberOfLines={1}>
           {loading ? 'Loading…' : (value || placeholder || 'Select…')}
         </Text>
         <Feather name="chevron-down" size={16} color="#64748B" />
@@ -81,7 +81,7 @@ function ModalDropdown({
                     <Text style={[s.pickerItemText, value === o.label && s.pickerItemTextActive]}>
                       {o.label}
                     </Text>
-                    {value === o.label && <Feather name="check" size={15} color={TEAL} />}
+                    {value === o.label && <Feather name="check" size={15} color={colors.primary} />}
                   </TouchableOpacity>
                 ))
               }
@@ -108,6 +108,8 @@ function DetailRow({ label, value, highlight }: { label: string; value: any; hig
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function TestChargeDetailScreen({ navigation }: any) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
 
   // Dropdown data
@@ -339,7 +341,7 @@ export default function TestChargeDetailScreen({ navigation }: any) {
         {/* Loading */}
         {loading && (
           <View style={s.centerBox}>
-            <ActivityIndicator size="large" color={TEAL} />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={s.centerTxt}>Searching…</Text>
           </View>
         )}
@@ -366,7 +368,7 @@ export default function TestChargeDetailScreen({ navigation }: any) {
             renderItem={renderRow}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 120 }}
-            ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: '#F1F5F9' }} />}
+            ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: colors.surfaceVariant }} />}
           />
         )}
       </View>
@@ -378,7 +380,7 @@ export default function TestChargeDetailScreen({ navigation }: any) {
             <View style={s.handle} />
             <View style={s.sheetHeader}>
               <View style={s.sheetIconBox}>
-                <MaterialCommunityIcons name="test-tube" size={22} color={TEAL} />
+                <MaterialCommunityIcons name="test-tube" size={22} color={colors.primary} />
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={s.sheetTitle} numberOfLines={2}>{selected?.TestName}</Text>
@@ -442,11 +444,11 @@ export default function TestChargeDetailScreen({ navigation }: any) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F8FAFC' },
+  root: { flex: 1, backgroundColor: colors.background },
 
   pageHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: TEAL,
+    backgroundColor: colors.primary,
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14,
   },
   backBtn:   { padding: 4 },
@@ -454,26 +456,26 @@ const s = StyleSheet.create({
 
   // Filter card — vertical stack
   filterCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14,
-    borderBottomWidth: 1, borderBottomColor: '#E2E8F0',
-    elevation: 3, shadowColor: '#000',
+    borderBottomWidth: 1, borderBottomColor: colors.cardBorder,
+    elevation: 3, shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4,
   },
 
   // Each dropdown field block
   fieldBlock: { marginBottom: 12 },
   fieldLabel: {
-    fontSize: 11, fontWeight: '700', color: '#64748B',
+    fontSize: 11, fontWeight: '700', color: colors.textSecondary,
     letterSpacing: 0.4, marginBottom: 6,
   },
   ddTrigger: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10,
+    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10,
     paddingHorizontal: 14, paddingVertical: 13,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
-  ddTriggerText: { flex: 1, fontSize: 14, color: '#0F172A', fontWeight: '500', marginRight: 6 },
+  ddTriggerText: { flex: 1, fontSize: 14, color: colors.textPrimary, fontWeight: '500', marginRight: 6 },
 
   // Modal picker
   pickerOverlay: {
@@ -481,42 +483,42 @@ const s = StyleSheet.create({
     justifyContent: 'center', paddingHorizontal: 24,
   },
   pickerBox: {
-    backgroundColor: '#FFF', borderRadius: 16,
+    backgroundColor: colors.card, borderRadius: 16,
     overflow: 'hidden',
-    elevation: 10, shadowColor: '#000',
+    elevation: 10, shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12,
   },
   pickerHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 18, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
-    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1, borderBottomColor: colors.divider,
+    backgroundColor: colors.background,
   },
-  pickerTitle:     { fontSize: 14, fontWeight: '800', color: '#0F172A' },
+  pickerTitle:     { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
   pickerItem: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 18, paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: '#F8FAFC',
   },
   pickerItemActive: { backgroundColor: '#F0FDFA' },
-  pickerItemText:   { fontSize: 14, color: '#0F172A' },
-  pickerItemTextActive: { color: TEAL, fontWeight: '700' },
+  pickerItemText:   { fontSize: 14, color: colors.textPrimary },
+  pickerItemTextActive: { color: colors.primary, fontWeight: '700' },
   pickerEmpty:      { paddingHorizontal: 18, paddingVertical: 16 },
-  pickerEmptyText:  { fontSize: 13, color: '#94A3B8' },
+  pickerEmptyText:  { fontSize: 13, color: colors.textMuted },
 
   // Search / Clear buttons
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   searchBtn: {
-    flex: 1, backgroundColor: TEAL, borderRadius: 10,
+    flex: 1, backgroundColor: colors.primary, borderRadius: 10,
     paddingVertical: 13, alignItems: 'center', justifyContent: 'center',
   },
   searchBtnTxt: { fontSize: 14, fontWeight: '700', color: '#FFF' },
   clearBtn: {
     paddingHorizontal: 24, paddingVertical: 13, borderRadius: 10,
-    borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC',
+    borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.background,
     alignItems: 'center', justifyContent: 'center',
   },
-  clearBtnTxt: { fontSize: 14, fontWeight: '600', color: '#64748B' },
+  clearBtnTxt: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
 
   // Results
   resultsSection: { flex: 1 },
@@ -537,10 +539,10 @@ const s = StyleSheet.create({
   tableRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
   },
-  tableRowAlt: { backgroundColor: '#F8FAFC' },
-  cell: { fontSize: 12, color: '#0F172A' },
+  tableRowAlt: { backgroundColor: colors.background },
+  cell: { fontSize: 12, color: colors.textPrimary },
   cId:   { width: 36 },
   cName: { flex: 1, paddingRight: 6 },
   cCode: { width: 68 },
@@ -551,12 +553,12 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     paddingVertical: 44, paddingHorizontal: 32, gap: 12,
   },
-  centerTxt: { fontSize: 13, color: '#94A3B8', textAlign: 'center', lineHeight: 20 },
+  centerTxt: { fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
 
   // Bottom sheet
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 22, borderTopRightRadius: 22,
     paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24,
     maxHeight: '88%',
@@ -570,8 +572,8 @@ const s = StyleSheet.create({
     width: 46, height: 46, borderRadius: 12,
     backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center',
   },
-  sheetTitle:  { fontSize: 15, fontWeight: '800', color: '#0F172A', lineHeight: 20 },
-  sheetSub:    { fontSize: 11, color: '#64748B', marginTop: 3 },
+  sheetTitle:  { fontSize: 15, fontWeight: '800', color: colors.textPrimary, lineHeight: 20 },
+  sheetSub:    { fontSize: 11, color: colors.textSecondary, marginTop: 3 },
   closeBtn:    { padding: 4, marginLeft: 8 },
   amountHero: {
     backgroundColor: '#F0FDF4', borderRadius: 14,
@@ -579,18 +581,18 @@ const s = StyleSheet.create({
     alignItems: 'center', paddingVertical: 14, marginBottom: 14,
   },
   amountVal: { fontSize: 26, fontWeight: '900', color: '#15803D' },
-  amountLbl: { fontSize: 11, color: '#64748B', marginTop: 3, fontWeight: '500' },
+  amountLbl: { fontSize: 11, color: colors.textSecondary, marginTop: 3, fontWeight: '500' },
   sheetScroll: { flex: 1 },
   detailCard: {
-    borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, overflow: 'hidden',
+    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 12, overflow: 'hidden',
   },
   detailRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 14, paddingVertical: 11,
-    borderBottomWidth: 1, borderBottomColor: '#F1F5F9', backgroundColor: '#FFF',
+    borderBottomWidth: 1, borderBottomColor: colors.divider, backgroundColor: colors.card,
   },
-  detailLabel: { fontSize: 12, color: '#64748B', fontWeight: '500', flex: 1 },
-  detailValue: { fontSize: 13, color: '#0F172A', fontWeight: '600', textAlign: 'right', flex: 1 },
+  detailLabel: { fontSize: 12, color: colors.textSecondary, fontWeight: '500', flex: 1 },
+  detailValue: { fontSize: 13, color: colors.textPrimary, fontWeight: '600', textAlign: 'right', flex: 1 },
   deleteBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#EF4444', borderRadius: 12,

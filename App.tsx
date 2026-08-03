@@ -5,26 +5,33 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider as PaperProvider } from 'react-native-paper';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from './src/context/AuthContext';
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 
-// Keep the splash screen visible while we prepare the app
 SplashScreen.preventAutoHideAsync();
 
-export default function App() {
-  useEffect(() => {
-    // Hide splash once the root component has mounted
-    SplashScreen.hideAsync();
-  }, []);
+function AppInner() {
+  const { scheme } = useTheme();
+  useEffect(() => { SplashScreen.hideAsync(); }, []);
+  return (
+    <>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <RootNavigator />
+    </>
+  );
+}
 
+export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <PaperProvider>
-          <AuthProvider>
-            <StatusBar style="auto" />
-            <RootNavigator />
-          </AuthProvider>
-        </PaperProvider>
+        <ThemeProvider>
+          <PaperProvider>
+            <AuthProvider>
+              <AppInner />
+            </AuthProvider>
+          </PaperProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

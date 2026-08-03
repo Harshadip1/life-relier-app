@@ -4,6 +4,7 @@ import {
   ActivityIndicator, TextInput, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../theme';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getPackages } from '../../services/testChargesService';
 import { Package } from '../../utils/types';
@@ -22,6 +23,8 @@ const T = {
 
 export default function PackagesScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
 
   const [packages, setPackages]   = useState<Package[]>([]);
   const [filtered, setFiltered]   = useState<Package[]>([]);
@@ -81,7 +84,7 @@ export default function PackagesScreen({ navigation }: any) {
 
       {/* Icon */}
       <View style={styles.rowIcon}>
-        <MaterialCommunityIcons name="package-variant-closed" size={20} color={T.primary} />
+        <MaterialCommunityIcons name="package-variant-closed" size={20} color={colors.primary} />
       </View>
     </View>
   );
@@ -92,7 +95,7 @@ export default function PackagesScreen({ navigation }: any) {
       {/* ── Header ── */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Feather name="arrow-left" size={22} color={T.text} />
+          <Feather name="arrow-left" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Packages</Text>
@@ -106,25 +109,25 @@ export default function PackagesScreen({ navigation }: any) {
           disabled={refreshing}
           activeOpacity={0.7}
         >
-          <Feather name="refresh-cw" size={18} color={T.primary} />
+          <Feather name="refresh-cw" size={18} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
       {/* ── Search Bar ── */}
       <View style={styles.searchWrapper}>
         <View style={styles.searchBar}>
-          <Feather name="search" size={16} color={T.muted} />
+          <Feather name="search" size={16} color={colors.textMuted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search by name or ID..."
-            placeholderTextColor={T.muted}
+            placeholderTextColor={colors.textMuted}
             value={search}
             onChangeText={setSearch}
             returnKeyType="search"
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
-              <Feather name="x" size={16} color={T.muted} />
+              <Feather name="x" size={16} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -133,7 +136,7 @@ export default function PackagesScreen({ navigation }: any) {
       {/* ── Loading ── */}
       {loading && (
         <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color={T.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading packages...</Text>
         </View>
       )}
@@ -161,13 +164,13 @@ export default function PackagesScreen({ navigation }: any) {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => fetchPackages(true)}
-              colors={[T.primary]}
-              tintColor={T.primary}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
             />
           }
           ListEmptyComponent={
             <View style={styles.emptyBox}>
-              <MaterialCommunityIcons name="package-variant-closed-remove" size={56} color={T.muted} />
+              <MaterialCommunityIcons name="package-variant-closed-remove" size={56} color={colors.textMuted} />
               <Text style={styles.emptyText}>
                 {search ? 'No packages match your search.' : 'No packages found.'}
               </Text>
@@ -180,42 +183,42 @@ export default function PackagesScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: T.bg },
+const makeStyles = (colors: any) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
 
   // Header
   header: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14,
-    backgroundColor: T.card,
-    borderBottomWidth: 1, borderBottomColor: T.border,
+    backgroundColor: colors.card,
+    borderBottomWidth: 1, borderBottomColor: colors.cardBorder,
     gap: 12,
   },
   backBtn:     { padding: 4 },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: T.text },
-  headerSub:   { fontSize: 12, color: T.sub, marginTop: 2 },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
+  headerSub:   { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   refreshBtn:  { padding: 6 },
 
   // Search
   searchWrapper: {
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: T.card,
-    borderBottomWidth: 1, borderBottomColor: T.border,
+    backgroundColor: colors.card,
+    borderBottomWidth: 1, borderBottomColor: colors.cardBorder,
   },
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: T.bg, borderRadius: 12,
-    borderWidth: 1, borderColor: T.border,
+    backgroundColor: colors.background, borderRadius: 12,
+    borderWidth: 1, borderColor: colors.cardBorder,
     paddingHorizontal: 12, height: 44, gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 14, color: T.text },
+  searchInput: { flex: 1, fontSize: 14, color: colors.textPrimary },
 
   // States
   centerBox:   { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 },
-  loadingText: { fontSize: 14, color: T.sub, fontWeight: '500' },
+  loadingText: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
   errorText:   { fontSize: 14, color: '#EF4444', textAlign: 'center', lineHeight: 22 },
   retryBtn: {
-    backgroundColor: T.primary, borderRadius: 10,
+    backgroundcolor: colors.primary, borderRadius: 10,
     paddingHorizontal: 24, paddingVertical: 10,
   },
   retryBtnText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
@@ -225,24 +228,24 @@ const styles = StyleSheet.create({
 
   row: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: T.card, borderRadius: 14,
-    borderWidth: 1, borderColor: T.tealBorder,
+    backgroundColor: colors.card, borderRadius: 14,
+    borderWidth: 1, borderColor: colors.primaryLight,
     padding: 14, gap: 14,
   },
   idBadge: {
     width: 40, height: 40, borderRadius: 10,
-    backgroundColor: T.tealBg,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center', justifyContent: 'center',
   },
-  idText:      { fontSize: 13, fontWeight: '800', color: T.primary },
+  idText:      { fontSize: 13, fontWeight: '800', color: colors.primary },
   rowContent:  { flex: 1 },
-  packageName: { fontSize: 15, fontWeight: '700', color: T.text },
-  packageSub:  { fontSize: 12, color: T.sub, marginTop: 2 },
+  packageName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  packageSub:  { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   rowIcon:     { padding: 4 },
 
   separator: { height: 10 },
 
   // Empty
   emptyBox:  { alignItems: 'center', paddingTop: 60, gap: 14 },
-  emptyText: { fontSize: 14, color: T.muted, textAlign: 'center', lineHeight: 22 },
+  emptyText: { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 22 },
 });

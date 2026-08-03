@@ -54,6 +54,8 @@ const TEST_DESCRIPTIONS: Record<string, string> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MyBookingsScreen({ navigation }: any) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [search, setSearch] = useState('');
   const [selectedTests, setSelectedTests] = useState<SelectedTest[]>([
     { id: 'cbc',     label: 'CBC',             description: 'Complete Blood Count',           price: 700  },
@@ -151,7 +153,7 @@ export default function MyBookingsScreen({ navigation }: any) {
           <TextInput
             style={styles.searchInput}
             placeholder="Search for tests, packages..."
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textMuted}
             value={search}
             onChangeText={setSearch}
           />
@@ -353,7 +355,7 @@ export default function MyBookingsScreen({ navigation }: any) {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   root: { flex: 1, backgroundColor: THEME.bg },
 
   // Header
@@ -393,7 +395,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptySearchText: {
-    color: '#94A3B8',
+    color: colors.textMuted,
     marginTop: 12,
     fontSize: 14,
     fontWeight: '500',
@@ -521,7 +523,7 @@ const styles = StyleSheet.create({
   },
   selectedInfo: { flex: 1 },
   selectedName: { fontSize: 14, fontWeight: '600', color: THEME.textPrimary },
-  selectedDesc: { fontSize: 12, color: '#94A3B8', marginTop: 4 },
+  selectedDesc: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
   selectedPrice: { fontSize: 14, fontWeight: '600', color: THEME.textPrimary, marginRight: 16 },
   removeBtn: { padding: 4 },
   totalRow: {
@@ -578,7 +580,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.divider,
   },
   dropdownItemText: {
     fontSize: 13,

@@ -4,6 +4,7 @@ import {
   ScrollView, Platform, FlatList, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../theme';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
@@ -14,7 +15,7 @@ import {
   DoctorDropdownItem,
 } from '../../services/doctorScheduleService';
 
-const TEAL = COLORS.primary;
+// colors.primary is now colors.primary (set inside component)
 
 function formatDate(d: Date) {
   return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
@@ -37,6 +38,8 @@ function formatSlot(slot: string): string {
 
 export default function AppointmentRecordsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
 
   // ── Filters ────────────────────────────────────────────────────────────────
   const [date, setDate]               = useState<Date | null>(null);  // null = show all
@@ -130,10 +133,10 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
 
       {/* Breadcrumb */}
       <View style={styles.breadcrumb}>
-        <Feather name="home" size={13} color={TEAL} />
+        <Feather name="home" size={13} color={colors.primary} />
         <Text style={styles.bcText}> Dr Appointment</Text>
         <Feather name="chevron-right" size={13} color="#94A3B8" style={{ marginHorizontal: 2 }} />
-        <Text style={[styles.bcText, { color: TEAL, fontWeight: '700' }]}>Appointment Desk</Text>
+        <Text style={[styles.bcText, { color: colors.primary, fontWeight: '700' }]}>Appointment Desk</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -182,7 +185,7 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
             {/* Doctor dropdown (from API) */}
             <Text style={[styles.label, { marginTop: 16 }]}>Collection Person (Doctor)</Text>
             <TouchableOpacity style={styles.dropdown} onPress={() => setShowDropdown(!showDropdown)}>
-              <Text style={[styles.dropdownText, !selectedDrName && { color: '#94A3B8' }]}>
+              <Text style={[styles.dropdownText, !selectedDrName && { color: colors.textMuted }]}>
                 {selectedDrName || 'Select...'}
               </Text>
               <Feather name="chevron-down" size={18} color="#64748B" />
@@ -190,7 +193,7 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
             {showDropdown && (
               <View style={styles.dropdownMenu}>
                 {doctors.length === 0
-                  ? <View style={styles.dropdownItem}><Text style={{ color: '#94A3B8' }}>No doctors found</Text></View>
+                  ? <View style={styles.dropdownItem}><Text style={{ color: colors.textMuted }}>No doctors found</Text></View>
                   : doctors.map(d => (
                     <TouchableOpacity key={d.Id} style={styles.dropdownItem}
                       onPress={() => { setSelectedDrId(d.Id); setSelectedDrName(d.FullName); setShowDropdown(false); }}>
@@ -210,13 +213,13 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
             <View style={styles.searchBar}>
               <Feather name="search" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
               <TextInput style={styles.searchInput} placeholder="Search table..."
-                placeholderTextColor="#94A3B8" value={search} onChangeText={setSearch} />
+                placeholderTextColor={colors.textMuted} value={search} onChangeText={setSearch} />
             </View>
 
             {/* Body */}
             {loading && records.length === 0 ? (
               <View style={styles.centreBox}>
-                <ActivityIndicator size="large" color={TEAL} />
+                <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={styles.centreText}>Loading appointments…</Text>
               </View>
             ) : error && records.length === 0 ? (
@@ -225,7 +228,7 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
                 <Text style={styles.emptyTitle}>Could not load data</Text>
                 <Text style={styles.emptySubtitle}>{error}</Text>
                 <TouchableOpacity style={styles.retryBtn} onPress={fetchRecords}>
-                  <Feather name="refresh-cw" size={14} color={TEAL} />
+                  <Feather name="refresh-cw" size={14} color={colors.primary} />
                   <Text style={styles.retryText}> Retry</Text>
                 </TouchableOpacity>
               </View>
@@ -254,7 +257,7 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
                 return (
                   <View key={String(item.AppointmentId ?? idx)} style={styles.recordRow}>
                     <View style={styles.recordIconBox}>
-                      <MaterialCommunityIcons name="calendar-account" size={18} color={TEAL} />
+                      <MaterialCommunityIcons name="calendar-account" size={18} color={colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.recordName}>
@@ -297,16 +300,16 @@ export default function AppointmentRecordsScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F1F5F9' },
+const makeStyles = (colors: any) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.surfaceVariant },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 12 },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   breadcrumb: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5F4', paddingHorizontal: 16, paddingVertical: 8 },
-  bcText: { fontSize: 12, color: '#64748B' },
+  bcText: { fontSize: 12, color: colors.textSecondary },
   scroll: { padding: 16, paddingBottom: 20 },
-  card: { backgroundColor: '#FFF', borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
-  cardHeader: { backgroundColor: TEAL, padding: 14 },
+  card: { backgroundColor: colors.card, borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+  cardHeader: { backgroundColor: colors.primary, padding: 14 },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   cardTitle: { fontSize: 15, fontWeight: '700', color: '#FFF', marginRight: 8 },
   recordBadge: { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
@@ -316,33 +319,33 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, fontWeight: '600', color: '#CBD5E1' },
   formBody: { padding: 16 },
   label: { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 8 },
-  dateRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 50 },
-  dateText: { flex: 1, fontSize: 14, color: '#0F172A' },
-  dropdown: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#F8FAFC', paddingHorizontal: 14, height: 50 },
-  dropdownText: { fontSize: 14, color: '#0F172A', flex: 1 },
-  dropdownMenu: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#FFF', marginTop: 4, overflow: 'hidden' },
-  dropdownItem: { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  dropdownItemText: { fontSize: 14, color: '#0F172A' },
-  clearBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#64748B', borderRadius: 20, paddingHorizontal: 20, paddingVertical: 8, alignSelf: 'flex-start', marginTop: 16 },
+  dateRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.background, paddingHorizontal: 14, height: 50 },
+  dateText: { flex: 1, fontSize: 14, color: colors.textPrimary },
+  dropdown: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.background, paddingHorizontal: 14, height: 50 },
+  dropdownText: { fontSize: 14, color: colors.textPrimary, flex: 1 },
+  dropdownMenu: { borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.card, marginTop: 4, overflow: 'hidden' },
+  dropdownItem: { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  dropdownItemText: { fontSize: 14, color: colors.textPrimary },
+  clearBtn: { flexDirection: 'row', alignItems: 'center', backgroundcolor: colors.textSecondary, borderRadius: 20, paddingHorizontal: 20, paddingVertical: 8, alignSelf: 'flex-start', marginTop: 16 },
   clearBtnText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
-  searchBar: { flexDirection: 'row', alignItems: 'center', marginTop: 16, backgroundColor: '#F8FAFC', borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 12, height: 44 },
-  searchInput: { flex: 1, fontSize: 14, color: '#0F172A' },
+  searchBar: { flexDirection: 'row', alignItems: 'center', marginTop: 16, backgroundColor: colors.background, borderRadius: 10, borderWidth: 1, borderColor: colors.cardBorder, paddingHorizontal: 12, height: 44 },
+  searchInput: { flex: 1, fontSize: 14, color: colors.textPrimary },
   centreBox: { alignItems: 'center', paddingVertical: 40 },
-  centreText: { marginTop: 10, fontSize: 13, color: '#64748B' },
+  centreText: { marginTop: 10, fontSize: 13, color: colors.textSecondary },
   emptyTitle: { fontSize: 15, fontWeight: '700', color: '#334155', marginTop: 12 },
-  emptySubtitle: { fontSize: 12, color: '#94A3B8', marginTop: 4, textAlign: 'center' },
-  retryBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 16, borderWidth: 1.5, borderColor: TEAL, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 7 },
-  retryText: { fontSize: 13, fontWeight: '700', color: TEAL },
+  emptySubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 4, textAlign: 'center' },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 16, borderWidth: 1.5, borderColor: colors.primary, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 7 },
+  retryText: { fontSize: 13, fontWeight: '700', color: colors.primary },
   emptyBox: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { fontSize: 14, color: '#94A3B8', fontWeight: '500', marginTop: 10 },
-  recordRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  emptyText: { fontSize: 14, color: colors.textMuted, fontWeight: '500', marginTop: 10 },
+  recordRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
   recordIconBox: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  recordName: { fontSize: 13, fontWeight: '700', color: '#0F172A', marginBottom: 2 },
-  recordSub: { fontSize: 11, color: '#64748B', marginTop: 1 },
+  recordName: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  recordSub: { fontSize: 11, color: colors.textSecondary, marginTop: 1 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start' },
   statusText: { fontSize: 10, fontWeight: '700' },
-  scanFab: { position: 'absolute', bottom: 50, right: 20, backgroundColor: TEAL, width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+  scanFab: { position: 'absolute', bottom: 50, right: 20, backgroundColor: colors.primary, width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
   scanLabel: { fontSize: 9, color: '#FFF', fontWeight: '700', marginTop: 2 },
-  footer: { backgroundColor: TEAL, paddingVertical: 12, alignItems: 'center' },
+  footer: { backgroundColor: colors.primary, paddingVertical: 12, alignItems: 'center' },
   footerText: { fontSize: 12, color: '#FFF', fontWeight: '500' },
 });
