@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { COLORS } from '../../utils/constants';
 import {
   View,
   Text,
@@ -15,7 +16,6 @@ import {
   Image,
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../theme';
 
 const { height } = Dimensions.get('window');
 
@@ -38,7 +38,6 @@ const companyLogo = require('../../../assets/splash.png');
 
 export default function LoginScreen() {
   const { login } = useAuth();
-  const { colors } = useTheme();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -66,11 +65,11 @@ export default function LoginScreen() {
     }
   }
 
-  const s = makeStyles(colors);
+  const s = styles;
 
   return (
     <View style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
       <View style={s.bg} />
 
       {/* Decorative crosses */}
@@ -170,12 +169,12 @@ export default function LoginScreen() {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   root: { flex: 1 },
 
   bg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.primary,
+    backgroundColor: COLORS.primary,
   },
 
   cross: {
@@ -205,13 +204,13 @@ const makeStyles = (colors: any) => StyleSheet.create({
   // ── White card ──
   card: {
     width: '100%',
-    backgroundColor: colors.card,
+    backgroundColor: COLORS.card,
     borderRadius: 20,
     paddingHorizontal: 24,
     paddingTop: 28,
     paddingBottom: 36,
     elevation: 10,
-    shadowColor: colors.shadow,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 18,
@@ -254,7 +253,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   privateLtd: {
     fontSize: 13,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: COLORS.textPrimary,
     letterSpacing: 0.2,
   },
 
@@ -264,22 +263,22 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   inputBox: {
     borderWidth: 1.5,
-    borderColor: colors.inputBorder,
+    borderColor: COLORS.inputBorder,
     borderRadius: 10,
-    backgroundColor: colors.card,
+    backgroundColor: COLORS.card,
     paddingHorizontal: 16,
     height: 54,
     justifyContent: 'center',
   },
   inputBoxError: {
-    borderColor: colors.danger,
+    borderColor: COLORS.danger,
   },
   input: {
     fontSize: 15,
-    color: colors.textPrimary,
+    color: COLORS.textPrimary,
   },
   errorText: {
-    color: colors.danger,
+    color: COLORS.danger,
     fontSize: 12,
     marginTop: 4,
     marginLeft: 2,

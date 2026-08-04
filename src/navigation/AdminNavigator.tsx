@@ -39,7 +39,6 @@ import EditPatientScreen          from '../screens/admin/EditPatientScreen';
 import SharedProfileScreen        from '../screens/shared/SharedProfileScreen';
 
 import { COLORS } from '../utils/constants';
-import { useTheme } from '../theme/ThemeContext';
 
 const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -49,15 +48,15 @@ const TAB_ROOTS = new Set([
   'DashboardMain', 'FrontDeskMain', 'LaboratoryMain', 'ReportsMain', 'MasterMain',
 ]);
 
-function getTabStyle(route: any, colors: any) {
+function getTabStyle(route: any) {
   const name = getFocusedRouteNameFromRoute(route) ?? '';
   if (name !== '' && !TAB_ROOTS.has(name)) return { display: 'none' as const };
   return {
-    backgroundColor: colors.tabBar,
-    borderTopWidth: 1, borderTopColor: colors.tabBarBorder,
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 1, borderTopColor: COLORS.border,
     height: 64, paddingBottom: 8, paddingTop: 8,
     elevation: 12,
-    shadowColor: colors.shadow,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.06, shadowRadius: 10,
   };
@@ -181,14 +180,13 @@ function MasterStack() {
 // ROOT TAB NAVIGATOR
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminNavigator() {
-  const { colors } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: getTabStyle(route, colors),
-        tabBarActiveTintColor:   colors.tabActive,
-        tabBarInactiveTintColor: colors.tabInactive,
+        tabBarStyle: getTabStyle(route),
+        tabBarActiveTintColor:   COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textMuted,
         tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 2 },
         tabBarIcon: ({ color, focused }) => {
           switch (route.name) {

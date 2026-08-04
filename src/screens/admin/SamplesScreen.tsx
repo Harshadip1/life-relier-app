@@ -4,10 +4,9 @@ import {
   TextInput, Modal, Platform, ActivityIndicator, RefreshControl, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../theme';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { API_BASE_URL } from '../../utils/constants';
+import { API_BASE_URL , COLORS} from '../../utils/constants';
 
 const THEME = {
   primary: '#0F766E', bg: '#FFFFFF', screenBg: '#FAFAFA',
@@ -56,8 +55,6 @@ async function fetchSamples(): Promise<SampleRow[]> {
 
 export default function SamplesScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
   const [samples, setSamples]     = useState<SampleRow[]>([]);
   const [loading, setLoading]     = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -254,7 +251,7 @@ export default function SamplesScreen({ navigation }: any) {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   root:        { flex: 1, backgroundColor: THEME.screenBg },
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 },
   backBtn:     { padding: 4, marginLeft: -4 },
@@ -273,7 +270,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   queueHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   centre:      { alignItems: 'center', paddingVertical: 40 },
   centreText:  { fontSize: 14, color: THEME.textSecondary, marginTop: 10 },
-  sampleCard:  { backgroundColor: THEME.bg, borderRadius: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 16, padding: 16, elevation: 1, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6 },
+  sampleCard:  { backgroundColor: THEME.bg, borderRadius: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 16, padding: 16, elevation: 1, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6 },
   cardHeader:  { flexDirection: 'row', marginBottom: 12 },
   avatarBox:   { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   avatarText:  { fontSize: 18, fontWeight: '700', color: THEME.primary },
@@ -286,7 +283,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   statusDot:   { width: 6, height: 6, borderRadius: 3, marginRight: 4 },
   statusText:  { fontSize: 9, fontWeight: '700' },
-  divider:     { height: 1, backgroundColor: colors.surfaceVariant, marginVertical: 12 },
+  divider:     { height: 1, backgroundColor: COLORS.surfaceVariant, marginVertical: 12 },
   idsRow:      { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   idLabel:     { fontSize: 11, color: THEME.textSecondary, marginBottom: 2 },
   idValue:     { fontSize: 13, fontWeight: '700', color: THEME.textPrimary },

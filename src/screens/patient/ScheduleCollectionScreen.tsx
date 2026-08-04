@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { COLORS } from '../../utils/constants';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -14,8 +15,6 @@ const THEME = {
 };
 
 export default function ScheduleCollectionScreen({ route, navigation }: any) {
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
   // Grab the data passed from the Bookings screen
   const { tests = [], total = 0, centerName = 'Select a Center' } = route.params || {};
 
@@ -162,7 +161,7 @@ export default function ScheduleCollectionScreen({ route, navigation }: any) {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: THEME.screenBg },
   
   header: {
@@ -179,12 +178,12 @@ const makeStyles = (colors: any) => StyleSheet.create({
   // Summary Card
   summaryCard: {
     backgroundColor: THEME.bg, borderRadius: 16, padding: 16, marginBottom: 24,
-    borderWidth: 1, borderColor: THEME.border, elevation: 1, shadowColor: colors.shadow,
+    borderWidth: 1, borderColor: THEME.border, elevation: 1, shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8,
   },
   summaryRow: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: colors.divider,
+    borderBottomWidth: 1, borderBottomColor: COLORS.divider,
   },
   summaryText: { fontSize: 14, fontWeight: '500', color: THEME.textPrimary, marginLeft: 12 },
   totalLabel: { fontSize: 14, fontWeight: '700', color: THEME.textSecondary, flex: 1 },

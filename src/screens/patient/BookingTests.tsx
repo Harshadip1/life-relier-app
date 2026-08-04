@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { COLORS } from '../../utils/constants';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Alert, ActivityIndicator,
@@ -54,8 +55,6 @@ const TEST_DESCRIPTIONS: Record<string, string> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MyBookingsScreen({ navigation }: any) {
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
   const [search, setSearch] = useState('');
   const [selectedTests, setSelectedTests] = useState<SelectedTest[]>([
     { id: 'cbc',     label: 'CBC',             description: 'Complete Blood Count',           price: 700  },
@@ -153,7 +152,7 @@ export default function MyBookingsScreen({ navigation }: any) {
           <TextInput
             style={styles.searchInput}
             placeholder="Search for tests, packages..."
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={COLORS.textMuted}
             value={search}
             onChangeText={setSearch}
           />
@@ -355,7 +354,7 @@ export default function MyBookingsScreen({ navigation }: any) {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: THEME.bg },
 
   // Header
@@ -395,7 +394,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   emptySearchText: {
-    color: colors.textMuted,
+    color: COLORS.textMuted,
     marginTop: 12,
     fontSize: 14,
     fontWeight: '500',
@@ -523,7 +522,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   selectedInfo: { flex: 1 },
   selectedName: { fontSize: 14, fontWeight: '600', color: THEME.textPrimary },
-  selectedDesc: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
+  selectedDesc: { fontSize: 12, color: COLORS.textMuted, marginTop: 4 },
   selectedPrice: { fontSize: 14, fontWeight: '600', color: THEME.textPrimary, marginRight: 16 },
   removeBtn: { padding: 4 },
   totalRow: {
@@ -580,7 +579,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
+    borderBottomColor: COLORS.divider,
   },
   dropdownItemText: {
     fontSize: 13,

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
+import { COLORS } from '../../utils/constants';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Alert, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '../../theme';
 
 const T = {
   primary:  '#0D9488',
@@ -44,7 +44,7 @@ const PATIENT = {
 const INITIAL_TESTS: OrderedTest[] = [
   { name: 'CBC',    full: 'Complete Blood Count',  status: 'Pending',   color: T.orange },
   { name: 'LFT',   full: 'Liver Function Test',   status: 'Pending',   color: T.orange },
-  { name: 'HbA1c', full: 'Glycated Hemoglobin',   status: 'Collected', color: colors.success  },
+  { name: 'HbA1c', full: 'Glycated Hemoglobin',   status: 'Collected', color: COLORS.success  },
 ];
 
 const INITIAL_TUBES: Tube[] = [
@@ -83,8 +83,6 @@ function TogglePair({ options, selected, onSelect }: { options: string[]; select
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export default function SampleCollectionScreen({ navigation }: any) {
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
 
   const [checklist,      setChecklist]      = useState<CheckItem[]>(INITIAL_CHECKLIST);
@@ -162,21 +160,21 @@ export default function SampleCollectionScreen({ navigation }: any) {
           </View>
           <View style={s.patientRight}>
             <View style={s.metaRow}>
-              <MaterialCommunityIcons name="doctor" size={13} color={colors.textSecondary} />
+              <MaterialCommunityIcons name="doctor" size={13} color={COLORS.textSecondary} />
               <View style={{ marginLeft: 6 }}>
                 <Text style={s.metaLabel}>Doctor</Text>
                 <Text style={s.metaValue}>{PATIENT.doctor}</Text>
               </View>
             </View>
             <View style={s.metaRow}>
-              <MaterialCommunityIcons name="map-marker-outline" size={13} color={colors.textSecondary} />
+              <MaterialCommunityIcons name="map-marker-outline" size={13} color={COLORS.textSecondary} />
               <View style={{ marginLeft: 6 }}>
                 <Text style={s.metaLabel}>Visit Type</Text>
                 <Text style={s.metaValue}>{PATIENT.visitType}</Text>
               </View>
             </View>
             <View style={s.metaRow}>
-              <MaterialCommunityIcons name="calendar-clock-outline" size={13} color={colors.textSecondary} />
+              <MaterialCommunityIcons name="calendar-clock-outline" size={13} color={COLORS.textSecondary} />
               <View style={{ marginLeft: 6 }}>
                 <Text style={s.metaLabel}>Appointment</Text>
                 <Text style={s.metaValue}>{PATIENT.appointment}</Text>
@@ -191,7 +189,7 @@ export default function SampleCollectionScreen({ navigation }: any) {
           {/* Ordered Tests */}
           <View style={[s.sectionCard, { flex: 1.1 }]}>
             <View style={s.sectionHeaderRow}>
-              <Text style={s.sectionTitle}>Ordered Tests <Text style={{ color: colors.primary }}>({INITIAL_TESTS.length})</Text></Text>
+              <Text style={s.sectionTitle}>Ordered Tests <Text style={{ color: COLORS.primary }}>({INITIAL_TESTS.length})</Text></Text>
               <TouchableOpacity><Text style={s.viewAll}>View All</Text></TouchableOpacity>
             </View>
             {INITIAL_TESTS.map((t, i) => (
@@ -204,7 +202,7 @@ export default function SampleCollectionScreen({ navigation }: any) {
                 {t.status === 'Collected'
                   ? <View style={s.collectedBadge}>
                       <Text style={s.collectedTxt}>Collected</Text>
-                      <MaterialCommunityIcons name="check-circle" size={12} color={colors.success} style={{ marginLeft: 2 }} />
+                      <MaterialCommunityIcons name="check-circle" size={12} color={COLORS.success} style={{ marginLeft: 2 }} />
                     </View>
                   : <View style={s.pendingBadge}>
                       <Text style={s.pendingTxt}>Pending</Text>
@@ -223,14 +221,14 @@ export default function SampleCollectionScreen({ navigation }: any) {
                   <View style={[s.tubeFill, { backgroundColor: tube.color }]} />
                 </View>
                 <View style={{ flex: 1, marginLeft: 8 }}>
-                  <Text style={s.tubeName}>{tube.name} <Text style={{ color: colors.textSecondary, fontWeight: '400' }}>{tube.sub}</Text></Text>
+                  <Text style={s.tubeName}>{tube.name} <Text style={{ color: COLORS.textSecondary, fontWeight: '400' }}>{tube.sub}</Text></Text>
                   <Text style={s.tubeSub}>1 Tube</Text>
                 </View>
                 <View style={[s.tubeCount, {
-                  borderColor: tube.collected === tube.total ? colors.success : T.amber,
+                  borderColor: tube.collected === tube.total ? COLORS.success : T.amber,
                   backgroundColor: tube.collected === tube.total ? '#ECFDF5' : '#FFFBEB',
                 }]}>
-                  <Text style={[s.tubeCountTxt, { color: tube.collected === tube.total ? colors.success : T.amber }]}>
+                  <Text style={[s.tubeCountTxt, { color: tube.collected === tube.total ? COLORS.success : T.amber }]}>
                     {tube.collected}/{tube.total}
                   </Text>
                 </View>
@@ -255,7 +253,7 @@ export default function SampleCollectionScreen({ navigation }: any) {
                 <View style={[s.checkCircle, item.done && s.checkCircleDone]}>
                   {item.done && <Feather name="check" size={12} color="#FFF" />}
                 </View>
-                <Text style={[s.checkLabel, item.done && { color: colors.textSecondary }]}>{item.label}</Text>
+                <Text style={[s.checkLabel, item.done && { color: COLORS.textSecondary }]}>{item.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -276,7 +274,7 @@ export default function SampleCollectionScreen({ navigation }: any) {
             <Text style={[s.detailLabel, { marginTop: 10 }]}>Sample Collected By</Text>
             <View style={s.collectedByBtn}>
               <Text style={s.collectedByTxt}>Ubaid (Phlebologist)</Text>
-              <Feather name="chevron-down" size={14} color={colors.textSecondary} />
+              <Feather name="chevron-down" size={14} color={COLORS.textSecondary} />
             </View>
           </View>
         </View>
@@ -286,11 +284,11 @@ export default function SampleCollectionScreen({ navigation }: any) {
           <Text style={[s.sectionTitle, { marginBottom: 12 }]}>Sample Image (Optional)</Text>
           <View style={s.imageRow}>
             <TouchableOpacity style={s.imageBtn} activeOpacity={0.8}>
-              <MaterialCommunityIcons name="camera-outline" size={24} color={colors.primary} />
+              <MaterialCommunityIcons name="camera-outline" size={24} color={COLORS.primary} />
               <Text style={s.imageBtnTxt}>Take Photo</Text>
             </TouchableOpacity>
             <TouchableOpacity style={s.imageBtn} activeOpacity={0.8}>
-              <MaterialCommunityIcons name="image-plus-outline" size={24} color={colors.primary} />
+              <MaterialCommunityIcons name="image-plus-outline" size={24} color={COLORS.primary} />
               <Text style={s.imageBtnTxt}>Upload</Text>
             </TouchableOpacity>
           </View>
@@ -310,10 +308,10 @@ export default function SampleCollectionScreen({ navigation }: any) {
                 <MaterialCommunityIcons
                   name={tag === 'Difficult Vein' ? 'needle' : tag === 'Second Attempt' ? 'pencil-outline' : 'alert-circle-outline'}
                   size={12}
-                  color={activeTags.includes(tag) ? colors.primary : colors.textSecondary}
+                  color={activeTags.includes(tag) ? COLORS.primary : COLORS.textSecondary}
                   style={{ marginRight: 4 }}
                 />
-                <Text style={[s.noteTagTxt, activeTags.includes(tag) && { color: colors.primary, fontWeight: '700' }]}>{tag}</Text>
+                <Text style={[s.noteTagTxt, activeTags.includes(tag) && { color: COLORS.primary, fontWeight: '700' }]}>{tag}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -321,7 +319,7 @@ export default function SampleCollectionScreen({ navigation }: any) {
             <TextInput
               style={s.notesInput}
               placeholder="Add notes here..."
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={COLORS.textMuted}
               multiline
               maxLength={200}
               value={notes}
@@ -338,7 +336,7 @@ export default function SampleCollectionScreen({ navigation }: any) {
       {/* ── Footer Action Buttons ── */}
       <View style={s.footer}>
         <TouchableOpacity style={s.rejectBtn} onPress={handleReject} activeOpacity={0.8}>
-          <MaterialCommunityIcons name="close-circle-outline" size={16} color={colors.danger} />
+          <MaterialCommunityIcons name="close-circle-outline" size={16} color={COLORS.danger} />
           <Text style={s.rejectTxt}> Reject Sample</Text>
         </TouchableOpacity>
 
@@ -358,43 +356,43 @@ export default function SampleCollectionScreen({ navigation }: any) {
 }
 
 const s = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: colors.background },
+  root:    { flex: 1, backgroundColor: COLORS.background },
 
-  header:  { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryDark, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14, gap: 12 },
+  header:  { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primaryDark, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14, gap: 12 },
   backBtn: { padding: 4 },
   headerTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#FFF' },
 
   scroll: { padding: 12, paddingBottom: 20 },
 
   // Patient card
-  patientCard:  { flexDirection: 'row', backgroundColor: colors.background, borderRadius: 14, borderWidth: 1, borderColor: colors.cardBorder, padding: 14, marginBottom: 10, gap: 12 },
+  patientCard:  { flexDirection: 'row', backgroundColor: COLORS.background, borderRadius: 14, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 14, marginBottom: 10, gap: 12 },
   patientLeft:  { flexDirection: 'row', alignItems: 'flex-start', flex: 1 },
-  avatar:       { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.cardBorder },
-  patientName:  { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
-  patientMeta:  { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  idBadge:      { backgroundColor: colors.surfaceVariant, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginTop: 4, alignSelf: 'flex-start' },
-  idText:       { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+  avatar:       { width: 56, height: 56, borderRadius: 28, backgroundColor: COLORS.cardBorder },
+  patientName:  { fontSize: 15, fontWeight: '800', color: COLORS.textPrimary },
+  patientMeta:  { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  idBadge:      { backgroundColor: COLORS.surfaceVariant, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginTop: 4, alignSelf: 'flex-start' },
+  idText:       { fontSize: 11, color: COLORS.textSecondary, fontWeight: '600' },
   patientRight: { flex: 1, gap: 6 },
   metaRow:      { flexDirection: 'row', alignItems: 'flex-start' },
-  metaLabel:    { fontSize: 10, color: colors.textMuted },
-  metaValue:    { fontSize: 12, fontWeight: '600', color: colors.textPrimary },
+  metaLabel:    { fontSize: 10, color: COLORS.textMuted },
+  metaValue:    { fontSize: 12, fontWeight: '600', color: COLORS.textPrimary },
 
   // Two-column layout
   twoCol: { flexDirection: 'row', gap: 10, marginBottom: 10 },
 
   // Section card
-  sectionCard: { backgroundColor: colors.background, borderRadius: 14, borderWidth: 1, borderColor: colors.cardBorder, padding: 12 },
+  sectionCard: { backgroundColor: COLORS.background, borderRadius: 14, borderWidth: 1, borderColor: COLORS.cardBorder, padding: 12 },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  sectionTitle: { fontSize: 13, fontWeight: '800', color: colors.textPrimary },
-  viewAll:      { fontSize: 11, fontWeight: '700', color: colors.primary },
+  sectionTitle: { fontSize: 13, fontWeight: '800', color: COLORS.textPrimary },
+  viewAll:      { fontSize: 11, fontWeight: '700', color: COLORS.primary },
 
   // Ordered tests
   testRow:    { flexDirection: 'row', alignItems: 'flex-start' },
   testDot:    { width: 8, height: 8, borderRadius: 4, marginTop: 4, marginRight: 6 },
-  testName:   { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
-  testFull:   { fontSize: 10, color: colors.textSecondary, marginTop: 1 },
+  testName:   { fontSize: 12, fontWeight: '700', color: COLORS.textPrimary },
+  testFull:   { fontSize: 10, color: COLORS.textSecondary, marginTop: 1 },
   collectedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2 },
-  collectedTxt:   { fontSize: 9, fontWeight: '700', color: colors.success },
+  collectedTxt:   { fontSize: 9, fontWeight: '700', color: COLORS.success },
   pendingBadge:   { backgroundColor: '#FFFBEB', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2 },
   pendingTxt:     { fontSize: 9, fontWeight: '700', color: T.amber },
 
@@ -402,47 +400,47 @@ const s = StyleSheet.create({
   tubeRow:   { flexDirection: 'row', alignItems: 'center' },
   tubeIcon:  { width: 22, height: 34, borderRadius: 11, borderWidth: 2, justifyContent: 'flex-end', overflow: 'hidden', alignItems: 'center' },
   tubeFill:  { width: '100%', height: '60%', borderBottomLeftRadius: 9, borderBottomRightRadius: 9 },
-  tubeName:  { fontSize: 11, fontWeight: '700', color: colors.textPrimary },
-  tubeSub:   { fontSize: 10, color: colors.textSecondary },
+  tubeName:  { fontSize: 11, fontWeight: '700', color: COLORS.textPrimary },
+  tubeSub:   { fontSize: 10, color: COLORS.textSecondary },
   tubeCount: { borderWidth: 1.5, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 },
   tubeCountTxt: { fontSize: 11, fontWeight: '800' },
 
   // Checklist
   checkRow:    { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  checkCircle: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: colors.cardBorder, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
-  checkCircleDone: { backgroundcolor: colors.success, bordercolor: colors.success },
-  checkLabel:  { fontSize: 12, color: colors.textPrimary, fontWeight: '500' },
+  checkCircle: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: COLORS.cardBorder, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
+  checkCircleDone: { backgroundColor: COLORS.success, borderColor: COLORS.success },
+  checkLabel:  { fontSize: 12, color: COLORS.textPrimary, fontWeight: '500' },
 
   // Collection details
-  detailLabel:    { fontSize: 11, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
+  detailLabel:    { fontSize: 11, fontWeight: '600', color: COLORS.textSecondary, marginBottom: 6 },
   toggleRow:      { flexDirection: 'row', gap: 6 },
-  toggleBtn:      { flex: 1, paddingVertical: 6, borderRadius: 8, borderWidth: 1.5, borderColor: colors.cardBorder, alignItems: 'center' },
-  toggleBtnActive:{ bordercolor: colors.primary, backgroundColor: colors.primaryLight },
-  toggleTxt:      { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
-  toggleTxtActive:{ color: colors.primary, fontWeight: '800' },
-  collectedByBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
-  collectedByTxt: { fontSize: 12, color: colors.textPrimary, fontWeight: '500' },
+  toggleBtn:      { flex: 1, paddingVertical: 6, borderRadius: 8, borderWidth: 1.5, borderColor: COLORS.cardBorder, alignItems: 'center' },
+  toggleBtnActive:{ borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
+  toggleTxt:      { fontSize: 11, fontWeight: '600', color: COLORS.textSecondary },
+  toggleTxtActive:{ color: COLORS.primary, fontWeight: '800' },
+  collectedByBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  collectedByTxt: { fontSize: 12, color: COLORS.textPrimary, fontWeight: '500' },
 
   // Sample Image
   imageRow:   { flexDirection: 'row', gap: 12 },
-  imageBtn:   { flex: 1, borderWidth: 1.5, borderColor: colors.cardBorder, borderRadius: 10, borderStyle: 'dashed', paddingVertical: 16, alignItems: 'center', gap: 6 },
-  imageBtnTxt:{ fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  imageBtn:   { flex: 1, borderWidth: 1.5, borderColor: COLORS.cardBorder, borderRadius: 10, borderStyle: 'dashed', paddingVertical: 16, alignItems: 'center', gap: 6 },
+  imageBtnTxt:{ fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
 
   // Notes
   tagsRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
-  noteTag:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
-  noteTagActive: { bordercolor: colors.primary, backgroundColor: colors.primaryLight },
-  noteTagTxt: { fontSize: 11, color: colors.textSecondary },
-  notesBox:   { borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, padding: 10, minHeight: 70 },
-  notesInput: { fontSize: 13, color: colors.textPrimary, minHeight: 50 },
-  notesCount: { fontSize: 10, color: colors.textMuted, textAlign: 'right', marginTop: 4 },
+  noteTag:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
+  noteTagActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
+  noteTagTxt: { fontSize: 11, color: COLORS.textSecondary },
+  notesBox:   { borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 10, padding: 10, minHeight: 70 },
+  notesInput: { fontSize: 13, color: COLORS.textPrimary, minHeight: 50 },
+  notesCount: { fontSize: 10, color: COLORS.textMuted, textAlign: 'right', marginTop: 4 },
 
   // Footer
-  footer:       { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.cardBorder },
+  footer:       { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: COLORS.background, borderTopWidth: 1, borderTopColor: COLORS.cardBorder },
   rejectBtn:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#FECACA', borderRadius: 12, paddingVertical: 12, backgroundColor: '#FEF2F2' },
-  rejectTxt:    { fontSize: 12, fontWeight: '700', color: colors.danger },
+  rejectTxt:    { fontSize: 12, fontWeight: '700', color: COLORS.danger },
   rescheduleBtn:{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#FED7AA', borderRadius: 12, paddingVertical: 12, backgroundColor: '#FFF7ED' },
   rescheduleTxt:{ fontSize: 12, fontWeight: '700', color: T.orange },
-  collectBtn:   { flex: 1.2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primaryDark, borderRadius: 12, paddingVertical: 12 },
+  collectBtn:   { flex: 1.2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primaryDark, borderRadius: 12, paddingVertical: 12 },
   collectTxt:   { fontSize: 12, fontWeight: '700', color: '#FFF' },
 });

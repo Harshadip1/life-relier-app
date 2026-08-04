@@ -17,8 +17,6 @@ import {
   SaveReferingDoctorPayload,
   UpdateReferingDoctorPayload,
 } from '../../services/referingDoctorService';
-
-// colors.primary is now colors.primary (set inside component)
 const DR_TYPES = ['DR', 'MR', 'TPA', 'OTHER'];
 
 function Field({ label, required, children }: any) {
@@ -31,8 +29,6 @@ function Field({ label, required, children }: any) {
 }
 
 export default function ReferralDoctorScreen({ navigation }: any) {
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
@@ -174,10 +170,10 @@ export default function ReferralDoctorScreen({ navigation }: any) {
 
       {/* Breadcrumb */}
       <View style={st.breadcrumb}>
-        <MaterialCommunityIcons name="account-heart-outline" size={13} color={colors.primary} />
+        <MaterialCommunityIcons name="account-heart-outline" size={13} color={COLORS.primary} />
         <Text style={st.bcText}> Master</Text>
         <Feather name="chevron-right" size={12} color="#94A3B8" style={{ marginHorizontal: 2 }} />
-        <Text style={[st.bcText, { color: colors.primary, fontWeight: '700' }]}>Referral Doctors</Text>
+        <Text style={[st.bcText, { color: COLORS.primary, fontWeight: '700' }]}>Referral Doctors</Text>
       </View>
 
       <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -206,19 +202,19 @@ export default function ReferralDoctorScreen({ navigation }: any) {
             <View style={st.searchBar}>
               <Feather name="search" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
               <TextInput style={st.searchInput} placeholder="Search by name, code, city..."
-                placeholderTextColor={colors.textMuted} value={search} onChangeText={setSearch} />
+                placeholderTextColor={COLORS.textMuted} value={search} onChangeText={setSearch} />
             </View>
 
             {/* States */}
             {loading && records.length === 0 ? (
-              <View style={st.centre}><ActivityIndicator size="large" color={colors.primary} /><Text style={st.centreTxt}>Loading…</Text></View>
+              <View style={st.centre}><ActivityIndicator size="large" color={COLORS.primary} /><Text style={st.centreTxt}>Loading…</Text></View>
             ) : error ? (
               <View style={st.centre}>
                 <MaterialCommunityIcons name="cloud-off-outline" size={44} color="#CBD5E1" />
                 <Text style={st.emptyTitle}>Could not load data</Text>
                 <Text style={st.emptySub}>{error}</Text>
                 <TouchableOpacity style={st.retryBtn} onPress={fetchRecords}>
-                  <Feather name="refresh-cw" size={14} color={colors.primary} /><Text style={st.retryTxt}> Retry</Text>
+                  <Feather name="refresh-cw" size={14} color={COLORS.primary} /><Text style={st.retryTxt}> Retry</Text>
                 </TouchableOpacity>
               </View>
             ) : filtered.length === 0 ? (
@@ -231,7 +227,7 @@ export default function ReferralDoctorScreen({ navigation }: any) {
               filtered.map((item, idx) => (
                 <View key={String(item.dr_codeid ?? idx)} style={st.row}>
                   <View style={st.rowIcon}>
-                    <MaterialCommunityIcons name="doctor" size={18} color={colors.primary} />
+                    <MaterialCommunityIcons name="doctor" size={18} color={COLORS.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={st.rowName}>{item.DoctorName}</Text>
@@ -278,42 +274,42 @@ export default function ReferralDoctorScreen({ navigation }: any) {
 
               <Field label="Doctor Code">
                 <View style={st.inputWrap}>
-                  <TextInput style={st.input} placeholder="e.g. 1755" placeholderTextColor={colors.textMuted}
+                  <TextInput style={st.input} placeholder="e.g. 1755" placeholderTextColor={COLORS.textMuted}
                     value={doctorCode} onChangeText={setDoctorCode} autoCapitalize="characters" />
                 </View>
               </Field>
 
               <Field label="Doctor Name" required>
                 <View style={st.inputWrap}>
-                  <TextInput style={st.input} placeholder="e.g. Aditya Manmdale" placeholderTextColor={colors.textMuted}
+                  <TextInput style={st.input} placeholder="e.g. Aditya Manmdale" placeholderTextColor={COLORS.textMuted}
                     value={doctorName} onChangeText={setDoctorName} />
                 </View>
               </Field>
 
               <Field label="Phone No.">
                 <View style={st.inputWrap}>
-                  <TextInput style={st.input} placeholder="e.g. 9876553210" placeholderTextColor={colors.textMuted}
+                  <TextInput style={st.input} placeholder="e.g. 9876553210" placeholderTextColor={COLORS.textMuted}
                     value={doctorPhoneno} onChangeText={setDoctorPhoneno} keyboardType="phone-pad" />
                 </View>
               </Field>
 
               <Field label="Email">
                 <View style={st.inputWrap}>
-                  <TextInput style={st.input} placeholder="e.g. doctor@gmail.com" placeholderTextColor={colors.textMuted}
+                  <TextInput style={st.input} placeholder="e.g. doctor@gmail.com" placeholderTextColor={COLORS.textMuted}
                     value={doctoremail} onChangeText={setDoctoremail} keyboardType="email-address" autoCapitalize="none" />
                 </View>
               </Field>
 
               <Field label="Address">
                 <View style={st.inputWrap}>
-                  <TextInput style={st.input} placeholder="e.g. Pune" placeholderTextColor={colors.textMuted}
+                  <TextInput style={st.input} placeholder="e.g. Pune" placeholderTextColor={COLORS.textMuted}
                     value={address1} onChangeText={setAddress1} />
                 </View>
               </Field>
 
               <Field label="City">
                 <View style={st.inputWrap}>
-                  <TextInput style={st.input} placeholder="e.g. Pune" placeholderTextColor={colors.textMuted}
+                  <TextInput style={st.input} placeholder="e.g. Pune" placeholderTextColor={COLORS.textMuted}
                     value={city} onChangeText={setCity} />
                 </View>
               </Field>
@@ -337,21 +333,21 @@ export default function ReferralDoctorScreen({ navigation }: any) {
 
               <Field label="Contact Person">
                 <View style={st.inputWrap}>
-                  <TextInput style={st.input} placeholder="e.g. 1" placeholderTextColor={colors.textMuted}
+                  <TextInput style={st.input} placeholder="e.g. 1" placeholderTextColor={COLORS.textMuted}
                     value={contactperson} onChangeText={setContactperson} keyboardType="numeric" />
                 </View>
               </Field>
 
               <Field label="Rate Type ID">
                 <View style={st.inputWrap}>
-                  <TextInput style={st.input} placeholder="e.g. 2" placeholderTextColor={colors.textMuted}
+                  <TextInput style={st.input} placeholder="e.g. 2" placeholderTextColor={COLORS.textMuted}
                     value={ratetypeid} onChangeText={setRatetypeid} keyboardType="numeric" />
                 </View>
               </Field>
 
               <Field label="PRO">
                 <View style={st.inputWrap}>
-                  <TextInput style={st.input} placeholder="e.g. 5" placeholderTextColor={colors.textMuted}
+                  <TextInput style={st.input} placeholder="e.g. 5" placeholderTextColor={COLORS.textMuted}
                     value={pro} onChangeText={setPro} keyboardType="numeric" />
                 </View>
               </Field>
@@ -366,17 +362,17 @@ export default function ReferralDoctorScreen({ navigation }: any) {
 }
 
 const st = StyleSheet.create({
-  root:        { flex: 1, backgroundColor: colors.surfaceVariant },
+  root:        { flex: 1, backgroundColor: COLORS.surfaceVariant },
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 12 },
   backBtn:     { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
   breadcrumb:  { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5F4', paddingHorizontal: 16, paddingVertical: 8 },
-  bcText:      { fontSize: 12, color: colors.textSecondary },
+  bcText:      { fontSize: 12, color: COLORS.textSecondary },
   scroll:      { padding: 16, paddingBottom: 20 },
-  footer:      { backgroundColor: colors.primary, paddingVertical: 12, alignItems: 'center' },
+  footer:      { backgroundColor: COLORS.primary, paddingVertical: 12, alignItems: 'center' },
   footerTxt:   { fontSize: 12, color: '#FFF', fontWeight: '500' },
-  card:        { backgroundColor: colors.card, borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
-  cardHeader:  { backgroundColor: colors.primary, padding: 14 },
+  card:        { backgroundColor: COLORS.card, borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+  cardHeader:  { backgroundColor: COLORS.primary, padding: 14 },
   cardTitleRow:{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   cardTitle:   { fontSize: 15, fontWeight: '700', color: '#FFF', marginRight: 8 },
   badge:       { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
@@ -385,36 +381,36 @@ const st = StyleSheet.create({
   tabBtn:      { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
   tabTxt:      { fontSize: 13, fontWeight: '600', color: '#CBD5E1' },
   body:        { padding: 16 },
-  searchBar:   { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, borderRadius: 10, borderWidth: 1, borderColor: colors.cardBorder, paddingHorizontal: 12, height: 44, marginBottom: 12 },
-  searchInput: { flex: 1, fontSize: 14, color: colors.textPrimary },
+  searchBar:   { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.background, borderRadius: 10, borderWidth: 1, borderColor: COLORS.cardBorder, paddingHorizontal: 12, height: 44, marginBottom: 12 },
+  searchInput: { flex: 1, fontSize: 14, color: COLORS.textPrimary },
   centre:      { alignItems: 'center', paddingVertical: 36 },
-  centreTxt:   { marginTop: 10, fontSize: 13, color: colors.textSecondary },
+  centreTxt:   { marginTop: 10, fontSize: 13, color: COLORS.textSecondary },
   emptyTitle:  { fontSize: 14, fontWeight: '700', color: '#334155', marginTop: 10 },
-  emptySub:    { fontSize: 12, color: colors.textMuted, marginTop: 4, textAlign: 'center' },
-  retryBtn:    { flexDirection: 'row', alignItems: 'center', marginTop: 14, borderWidth: 1.5, borderColor: colors.primary, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 7 },
-  retryTxt:    { fontSize: 13, fontWeight: '700', color: colors.primary },
-  row:         { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  emptySub:    { fontSize: 12, color: COLORS.textMuted, marginTop: 4, textAlign: 'center' },
+  retryBtn:    { flexDirection: 'row', alignItems: 'center', marginTop: 14, borderWidth: 1.5, borderColor: COLORS.primary, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 7 },
+  retryTxt:    { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+  row:         { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.divider },
   rowIcon:     { width: 36, height: 36, borderRadius: 8, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  rowName:     { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
-  rowSub:      { fontSize: 11, color: colors.textSecondary, marginTop: 1 },
+  rowName:     { fontSize: 13, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 2 },
+  rowSub:      { fontSize: 11, color: COLORS.textSecondary, marginTop: 1 },
   rowActions:  { gap: 6 },
   editBtn:     { width: 28, height: 28, borderRadius: 8, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#BFDBFE' },
   delBtn:      { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA' },
   label:       { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 6 },
-  inputWrap:   { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.background, paddingHorizontal: 14, height: 48 },
-  input:       { flex: 1, fontSize: 14, color: colors.textPrimary },
-  dd:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.background, paddingHorizontal: 14, height: 48 },
-  ddText:      { fontSize: 14, color: colors.textPrimary },
-  ddMenu:      { borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.card, marginTop: 4, overflow: 'hidden', elevation: 4, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
-  ddItem:      { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
-  ddItemText:  { fontSize: 14, color: colors.textPrimary },
+  inputWrap:   { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 10, backgroundColor: COLORS.background, paddingHorizontal: 14, height: 48 },
+  input:       { flex: 1, fontSize: 14, color: COLORS.textPrimary },
+  dd:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 10, backgroundColor: COLORS.background, paddingHorizontal: 14, height: 48 },
+  ddText:      { fontSize: 14, color: COLORS.textPrimary },
+  ddMenu:      { borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 10, backgroundColor: COLORS.card, marginTop: 4, overflow: 'hidden', elevation: 4, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
+  ddItem:      { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.divider },
+  ddItemText:  { fontSize: 14, color: COLORS.textPrimary },
   modalOverlay:{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  modalCard:   { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '92%' },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 14, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  modalCard:   { backgroundColor: COLORS.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '92%' },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, paddingHorizontal: 16, paddingVertical: 14, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
   modalTitle:  { fontSize: 15, fontWeight: '700', color: '#FFF' },
-  modalActions:{ flexDirection: 'row', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  modalActions:{ flexDirection: 'row', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.divider },
   modalScroll: { padding: 16 },
   saveBtn:     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#15803D', borderRadius: 10, paddingVertical: 11 },
-  cancelBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundcolor: colors.textSecondary, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 11 },
+  cancelBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.textSecondary, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 11 },
   btnTxt:      { fontSize: 13, fontWeight: '700', color: '#FFF' },
 });

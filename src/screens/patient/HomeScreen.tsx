@@ -22,7 +22,6 @@ import ReportCard from '../../components/ReportCard';
 import { COLORS, SPACING, BORDER_RADIUS, API_BASE_URL } from '../../utils/constants';
 import { ReportItem } from '../../utils/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../theme';
 
 const QUICK_ACTIONS = [
   { id: 'reports', icon: 'file-document-plus', label: 'View\nReports', color: '#0D9488', bg: '#E0F2F1' },
@@ -55,8 +54,6 @@ interface AppointmentItem {
 }
 
 export default function HomeScreen() {
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
   const { user } = useAuth();
   const navigation = useNavigation<any>();
   const [refreshing, setRefreshing] = useState(false);
@@ -237,7 +234,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.card }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.card }}>
       <ScrollView
         style={styles.root}
         contentContainerStyle={[styles.content, { paddingBottom: 30 }]}
@@ -349,7 +346,7 @@ export default function HomeScreen() {
         ) : recentReports.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: 20 }}>
             <MaterialCommunityIcons name="file-document-outline" size={36} color="#CBD5E1" />
-            <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 8 }}>No recent reports</Text>
+            <Text style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 8 }}>No recent reports</Text>
           </View>
         ) : (
           recentReports.map((r) => (
@@ -511,28 +508,28 @@ export default function HomeScreen() {
                 <View>
                   <View style={styles.tableRow}>
                     <Text style={[styles.tableCol, { flex: 2 }]}>Hemoglobin (Hb)</Text>
-                    <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: colors.textPrimary }]}>14.5 g/dL</Text>
-                    <Text style={[styles.tableCol, { flex: 1.2, color: colors.textSecondary, textAlign: 'right' }]}>13.0 - 17.0</Text>
+                    <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: COLORS.textPrimary }]}>14.5 g/dL</Text>
+                    <Text style={[styles.tableCol, { flex: 1.2, color: COLORS.textSecondary, textAlign: 'right' }]}>13.0 - 17.0</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={[styles.tableCol, { flex: 2 }]}>Red Blood Cell (RBC)</Text>
-                    <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: colors.textPrimary }]}>4.9 M/µL</Text>
-                    <Text style={[styles.tableCol, { flex: 1.2, color: colors.textSecondary, textAlign: 'right' }]}>4.5 - 5.5</Text>
+                    <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: COLORS.textPrimary }]}>4.9 M/µL</Text>
+                    <Text style={[styles.tableCol, { flex: 1.2, color: COLORS.textSecondary, textAlign: 'right' }]}>4.5 - 5.5</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={[styles.tableCol, { flex: 2 }]}>Platelet Count</Text>
                     <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: '#D97706' }]}>142,000 /µL ⬇</Text>
-                    <Text style={[styles.tableCol, { flex: 1.2, color: colors.textSecondary, textAlign: 'right' }]}>150k - 450k</Text>
+                    <Text style={[styles.tableCol, { flex: 1.2, color: COLORS.textSecondary, textAlign: 'right' }]}>150k - 450k</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={[styles.tableCol, { flex: 2 }]}>White Blood Cell (WBC)</Text>
-                    <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: colors.textPrimary }]}>7,200 /µL</Text>
-                    <Text style={[styles.tableCol, { flex: 1.2, color: colors.textSecondary, textAlign: 'right' }]}>4.0k - 11.0k</Text>
+                    <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: COLORS.textPrimary }]}>7,200 /µL</Text>
+                    <Text style={[styles.tableCol, { flex: 1.2, color: COLORS.textSecondary, textAlign: 'right' }]}>4.0k - 11.0k</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={[styles.tableCol, { flex: 2 }]}>Packed Cell Volume (PCV)</Text>
-                    <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: colors.textPrimary }]}>44.2 %</Text>
-                    <Text style={[styles.tableCol, { flex: 1.2, color: colors.textSecondary, textAlign: 'right' }]}>40.0 - 50.0</Text>
+                    <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: COLORS.textPrimary }]}>44.2 %</Text>
+                    <Text style={[styles.tableCol, { flex: 1.2, color: COLORS.textSecondary, textAlign: 'right' }]}>40.0 - 50.0</Text>
                   </View>
                 </View>
               )}
@@ -541,18 +538,18 @@ export default function HomeScreen() {
                 <View>
                   <View style={styles.tableRow}>
                     <Text style={[styles.tableCol, { flex: 2 }]}>T3 (Triiodothyronine)</Text>
-                    <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: colors.textPrimary }]}>1.2 ng/mL</Text>
-                    <Text style={[styles.tableCol, { flex: 1.2, color: colors.textSecondary, textAlign: 'right' }]}>0.8 - 2.0</Text>
+                    <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: COLORS.textPrimary }]}>1.2 ng/mL</Text>
+                    <Text style={[styles.tableCol, { flex: 1.2, color: COLORS.textSecondary, textAlign: 'right' }]}>0.8 - 2.0</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={[styles.tableCol, { flex: 2 }]}>T4 (Thyroxine)</Text>
-                    <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: colors.textPrimary }]}>8.5 µg/dL</Text>
-                    <Text style={[styles.tableCol, { flex: 1.2, color: colors.textSecondary, textAlign: 'right' }]}>5.1 - 14.1</Text>
+                    <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: COLORS.textPrimary }]}>8.5 µg/dL</Text>
+                    <Text style={[styles.tableCol, { flex: 1.2, color: COLORS.textSecondary, textAlign: 'right' }]}>5.1 - 14.1</Text>
                   </View>
                   <View style={styles.tableRow}>
                     <Text style={[styles.tableCol, { flex: 2 }]}>TSH (Thyrotropin)</Text>
                     <Text style={[styles.tableCol, { flex: 1, fontWeight: 'bold', textAlign: 'right', color: '#DC2626' }]}>4.9 µIU/mL ⬆</Text>
-                    <Text style={[styles.tableCol, { flex: 1.2, color: colors.textSecondary, textAlign: 'right' }]}>0.5 - 4.5</Text>
+                    <Text style={[styles.tableCol, { flex: 1.2, color: COLORS.textSecondary, textAlign: 'right' }]}>0.5 - 4.5</Text>
                   </View>
                 </View>
               )}
@@ -699,8 +696,8 @@ export default function HomeScreen() {
                       <Text style={styles.summaryLabel}>Date & Time</Text>
                       <Text style={styles.summaryVal}>{bookingDate} @ {bookingTime}</Text>
                     </View>
-                    <View style={[styles.summaryRow, { borderTopWidth: 1, borderColor: colors.divider, paddingTop: 10, marginTop: 4 }]}>
-                      <Text style={[styles.summaryLabel, { fontWeight: '700', color: colors.textPrimary }]}>Amount to Pay</Text>
+                    <View style={[styles.summaryRow, { borderTopWidth: 1, borderColor: COLORS.divider, paddingTop: 10, marginTop: 4 }]}>
+                      <Text style={[styles.summaryLabel, { fontWeight: '700', color: COLORS.textPrimary }]}>Amount to Pay</Text>
                       <Text style={[styles.summaryVal, { fontWeight: '800', color: '#0D9488', fontSize: 16 }]}>₹{selectedTest?.price}</Text>
                     </View>
                   </View>
@@ -907,24 +904,24 @@ export default function HomeScreen() {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.card },
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.card },
   content: { padding: SPACING.md },
 
   // Header
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg },
-  greeting: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
-  date: { fontSize: 13, color: colors.textSecondary, marginTop: 4 },
+  greeting: { fontSize: 20, fontWeight: '800', color: COLORS.textPrimary },
+  date: { fontSize: 13, color: COLORS.textSecondary, marginTop: 4 },
   notifBtn: {
     position: 'relative',
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.card,
+    backgroundColor: COLORS.card,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.cardBorder,
+    borderColor: COLORS.cardBorder,
   },
   notifBadge: {
     position: 'absolute',
@@ -947,7 +944,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16 
   },
   quickCard: {
-    backgroundColor: colors.card,
+    backgroundColor: COLORS.card,
     borderRadius: 20,
     paddingVertical: 14,
     paddingHorizontal: 8,
@@ -955,8 +952,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     marginHorizontal: 4,
     borderWidth: 1,
-    borderColor: colors.divider,
-    shadowColor: colors.shadow,
+    borderColor: COLORS.divider,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02,
     shadowRadius: 6,
@@ -973,7 +970,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   quickLabel: { 
     fontSize: 12, 
     fontWeight: '700', 
-    color: colors.textPrimary, 
+    color: COLORS.textPrimary, 
     textAlign: 'center', 
     lineHeight: 15 
   },
@@ -989,14 +986,14 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.card,
+    backgroundColor: COLORS.card,
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 20,
     marginBottom: 44,
     zIndex: 2,
-    shadowColor: colors.shadow,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -1010,7 +1007,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bannerTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  bannerTitle: { fontSize: 13, fontWeight: '700', color: COLORS.textPrimary },
   microscopeImage: {
     position: 'absolute',
     right: 10,
@@ -1020,12 +1017,12 @@ const makeStyles = (colors: any) => StyleSheet.create({
     zIndex: 1,
   },
   bannerWhiteCard: {
-    backgroundColor: colors.card,
+    backgroundColor: COLORS.card,
     borderRadius: 18,
     flexDirection: 'row',
     padding: 12,
     alignItems: 'flex-start',
-    shadowColor: colors.shadow,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -1041,19 +1038,19 @@ const makeStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  bStatVal: { fontSize: 13, fontWeight: '800', color: colors.textPrimary },
-  bStatLabel: { fontSize: 9, color: colors.textSecondary, marginTop: 3, lineHeight: 12 },
+  bStatVal: { fontSize: 13, fontWeight: '800', color: COLORS.textPrimary },
+  bStatLabel: { fontSize: 9, color: COLORS.textSecondary, marginTop: 3, lineHeight: 12 },
   bDivider: { width: 1, height: '80%', backgroundColor: '#E2E8F0', alignSelf: 'center', marginHorizontal: 2 },
 
   // Booking Status
   statusCard: {
-    backgroundColor: colors.card,
+    backgroundColor: COLORS.card,
     borderRadius: 20,
     padding: SPACING.md,
     marginBottom: SPACING.lg,
     borderWidth: 1,
-    borderColor: colors.divider,
-    shadowColor: colors.shadow,
+    borderColor: COLORS.divider,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.02,
     shadowRadius: 8,
@@ -1085,16 +1082,16 @@ const makeStyles = (colors: any) => StyleSheet.create({
     zIndex: 1,
   },
   stepDone: { backgroundColor: '#10B981' },
-  stepActive: { backgroundColor: colors.card, borderWidth: 2.5, borderColor: '#F59E0B' },
+  stepActive: { backgroundColor: COLORS.card, borderWidth: 2.5, borderColor: '#F59E0B' },
   stepActiveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#F59E0B' },
-  stepEmpty: { backgroundColor: colors.card, borderWidth: 2, borderColor: '#CBD5E1' },
-  stepLabel: { fontSize: 10, color: colors.textSecondary, textAlign: 'center', marginBottom: 4, lineHeight: 13 },
-  stepLabelActive: { color: colors.textPrimary, fontWeight: '700' },
-  stepDate: { fontSize: 9, color: colors.textMuted, textAlign: 'center' },
+  stepEmpty: { backgroundColor: COLORS.card, borderWidth: 2, borderColor: '#CBD5E1' },
+  stepLabel: { fontSize: 10, color: COLORS.textSecondary, textAlign: 'center', marginBottom: 4, lineHeight: 13 },
+  stepLabelActive: { color: COLORS.textPrimary, fontWeight: '700' },
+  stepDate: { fontSize: 9, color: COLORS.textMuted, textAlign: 'center' },
 
   // Upcoming Appointment
   apptCard: {
-    backgroundColor: colors.card,
+    backgroundColor: COLORS.card,
     borderRadius: 20,
     padding: SPACING.md,
     flexDirection: 'row',
@@ -1102,23 +1099,23 @@ const makeStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.sm,
     borderWidth: 1,
-    borderColor: colors.divider,
-    shadowColor: colors.shadow,
+    borderColor: COLORS.divider,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.02,
     shadowRadius: 8,
     elevation: 2,
   },
   noApptCard: {
-    backgroundColor: colors.background,
+    backgroundColor: COLORS.background,
     borderRadius: 16,
     padding: SPACING.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.cardBorder,
+    borderColor: COLORS.cardBorder,
     borderStyle: 'dashed',
   },
-  noApptText: { color: colors.textSecondary, fontSize: 13 },
+  noApptText: { color: COLORS.textSecondary, fontSize: 13 },
   apptLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   apptIconBox: {
     width: 50,
@@ -1138,22 +1135,22 @@ const makeStyles = (colors: any) => StyleSheet.create({
     marginBottom: 2,
   },
   apptBadgeText: { fontSize: 9, color: '#FFFFFF', fontWeight: '700' },
-  apptName: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  apptName: { fontSize: 14, fontWeight: '800', color: COLORS.textPrimary },
   apptDateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  apptDate: { fontSize: 11, color: colors.textSecondary },
+  apptDate: { fontSize: 11, color: COLORS.textSecondary },
 
   apptPhlebotomist: { alignItems: 'flex-start', paddingLeft: 8 },
-  apptPhlLabel: { fontSize: 9, color: colors.textMuted, marginBottom: 4 },
+  apptPhlLabel: { fontSize: 9, color: COLORS.textMuted, marginBottom: 4 },
   apptPhlRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   apptPhlAvatar: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.surfaceVariant,
+    backgroundColor: COLORS.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  apptPhlName: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
+  apptPhlName: { fontSize: 12, fontWeight: '700', color: COLORS.textPrimary },
 
   // ================= MODALS STYLES =================
   modalOverlay: {
@@ -1162,12 +1159,12 @@ const makeStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'flex-end',
   },
   reportModalContainer: {
-    backgroundColor: colors.card,
+    backgroundColor: COLORS.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
     maxHeight: '90%',
-    shadowColor: colors.shadow,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.1,
     shadowRadius: 24,
@@ -1178,17 +1175,17 @@ const makeStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderColor: colors.divider,
+    borderColor: COLORS.divider,
     paddingBottom: 16,
     marginBottom: 16,
   },
-  modalTitle: { fontSize: 17, fontWeight: '800', color: colors.textPrimary },
-  modalSubtitle: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  modalTitle: { fontSize: 17, fontWeight: '800', color: COLORS.textPrimary },
+  modalSubtitle: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
   modalCloseBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.surfaceVariant,
+    backgroundColor: COLORS.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1198,7 +1195,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   metaRow: {
     flexDirection: 'row',
-    backgroundColor: colors.background,
+    backgroundColor: COLORS.background,
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
@@ -1206,14 +1203,14 @@ const makeStyles = (colors: any) => StyleSheet.create({
   metaItem: {
     flex: 1,
   },
-  metaLabel: { fontSize: 10, color: colors.textMuted, textTransform: 'uppercase', fontWeight: '600' },
-  metaVal: { fontSize: 13, color: colors.textPrimary, fontWeight: '700', marginTop: 4 },
+  metaLabel: { fontSize: 10, color: COLORS.textMuted, textTransform: 'uppercase', fontWeight: '600' },
+  metaVal: { fontSize: 13, color: COLORS.textPrimary, fontWeight: '700', marginTop: 4 },
 
   tableHeader: {
     flexDirection: 'row',
     paddingVertical: 8,
     borderBottomWidth: 1.5,
-    borderColor: colors.cardBorder,
+    borderColor: COLORS.cardBorder,
     marginBottom: 8,
   },
   tableCol: {
@@ -1224,17 +1221,17 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderColor: colors.divider,
+    borderColor: COLORS.divider,
   },
   disclaimerBox: {
     flexDirection: 'row',
     gap: 8,
-    backgroundColor: colors.background,
+    backgroundColor: COLORS.background,
     padding: 12,
     borderRadius: 12,
     marginTop: 16,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: COLORS.divider,
   },
   disclaimerText: { fontSize: 11, color: '#475569', flex: 1, lineHeight: 15 },
 
@@ -1255,9 +1252,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
   modalPrimaryBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
 
   modalSecondaryBtn: {
-    backgroundColor: colors.card,
+    backgroundColor: COLORS.card,
     borderWidth: 1.5,
-    borderColor: colors.cardBorder,
+    borderColor: COLORS.cardBorder,
     height: 50,
     borderRadius: 25,
     alignItems: 'center',
@@ -1265,13 +1262,13 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   modalSecondaryBtnText: { color: '#475569', fontSize: 14, fontWeight: '700' },
 
-  wizardSectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 12 },
+  wizardSectionTitle: { fontSize: 13, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 12 },
   testSelectCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderWidth: 1.5,
-    borderColor: colors.cardBorder,
+    borderColor: COLORS.cardBorder,
     borderRadius: 16,
     marginBottom: 8,
   },
@@ -1279,8 +1276,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderColor: '#0D9488',
     backgroundColor: '#F0FDFA',
   },
-  testSelectName: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
-  testSelectInfo: { fontSize: 10, color: colors.textSecondary, marginTop: 2 },
+  testSelectName: { fontSize: 13, fontWeight: '700', color: COLORS.textPrimary },
+  testSelectInfo: { fontSize: 10, color: COLORS.textSecondary, marginTop: 2 },
   testSelectPrice: { fontSize: 14, fontWeight: '800', color: '#0D9488' },
 
   modeSelectBtn: {
@@ -1289,7 +1286,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderWidth: 1.5,
-    borderColor: colors.cardBorder,
+    borderColor: COLORS.cardBorder,
     borderRadius: 16,
     gap: 6,
   },
@@ -1297,7 +1294,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderColor: '#0D9488',
     backgroundColor: '#F0FDFA',
   },
-  modeSelectText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
+  modeSelectText: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '600' },
   modeSelectTextActive: { color: '#0F766E', fontWeight: '700' },
 
   dateChoiceBtn: {
@@ -1305,30 +1302,30 @@ const makeStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderWidth: 1.5,
-    borderColor: colors.cardBorder,
+    borderColor: COLORS.cardBorder,
     borderRadius: 12,
   },
   dateChoiceBtnActive: {
     borderColor: '#0D9488',
     backgroundColor: '#F0FDFA',
   },
-  dateChoiceText: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+  dateChoiceText: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '600' },
   dateChoiceTextActive: { color: '#0F766E', fontWeight: '700' },
 
   summaryCard: {
-    backgroundColor: colors.background,
+    backgroundColor: COLORS.background,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: COLORS.divider,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 6,
   },
-  summaryLabel: { fontSize: 12, color: colors.textSecondary },
-  summaryVal: { fontSize: 12, color: colors.textPrimary, fontWeight: '700' },
+  summaryLabel: { fontSize: 12, color: COLORS.textSecondary },
+  summaryVal: { fontSize: 12, color: COLORS.textPrimary, fontWeight: '700' },
 
   paymentBalanceCard: {
     backgroundColor: '#FEF2F2',
@@ -1341,7 +1338,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   payBalLabel: { fontSize: 11, color: '#EF4444', textTransform: 'uppercase', fontWeight: '700' },
   payBalVal: { fontSize: 28, fontWeight: '900', color: '#EF4444', marginVertical: 6 },
-  payBalSubtitle: { fontSize: 10, color: colors.textMuted },
+  payBalSubtitle: { fontSize: 10, color: COLORS.textMuted },
 
   payMethodRow: {
     flexDirection: 'row',
@@ -1349,7 +1346,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     gap: 12,
     padding: 14,
     borderWidth: 1.5,
-    borderColor: colors.cardBorder,
+    borderColor: COLORS.cardBorder,
     borderRadius: 16,
     marginBottom: 10,
   },
@@ -1357,31 +1354,31 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderColor: '#0D9488',
     backgroundColor: '#F0FDFA',
   },
-  payMethodText: { fontSize: 13, color: colors.textPrimary, fontWeight: '700' },
+  payMethodText: { fontSize: 13, color: COLORS.textPrimary, fontWeight: '700' },
 
   contactItemBox: {
-    backgroundColor: colors.card,
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: COLORS.divider,
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
-    shadowColor: colors.shadow,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02,
     shadowRadius: 6,
     elevation: 1,
   },
   contactItemHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  contactItemTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
-  contactItemText: { fontSize: 12, color: colors.textSecondary, lineHeight: 16 },
+  contactItemTitle: { fontSize: 13, fontWeight: '700', color: COLORS.textPrimary },
+  contactItemText: { fontSize: 12, color: COLORS.textSecondary, lineHeight: 16 },
   contactItemAction: { alignSelf: 'flex-start', marginTop: 8 },
   contactItemActionText: { color: '#0D9488', fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' },
 
   consultCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0FDFA', // Light colors.primary background
+    backgroundColor: '#F0FDFA', // Light COLORS.primary background
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
@@ -1407,7 +1404,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: colors.card,
+    backgroundColor: COLORS.card,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,

@@ -4,10 +4,9 @@ import {
   TextInput, ActivityIndicator, RefreshControl, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../theme';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { API_BASE_URL } from '../../utils/constants';
+import { API_BASE_URL , COLORS} from '../../utils/constants';
 
 const THEME = {
   primary: '#0F766E', bg: '#FFFFFF', screenBg: '#FAFAFA',
@@ -52,8 +51,6 @@ async function fetchTestStatus(status: string): Promise<TestRow[]> {
 
 export default function ReportsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
   const [activeTab, setActiveTab] = useState('All');
   const [records,   setRecords]   = useState<TestRow[]>([]);
   const [loading,   setLoading]   = useState(false);
@@ -197,7 +194,7 @@ function SummaryCard({ label, value, color, bg }: any) {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   root:        { flex: 1, backgroundColor: THEME.screenBg },
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 },
   backBtn:     { padding: 4, marginLeft: -4 },
@@ -217,7 +214,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   summaryLabel:{ fontSize: 10, fontWeight: '600', marginTop: 2 },
   centre:      { alignItems: 'center', paddingVertical: 40 },
   centreText:  { fontSize: 14, color: THEME.textSecondary, marginTop: 10 },
-  patientCard: { backgroundColor: THEME.bg, borderRadius: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 14, padding: 14, elevation: 1, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6 },
+  patientCard: { backgroundColor: THEME.bg, borderRadius: 16, borderWidth: 1, borderColor: THEME.border, marginBottom: 14, padding: 14, elevation: 1, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 6 },
   cardHeader:  { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   avatarBox:   { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   avatarText:  { fontSize: 16, fontWeight: '700', color: THEME.primary },

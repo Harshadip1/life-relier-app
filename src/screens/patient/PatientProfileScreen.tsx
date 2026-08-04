@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView } from 'react-native';
 import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../theme'; 
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
 
@@ -33,9 +32,6 @@ const SECTIONS = [
 export default function PatientProfileScreen({ navigation }: any) {
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
-  const styles = makeStyles(colors); 
-
   async function handleLogout() {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
@@ -135,13 +131,13 @@ export default function PatientProfileScreen({ navigation }: any) {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FAFAFA' }, 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 10,
   },
-  headerTitle: { fontSize: 26, fontWeight: '800', color: colors.textPrimary },
+  headerTitle: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary },
   settingsBtn: { padding: 4 },
   
   // Adjusted bottom padding to cleanly end right above the new flat nav bar
@@ -150,10 +146,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
   // Profile Card Fixes
   profileCard: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.card, borderRadius: 20,
+    backgroundColor: COLORS.card, borderRadius: 20,
     padding: 16, marginBottom: 30,
-    shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
-    borderWidth: 1, borderColor: colors.divider,
+    shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
+    borderWidth: 1, borderColor: COLORS.divider,
   },
   avatarPlaceholder: {
     width: 64, height: 64, borderRadius: 32,
@@ -162,11 +158,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   avatarText: { fontSize: 28, fontWeight: '700', color: COLORS.primary },
   profileInfo: { flex: 1, marginLeft: 16, marginRight: 8 },
-  userName: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 },
+  userName: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 4 },
   infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  idLabel: { fontSize: 13, color: colors.textSecondary },
+  idLabel: { fontSize: 13, color: COLORS.textSecondary },
   idValue: { fontSize: 13, fontWeight: '600', color: COLORS.primary },
-  phoneText: { fontSize: 13, color: colors.textSecondary, marginLeft: 6 },
+  phoneText: { fontSize: 13, color: COLORS.textSecondary, marginLeft: 6 },
   editBtn: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 12, paddingVertical: 8,
@@ -176,11 +172,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   // Menu List Sections
   sectionContainer: { marginBottom: 24 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 12 },
   menuCard: {
-    backgroundColor: colors.card, borderRadius: 16,
-    shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1,
-    borderWidth: 1, borderColor: colors.divider,
+    backgroundColor: COLORS.card, borderRadius: 16,
+    shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1,
+    borderWidth: 1, borderColor: COLORS.divider,
   },
   menuItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F8FAFC' },
   menuIconContainer: {
@@ -188,12 +184,12 @@ const makeStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginRight: 16,
   },
   menuTextContainer: { flex: 1 },
-  menuLabel: { fontSize: 15, fontWeight: '600', color: colors.textPrimary, marginBottom: 2 },
-  menuSublabel: { fontSize: 12, color: colors.textMuted },
+  menuLabel: { fontSize: 15, fontWeight: '600', color: COLORS.textPrimary, marginBottom: 2 },
+  menuSublabel: { fontSize: 12, color: COLORS.textMuted },
 
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.card, borderWidth: 1.5, borderColor: COLORS.danger || '#EF4444',
+    backgroundColor: COLORS.card, borderWidth: 1.5, borderColor: COLORS.danger || '#EF4444',
     paddingVertical: 16, borderRadius: 16, gap: 8, marginTop: 8,
   },
   logoutText: { fontSize: 16, fontWeight: '700', color: COLORS.danger || '#EF4444' },

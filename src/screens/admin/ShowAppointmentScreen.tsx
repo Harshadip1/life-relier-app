@@ -4,7 +4,6 @@ import {
   ScrollView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../theme';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
@@ -16,8 +15,6 @@ import {
   DoctorDropdownItem,
   AppointmentRecord,
 } from '../../services/doctorScheduleService';
-
-// colors.primary is now colors.primary (set inside component)
 
 function formatDate(d: Date) {
   return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
@@ -38,9 +35,6 @@ function formatSlot(slot: string): string {
 
 export default function ShowAppointmentScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
-
   const [date, setDate]               = useState<Date | null>(null); // null = show all
   const [showPicker, setShowPicker]   = useState(false);
   const [doctors, setDoctors]         = useState<DoctorDropdownItem[]>([]);
@@ -154,10 +148,10 @@ export default function ShowAppointmentScreen({ navigation }: any) {
 
       {/* Breadcrumb */}
       <View style={styles.breadcrumb}>
-        <Feather name="home" size={13} color={colors.primary} />
+        <Feather name="home" size={13} color={COLORS.primary} />
         <Text style={styles.bcText}> Dr Appointment</Text>
         <Feather name="chevron-right" size={13} color="#94A3B8" style={{ marginHorizontal: 2 }} />
-        <Text style={[styles.bcText, { color: colors.primary, fontWeight: '700' }]}>Show Appointment</Text>
+        <Text style={[styles.bcText, { color: COLORS.primary, fontWeight: '700' }]}>Show Appointment</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -211,7 +205,7 @@ export default function ShowAppointmentScreen({ navigation }: any) {
             {/* Doctor dropdown */}
             <Text style={[styles.label, { marginTop: 16 }]}>Collection Person (Doctor)</Text>
             <TouchableOpacity style={styles.dropdown} onPress={() => setShowDropdown(!showDropdown)}>
-              <Text style={[styles.dropdownText, !selectedDrName && { color: colors.textMuted }]}>
+              <Text style={[styles.dropdownText, !selectedDrName && { color: COLORS.textMuted }]}>
                 {selectedDrName || 'Select...'}
               </Text>
               <Feather name="chevron-down" size={18} color="#64748B" />
@@ -220,7 +214,7 @@ export default function ShowAppointmentScreen({ navigation }: any) {
               <View style={styles.dropdownMenu}>
                 <TouchableOpacity style={styles.dropdownItem}
                   onPress={() => { setSelectedDrId(null); setSelectedDrName(''); setShowDropdown(false); }}>
-                  <Text style={{ color: colors.textMuted, fontSize: 14 }}>All Doctors</Text>
+                  <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>All Doctors</Text>
                 </TouchableOpacity>
                 {doctors.map(d => (
                   <TouchableOpacity key={d.Id} style={styles.dropdownItem}
@@ -235,13 +229,13 @@ export default function ShowAppointmentScreen({ navigation }: any) {
             <View style={[styles.searchBar, { marginTop: 16 }]}>
               <Feather name="search" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
               <TextInput style={styles.searchInput} placeholder="Search table..."
-                placeholderTextColor={colors.textMuted} value={search} onChangeText={setSearch} />
+                placeholderTextColor={COLORS.textMuted} value={search} onChangeText={setSearch} />
             </View>
 
             {/* Body */}
             {loading && appointments.length === 0 ? (
               <View style={styles.centreBox}>
-                <ActivityIndicator size="large" color={colors.primary} />
+                <ActivityIndicator size="large" color={COLORS.primary} />
                 <Text style={styles.centreText}>Loading appointments…</Text>
               </View>
             ) : error && appointments.length === 0 ? (
@@ -250,7 +244,7 @@ export default function ShowAppointmentScreen({ navigation }: any) {
                 <Text style={styles.emptyTitle}>Could not load data</Text>
                 <Text style={styles.emptySubtitle}>{error}</Text>
                 <TouchableOpacity style={styles.retryBtn} onPress={fetchAppointments}>
-                  <Feather name="refresh-cw" size={14} color={colors.primary} />
+                  <Feather name="refresh-cw" size={14} color={COLORS.primary} />
                   <Text style={styles.retryText}> Retry</Text>
                 </TouchableOpacity>
               </View>
@@ -267,7 +261,7 @@ export default function ShowAppointmentScreen({ navigation }: any) {
                 return (
                 <View key={String(item.AppointmentId ?? idx)} style={styles.apptRow}>
                   <View style={styles.apptIcon}>
-                    <MaterialCommunityIcons name="calendar-account" size={18} color={colors.primary} />
+                    <MaterialCommunityIcons name="calendar-account" size={18} color={COLORS.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.apptName}>
@@ -330,16 +324,16 @@ export default function ShowAppointmentScreen({ navigation }: any) {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.surfaceVariant },
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.surfaceVariant },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 12 },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
   breadcrumb: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5F4', paddingHorizontal: 16, paddingVertical: 8 },
-  bcText: { fontSize: 12, color: colors.textSecondary },
+  bcText: { fontSize: 12, color: COLORS.textSecondary },
   scroll: { padding: 16, paddingBottom: 20 },
-  card: { backgroundColor: colors.card, borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
-  cardHeader: { backgroundColor: colors.primary, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  card: { backgroundColor: COLORS.card, borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+  cardHeader: { backgroundColor: COLORS.primary, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   cardTitle: { fontSize: 15, fontWeight: '700', color: '#FFF', marginRight: 8 },
   recordBadge: { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
@@ -348,34 +342,34 @@ const makeStyles = (colors: any) => StyleSheet.create({
   btnText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
   formBody: { padding: 16 },
   label: { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 8 },
-  dateRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.background, paddingHorizontal: 14, height: 50 },
-  dateText: { flex: 1, fontSize: 14, color: colors.textPrimary },
-  dropdown: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.background, paddingHorizontal: 14, height: 50 },
-  dropdownText: { fontSize: 14, color: colors.textPrimary, flex: 1 },
-  dropdownMenu: { borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 10, backgroundColor: colors.card, marginTop: 4, overflow: 'hidden' },
-  dropdownItem: { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
-  dropdownItemText: { fontSize: 14, color: colors.textPrimary },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, borderRadius: 10, borderWidth: 1, borderColor: colors.cardBorder, paddingHorizontal: 12, height: 44 },
-  searchInput: { flex: 1, fontSize: 14, color: colors.textPrimary },
+  dateRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 10, backgroundColor: COLORS.background, paddingHorizontal: 14, height: 50 },
+  dateText: { flex: 1, fontSize: 14, color: COLORS.textPrimary },
+  dropdown: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 10, backgroundColor: COLORS.background, paddingHorizontal: 14, height: 50 },
+  dropdownText: { fontSize: 14, color: COLORS.textPrimary, flex: 1 },
+  dropdownMenu: { borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 10, backgroundColor: COLORS.card, marginTop: 4, overflow: 'hidden' },
+  dropdownItem: { paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.divider },
+  dropdownItemText: { fontSize: 14, color: COLORS.textPrimary },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.background, borderRadius: 10, borderWidth: 1, borderColor: COLORS.cardBorder, paddingHorizontal: 12, height: 44 },
+  searchInput: { flex: 1, fontSize: 14, color: COLORS.textPrimary },
   centreBox: { alignItems: 'center', paddingVertical: 40 },
-  centreText: { marginTop: 10, fontSize: 13, color: colors.textSecondary },
+  centreText: { marginTop: 10, fontSize: 13, color: COLORS.textSecondary },
   emptyTitle: { fontSize: 15, fontWeight: '700', color: '#334155', marginTop: 12 },
-  emptySubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 4, textAlign: 'center' },
-  retryBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 16, borderWidth: 1.5, borderColor: colors.primary, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 7 },
-  retryText: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  emptySubtitle: { fontSize: 12, color: COLORS.textMuted, marginTop: 4, textAlign: 'center' },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 16, borderWidth: 1.5, borderColor: COLORS.primary, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 7 },
+  retryText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
   emptyBox: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { fontSize: 14, color: colors.textMuted, fontWeight: '500', marginTop: 10 },
-  apptRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  emptyText: { fontSize: 14, color: COLORS.textMuted, fontWeight: '500', marginTop: 10 },
+  apptRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.divider },
   apptIcon: { width: 34, height: 34, borderRadius: 8, backgroundColor: '#F0FDFA', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  apptName: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
-  apptSub: { fontSize: 11, color: colors.textSecondary },
-  apptTime: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  apptName: { fontSize: 13, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 2 },
+  apptSub: { fontSize: 11, color: COLORS.textSecondary },
+  apptTime: { fontSize: 11, color: COLORS.textMuted, marginTop: 1 },
   statusPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
   statusDot: { width: 5, height: 5, borderRadius: 3, marginRight: 4 },
   statusText: { fontSize: 10, fontWeight: '700' },
-  scanFab: { position: 'absolute', bottom: 50, right: 20, backgroundColor: colors.primary, width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+  scanFab: { position: 'absolute', bottom: 50, right: 20, backgroundColor: COLORS.primary, width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
   scanLabel: { fontSize: 9, color: '#FFF', fontWeight: '700', marginTop: 2 },
-  footer: { backgroundColor: colors.primary, paddingVertical: 12, alignItems: 'center' },
+  footer: { backgroundColor: COLORS.primary, paddingVertical: 12, alignItems: 'center' },
   footerText: { fontSize: 12, color: '#FFF', fontWeight: '500' },
   deleteBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA' },
 });

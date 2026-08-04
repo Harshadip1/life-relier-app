@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
+import { COLORS } from '../../utils/constants';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '../../theme';
 
 const MODULES = [
   {
@@ -54,10 +54,7 @@ const MODULES = [
 export default function FrontDeskScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
-  const { colors } = useTheme();
-  const T = { primary: colors.primary, bg: colors.background, card: colors.card, text: colors.textPrimary, sub: colors.textSecondary, muted: colors.textMuted, border: colors.cardBorder };
-  const styles = makeStyles(colors);
-
+  const T = { primary: COLORS.primary, bg: COLORS.background, card: COLORS.card, text: COLORS.textPrimary, sub: COLORS.textSecondary, muted: COLORS.textMuted, border: COLORS.cardBorder };
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 0) }]}>
 
@@ -68,7 +65,7 @@ export default function FrontDeskScreen({ navigation }: any) {
           <Text style={styles.headerSub}>Patient registration & billing</Text>
         </View>
         <TouchableOpacity style={styles.notifBtn}>
-          <Feather name="bell" size={22} color={colors.textPrimary} />
+          <Feather name="bell" size={22} color={COLORS.textPrimary} />
           <View style={styles.notifDot} />
         </TouchableOpacity>
       </View>
@@ -76,17 +73,17 @@ export default function FrontDeskScreen({ navigation }: any) {
       {/* ── Search Patient ── */}
       <View style={styles.searchWrap}>
         <View style={styles.searchBar}>
-          <Feather name="search" size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
+          <Feather name="search" size={18} color={COLORS.textMuted} style={{ marginRight: 10 }} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search patient by name, ID or phone..."
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={COLORS.textMuted}
             value={search}
             onChangeText={setSearch}
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')}>
-              <Feather name="x" size={16} color={colors.textMuted} />
+              <Feather name="x" size={16} color={COLORS.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -136,24 +133,24 @@ export default function FrontDeskScreen({ navigation }: any) {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 8, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.cardBorder },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
-  headerSub:   { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.background },
+  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 8, backgroundColor: COLORS.card, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary },
+  headerSub:   { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
   notifBtn: { position: 'relative', padding: 6 },
-  notifDot: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: colors.card },
-  searchWrap: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.cardBorder },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceVariant, borderRadius: 12, paddingHorizontal: 14, height: 46 },
-  searchInput: { flex: 1, fontSize: 14, color: colors.textPrimary },
+  notifDot: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: COLORS.card },
+  searchWrap: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: COLORS.card, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surfaceVariant, borderRadius: 12, paddingHorizontal: 14, height: 46 },
+  searchInput: { flex: 1, fontSize: 14, color: COLORS.textPrimary },
   scroll: { padding: 14, paddingBottom: 20 },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: colors.textMuted, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 12 },
-  moduleCard: { backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.cardBorder, flexDirection: 'row', alignItems: 'center', paddingVertical: 13, paddingHorizontal: 14, marginBottom: 10, elevation: 1, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: COLORS.textMuted, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 12 },
+  moduleCard: { backgroundColor: COLORS.card, borderRadius: 12, borderWidth: 1, borderColor: COLORS.cardBorder, flexDirection: 'row', alignItems: 'center', paddingVertical: 13, paddingHorizontal: 14, marginBottom: 10, elevation: 1, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
   iconBox: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   moduleText: { flex: 1 },
   moduleTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
-  moduleTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  moduleSub:   { fontSize: 11.5, color: colors.textSecondary, lineHeight: 17 },
+  moduleTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
+  moduleSub:   { fontSize: 11.5, color: COLORS.textSecondary, lineHeight: 17 },
   futureBadge: { backgroundColor: '#FEF3C7', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2, marginLeft: 7 },
   futureBadgeText: { fontSize: 9, fontWeight: '800', color: '#92400E' },
   arrowBox: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginLeft: 10 },

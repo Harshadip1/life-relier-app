@@ -1,11 +1,11 @@
 import React from 'react';
+import { COLORS } from '../../utils/constants';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../theme';
 
 // ─── Master sections ──────────────────────────────────────────────────────────
 const SECTIONS = [
@@ -63,10 +63,7 @@ const SECTIONS = [
 export default function MasterScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
-  const { colors } = useTheme();
-  const T = { primary: colors.primary, bg: colors.background, card: colors.card, text: colors.textPrimary, sub: colors.textSecondary, muted: colors.textMuted, border: colors.cardBorder, danger: colors.danger, dangerBg: colors.dangerBg };
-  const styles = makeStyles(colors);
-
+  const T = { primary: COLORS.primary, bg: COLORS.background, card: COLORS.card, text: COLORS.textPrimary, sub: COLORS.textSecondary, muted: COLORS.textMuted, border: COLORS.cardBorder, danger: COLORS.danger, dangerBg: COLORS.dangerBg };
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 0) }]}>
 
@@ -77,7 +74,7 @@ export default function MasterScreen({ navigation }: any) {
           <Text style={styles.headerSub}>Configuration — not for daily use</Text>
         </View>
         <TouchableOpacity style={styles.settingsBtn}>
-          <Feather name="settings" size={20} color={colors.textSecondary} />
+          <Feather name="settings" size={20} color={COLORS.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -86,7 +83,7 @@ export default function MasterScreen({ navigation }: any) {
         {/* Admin identity chip */}
         <View style={styles.adminChip}>
           <View style={styles.adminAvatar}>
-            <Feather name="user" size={20} color={colors.primary} />
+            <Feather name="user" size={20} color={COLORS.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.adminName}>{user?.name || 'Admin'}</Text>
@@ -122,7 +119,7 @@ export default function MasterScreen({ navigation }: any) {
                     <MaterialCommunityIcons name={item.icon as any} size={20} color={item.color} />
                   </View>
                   <Text style={styles.menuLabel}>{item.label}</Text>
-                  <Feather name="chevron-right" size={18} color={colors.textMuted} />
+                  <Feather name="chevron-right" size={18} color={COLORS.textMuted} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -145,7 +142,7 @@ export default function MasterScreen({ navigation }: any) {
           onPress={() => logout()}
           activeOpacity={0.8}
         >
-          <Feather name="power" size={18} color={colors.danger} />
+          <Feather name="power" size={18} color={COLORS.danger} />
           <Text style={styles.logoutText}>System Logout</Text>
         </TouchableOpacity>
 
@@ -155,28 +152,30 @@ export default function MasterScreen({ navigation }: any) {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.cardBorder },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
-  headerSub:   { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.background },
+  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12, backgroundColor: COLORS.card, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary },
+  headerSub:   { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
   settingsBtn: { padding: 6 },
   scroll: { padding: 16 },
-  adminChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.primaryLight, padding: 14, marginBottom: 24 },
-  adminAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  adminName:  { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  adminEmail: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
-  adminBadge: { backgroundColor: colors.primaryLight, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: colors.primaryLight },
-  adminBadgeText: { fontSize: 10, fontWeight: '700', color: colors.primary },
+  adminChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 14, borderWidth: 1, borderColor: COLORS.primaryLight, padding: 14, marginBottom: 24 },
+  adminAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: COLORS.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  adminName:  { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
+  adminEmail: { fontSize: 12, color: COLORS.textSecondary, marginTop: 1 },
+  adminBadge: { backgroundColor: COLORS.primaryLight, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: COLORS.primaryLight },
+  adminBadgeText: { fontSize: 10, fontWeight: '700', color: COLORS.primary },
   section: { marginBottom: 24 },
   secHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   secIconBox: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
   secTitle: { fontSize: 13, fontWeight: '800', letterSpacing: 0.3 },
   secDivider: { flex: 1, height: 1, marginLeft: 10 },
-  itemsCard: { backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden', elevation: 1, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  itemsCard: { backgroundColor: COLORS.card, borderRadius: 14, borderWidth: 1, borderColor: COLORS.cardBorder, overflow: 'hidden', elevation: 1, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.divider },
   menuIconBox: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-  menuLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.textPrimary },
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dangerBg, borderRadius: 14, paddingVertical: 14, gap: 10, borderWidth: 1, borderColor: colors.danger + '40' },
-  logoutText: { fontSize: 15, fontWeight: '700', color: colors.danger },
+  menuLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: COLORS.textPrimary },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.dangerBg, borderRadius: 14, paddingVertical: 14, gap: 10, borderWidth: 1, borderColor: COLORS.danger + '40' },
+  logoutText: { fontSize: 15, fontWeight: '700', color: COLORS.danger },
+  profileBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primaryLight, borderRadius: 14, paddingVertical: 14, gap: 10, borderWidth: 1, borderColor: COLORS.primaryLight, marginBottom: 12 },
+  profileBtnText: { fontSize: 15, fontWeight: '700', color: COLORS.primary },
 });

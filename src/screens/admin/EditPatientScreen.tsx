@@ -6,9 +6,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { API_BASE_URL } from '../../utils/constants';
+import { API_BASE_URL , COLORS} from '../../utils/constants';
 import { getPatient, updatePatient, updatePatientFiles, PatientDetail, UpdatePatientPayload } from '../../services/editPatientService';
-import { useTheme } from '../../theme';
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const T = {
@@ -35,7 +34,7 @@ function Field({ label, required, children }: {
     <View style={s.fieldWrap}>
       <Text style={s.fieldLabel}>
         {label}
-        {required && <Text style={{ color: colors.danger }}> *</Text>}
+        {required && <Text style={{ color: COLORS.danger }}> *</Text>}
       </Text>
       {children}
     </View>
@@ -53,8 +52,6 @@ function SectionBar({ icon, title }: { icon: string; title: string }) {
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function EditPatientScreen({ navigation, route }: any) {
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
 
   // PID can come from grid row params or as a standalone number
@@ -305,24 +302,24 @@ export default function EditPatientScreen({ navigation, route }: any) {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Feather name="arrow-left" size={22} color={colors.textPrimary} />
+          <Feather name="arrow-left" size={22} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={s.headerTitle}>Edit Patient</Text>
           {pid > 0 && (
             <Text style={s.headerSub}>
-              PID: <Text style={{ color: colors.primary, fontWeight: '700' }}>{pid}</Text>
+              PID: <Text style={{ color: COLORS.primary, fontWeight: '700' }}>{pid}</Text>
               {patRegID > 0 && `   ·   PT${String(patRegID).padStart(6, '0')}`}
             </Text>
           )}
         </View>
-        {fetching && <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 4 }} />}
+        {fetching && <ActivityIndicator size="small" color={COLORS.primary} style={{ marginRight: 4 }} />}
       </View>
 
       {/* Loading skeleton */}
       {fetching ? (
         <View style={s.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={s.loadingText}>Loading patient details…</Text>
         </View>
       ) : (
@@ -341,16 +338,16 @@ export default function EditPatientScreen({ navigation, route }: any) {
                 <Field label="Initial">
                   <View style={s.inputRow}>
                     <TextInput style={s.input} value={initial} onChangeText={setInitial}
-                      placeholder="Mr" placeholderTextColor={colors.textMuted} />
+                      placeholder="Mr" placeholderTextColor={COLORS.textMuted} />
                   </View>
                 </Field>
               </View>
               <View style={{ flex: 1 }}>
                 <Field label="Full Name" required>
                   <View style={s.inputRow}>
-                    <Feather name="user" size={16} color={colors.textMuted} style={s.inputIcon} />
+                    <Feather name="user" size={16} color={COLORS.textMuted} style={s.inputIcon} />
                     <TextInput style={s.input} value={name} onChangeText={setName}
-                      placeholder="Enter full name" placeholderTextColor={colors.textMuted} />
+                      placeholder="Enter full name" placeholderTextColor={COLORS.textMuted} />
                   </View>
                 </Field>
               </View>
@@ -358,9 +355,9 @@ export default function EditPatientScreen({ navigation, route }: any) {
 
             <Field label="Mobile Number" required>
               <View style={s.inputRow}>
-                <Feather name="phone" size={16} color={colors.textMuted} style={s.inputIcon} />
+                <Feather name="phone" size={16} color={COLORS.textMuted} style={s.inputIcon} />
                 <TextInput style={s.input} value={mobile} onChangeText={setMobile}
-                  keyboardType="phone-pad" placeholder="Enter mobile" placeholderTextColor={colors.textMuted} />
+                  keyboardType="phone-pad" placeholder="Enter mobile" placeholderTextColor={COLORS.textMuted} />
               </View>
             </Field>
 
@@ -370,7 +367,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
                 <Field label="Age" required>
                   <View style={s.inputRow}>
                     <TextInput style={s.input} value={age} onChangeText={setAge}
-                      keyboardType="numeric" placeholder="Age" placeholderTextColor={colors.textMuted} />
+                      keyboardType="numeric" placeholder="Age" placeholderTextColor={COLORS.textMuted} />
                   </View>
                 </Field>
               </View>
@@ -379,7 +376,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
                   <TouchableOpacity style={s.inputRow} onPress={() =>
                     setMdy(m => m === 'Year' ? 'Month' : m === 'Month' ? 'Day' : 'Year')}>
                     <Text style={[s.input, { fontSize: 13 }]}>{mdy}</Text>
-                    <Feather name="chevron-down" size={13} color={colors.textSecondary} />
+                    <Feather name="chevron-down" size={13} color={COLORS.textSecondary} />
                   </TouchableOpacity>
                 </Field>
               </View>
@@ -387,16 +384,16 @@ export default function EditPatientScreen({ navigation, route }: any) {
                 <Field label="Gender" required>
                   <TouchableOpacity style={s.inputRow} activeOpacity={0.8}
                     onPress={() => setGenderOpen(o => !o)}>
-                    <Text style={[s.input, !gender && { color: colors.textMuted }]}>{gender || 'Select'}</Text>
-                    <Feather name="chevron-down" size={13} color={colors.textSecondary} />
+                    <Text style={[s.input, !gender && { color: COLORS.textMuted }]}>{gender || 'Select'}</Text>
+                    <Feather name="chevron-down" size={13} color={COLORS.textSecondary} />
                   </TouchableOpacity>
                   {genderOpen && (
                     <View style={s.ddMenu}>
                       {GENDERS.map(g => (
                         <TouchableOpacity key={g} style={s.ddItem}
                           onPress={() => { setGender(g); setGenderOpen(false); }}>
-                          <Text style={[s.ddItemText, gender === g && { color: colors.primary, fontWeight: '700' }]}>{g}</Text>
-                          {gender === g && <Feather name="check" size={13} color={colors.primary} />}
+                          <Text style={[s.ddItemText, gender === g && { color: COLORS.primary, fontWeight: '700' }]}>{g}</Text>
+                          {gender === g && <Feather name="check" size={13} color={COLORS.primary} />}
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -410,19 +407,19 @@ export default function EditPatientScreen({ navigation, route }: any) {
               <View style={{ flex: 1 }}>
                 <Field label="Date of Birth">
                   <View style={s.inputRow}>
-                    <Feather name="calendar" size={14} color={colors.textMuted} style={s.inputIcon} />
+                    <Feather name="calendar" size={14} color={COLORS.textMuted} style={s.inputIcon} />
                     <TextInput style={s.input} value={dob} onChangeText={setDob}
-                      placeholder="YYYY-MM-DD" placeholderTextColor={colors.textMuted} />
+                      placeholder="YYYY-MM-DD" placeholderTextColor={COLORS.textMuted} />
                   </View>
                 </Field>
               </View>
               <View style={{ flex: 1 }}>
                 <Field label="Email">
                   <View style={s.inputRow}>
-                    <Feather name="mail" size={14} color={colors.textMuted} style={s.inputIcon} />
+                    <Feather name="mail" size={14} color={COLORS.textMuted} style={s.inputIcon} />
                     <TextInput style={s.input} value={email} onChangeText={setEmail}
                       keyboardType="email-address" autoCapitalize="none"
-                      placeholder="Email" placeholderTextColor={colors.textMuted} />
+                      placeholder="Email" placeholderTextColor={COLORS.textMuted} />
                   </View>
                 </Field>
               </View>
@@ -430,9 +427,9 @@ export default function EditPatientScreen({ navigation, route }: any) {
 
             <Field label="Address">
               <View style={s.inputRow}>
-                <Feather name="map-pin" size={14} color={colors.textMuted} style={s.inputIcon} />
+                <Feather name="map-pin" size={14} color={COLORS.textMuted} style={s.inputIcon} />
                 <TextInput style={s.input} value={address} onChangeText={setAddress}
-                  placeholder="Enter address" placeholderTextColor={colors.textMuted} />
+                  placeholder="Enter address" placeholderTextColor={COLORS.textMuted} />
               </View>
             </Field>
 
@@ -442,7 +439,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
                 <Field label="Patient Card No">
                   <View style={s.inputRow}>
                     <TextInput style={s.input} value={cardNo} onChangeText={setCardNo}
-                      placeholder="PCN2026001" placeholderTextColor={colors.textMuted} />
+                      placeholder="PCN2026001" placeholderTextColor={COLORS.textMuted} />
                   </View>
                 </Field>
               </View>
@@ -450,7 +447,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
                 <Field label="Card Expiry">
                   <View style={s.inputRow}>
                     <TextInput style={s.input} value={cardExp} onChangeText={setCardExp}
-                      placeholder="2030" placeholderTextColor={colors.textMuted} keyboardType="numeric" />
+                      placeholder="2030" placeholderTextColor={COLORS.textMuted} keyboardType="numeric" />
                   </View>
                 </Field>
               </View>
@@ -462,7 +459,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
                 <Field label="Weight (kg)">
                   <View style={s.inputRow}>
                     <TextInput style={s.input} value={weight} onChangeText={setWeight}
-                      keyboardType="numeric" placeholder="62" placeholderTextColor={colors.textMuted} />
+                      keyboardType="numeric" placeholder="62" placeholderTextColor={COLORS.textMuted} />
                   </View>
                 </Field>
               </View>
@@ -470,7 +467,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
                 <Field label="Height (cm)">
                   <View style={s.inputRow}>
                     <TextInput style={s.input} value={height} onChangeText={setHeight}
-                      keyboardType="numeric" placeholder="165" placeholderTextColor={colors.textMuted} />
+                      keyboardType="numeric" placeholder="165" placeholderTextColor={COLORS.textMuted} />
                   </View>
                 </Field>
               </View>
@@ -479,7 +476,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
             <Field label="Hospital No">
               <View style={s.inputRow}>
                 <TextInput style={s.input} value={hospitalNo} onChangeText={setHospitalNo}
-                  placeholder="Hospital number (optional)" placeholderTextColor={colors.textMuted} />
+                  placeholder="Hospital number (optional)" placeholderTextColor={COLORS.textMuted} />
               </View>
             </Field>
           </View>
@@ -491,21 +488,21 @@ export default function EditPatientScreen({ navigation, route }: any) {
             <Field label="Disease">
               <View style={s.inputRow}>
                 <TextInput style={s.input} value={disease} onChangeText={setDisease}
-                  placeholder="e.g. Hypertension" placeholderTextColor={colors.textMuted} />
+                  placeholder="e.g. Hypertension" placeholderTextColor={COLORS.textMuted} />
               </View>
             </Field>
 
             <Field label="Symptoms">
               <View style={s.inputRow}>
                 <TextInput style={s.input} value={symptoms} onChangeText={setSymptoms}
-                  placeholder="e.g. Headache" placeholderTextColor={colors.textMuted} />
+                  placeholder="e.g. Headache" placeholderTextColor={COLORS.textMuted} />
               </View>
             </Field>
 
             <Field label="Therapy">
               <View style={s.inputRow}>
                 <TextInput style={s.input} value={therapy} onChangeText={setTherapy}
-                  placeholder="e.g. Medication" placeholderTextColor={colors.textMuted} />
+                  placeholder="e.g. Medication" placeholderTextColor={COLORS.textMuted} />
               </View>
             </Field>
 
@@ -515,7 +512,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
                 <Field label="FS Time">
                   <View style={s.inputRow}>
                     <TextInput style={s.input} value={fsTime} onChangeText={setFsTime}
-                      placeholder="08:00 AM" placeholderTextColor={colors.textMuted} />
+                      placeholder="08:00 AM" placeholderTextColor={COLORS.textMuted} />
                   </View>
                 </Field>
               </View>
@@ -523,7 +520,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
                 <Field label="Last Period">
                   <View style={s.inputRow}>
                     <TextInput style={s.input} value={lastPeriod} onChangeText={setLastPeriod}
-                      placeholder="YYYY-MM-DD" placeholderTextColor={colors.textMuted} />
+                      placeholder="YYYY-MM-DD" placeholderTextColor={COLORS.textMuted} />
                   </View>
                 </Field>
               </View>
@@ -533,14 +530,14 @@ export default function EditPatientScreen({ navigation, route }: any) {
               <View style={[s.inputRow, { height: 70, alignItems: 'flex-start', paddingTop: 10 }]}>
                 <TextInput style={[s.input, { textAlignVertical: 'top' }]}
                   multiline value={patHistory} onChangeText={setPatHistory}
-                  placeholder="Patient history…" placeholderTextColor={colors.textMuted} />
+                  placeholder="Patient history…" placeholderTextColor={COLORS.textMuted} />
               </View>
             </Field>
 
             <Field label="Comment">
               <View style={s.inputRow}>
                 <TextInput style={s.input} value={comment} onChangeText={setComment}
-                  placeholder="e.g. Follow Up" placeholderTextColor={colors.textMuted} />
+                  placeholder="e.g. Follow Up" placeholderTextColor={COLORS.textMuted} />
               </View>
             </Field>
           </View>
@@ -585,7 +582,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
             <Text style={s.fieldLabel}>Prescription</Text>
             {existingPrescription ? (
               <View style={s.existingFileRow}>
-                <Feather name="file-text" size={14} color={colors.primary} />
+                <Feather name="file-text" size={14} color={COLORS.primary} />
                 <Text style={s.existingFilePath} numberOfLines={1}>{existingPrescription}</Text>
                 <View style={s.fileSavedBadge}><Text style={s.fileSavedText}>Saved</Text></View>
               </View>
@@ -593,7 +590,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
             <TouchableOpacity style={s.pickBtn} onPress={() => pickImage('prescription')}>
               {prescriptionUri
                 ? <Image source={{ uri: prescriptionUri }} style={s.previewThumb} />
-                : <><Feather name="upload" size={16} color={colors.primary} />
+                : <><Feather name="upload" size={16} color={COLORS.primary} />
                     <Text style={s.pickBtnText}>
                       {existingPrescription ? 'Replace Prescription' : 'Choose Prescription'}
                     </Text></>
@@ -609,7 +606,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
                   <Text style={s.selectedFileHint}>Ready to upload</Text>
                 </View>
                 <TouchableOpacity onPress={() => setPrescriptionUri(null)}>
-                  <Feather name="x" size={16} color={colors.danger} />
+                  <Feather name="x" size={16} color={COLORS.danger} />
                 </TouchableOpacity>
               </View>
             )}
@@ -620,7 +617,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
             <Text style={s.fieldLabel}>Patient Image</Text>
             {existingImage ? (
               <View style={s.existingFileRow}>
-                <Feather name="image" size={14} color={colors.primary} />
+                <Feather name="image" size={14} color={COLORS.primary} />
                 <Text style={s.existingFilePath} numberOfLines={1}>{existingImage}</Text>
                 <View style={s.fileSavedBadge}><Text style={s.fileSavedText}>Saved</Text></View>
               </View>
@@ -628,7 +625,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
             <TouchableOpacity style={s.pickBtn} onPress={() => pickImage('image')}>
               {imageUri
                 ? <Image source={{ uri: imageUri }} style={s.previewThumb} />
-                : <><Feather name="camera" size={16} color={colors.primary} />
+                : <><Feather name="camera" size={16} color={COLORS.primary} />
                     <Text style={s.pickBtnText}>
                       {existingImage ? 'Replace Image' : 'Choose Image'}
                     </Text></>
@@ -644,7 +641,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
                   <Text style={s.selectedFileHint}>Ready to upload</Text>
                 </View>
                 <TouchableOpacity onPress={() => setImageUri(null)}>
-                  <Feather name="x" size={16} color={colors.danger} />
+                  <Feather name="x" size={16} color={COLORS.danger} />
                 </TouchableOpacity>
               </View>
             )}
@@ -687,46 +684,46 @@ export default function EditPatientScreen({ navigation, route }: any) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root:       { flex: 1, backgroundColor: colors.background },
+  root:       { flex: 1, backgroundColor: COLORS.background },
 
   header:     {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12,
-    backgroundColor: colors.background, borderBottomWidth: 1, borderBottomColor: colors.cardBorder,
+    backgroundColor: COLORS.background, borderBottomWidth: 1, borderBottomColor: COLORS.cardBorder,
   },
   backBtn:    { padding: 4, marginRight: 10 },
-  headerTitle:{ fontSize: 18, fontWeight: '800', color: colors.textPrimary },
-  headerSub:  { fontSize: 11, color: colors.textSecondary, marginTop: 1 },
+  headerTitle:{ fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
+  headerSub:  { fontSize: 11, color: COLORS.textSecondary, marginTop: 1 },
 
   centered:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText:{ marginTop: 12, fontSize: 14, color: colors.textSecondary },
+  loadingText:{ marginTop: 12, fontSize: 14, color: COLORS.textSecondary },
 
   scroll:     { paddingBottom: 24 },
 
   sectionBar: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: colors.primaryDark, paddingHorizontal: 14, paddingVertical: 10,
+    backgroundColor: COLORS.primaryDark, paddingHorizontal: 14, paddingVertical: 10,
   },
   sectionBarText: { fontSize: 13, fontWeight: '700', color: '#FFF' },
 
-  formCard:   { backgroundColor: colors.background, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4, marginBottom: 2 },
+  formCard:   { backgroundColor: COLORS.background, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4, marginBottom: 2 },
 
   fieldWrap:  { marginBottom: 10 },
-  fieldLabel: { fontSize: 11, fontWeight: '700', color: colors.textSecondary, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.4 },
+  fieldLabel: { fontSize: 11, fontWeight: '700', color: COLORS.textSecondary, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.4 },
 
   inputRow:   {
     flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 8,
-    paddingHorizontal: 10, height: 44, backgroundColor: colors.background,
+    borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 8,
+    paddingHorizontal: 10, height: 44, backgroundColor: COLORS.background,
   },
   inputIcon:  { marginRight: 8 },
-  input:      { flex: 1, fontSize: 14, color: colors.textPrimary },
+  input:      { flex: 1, fontSize: 14, color: COLORS.textPrimary },
 
   // Gender dropdown
   ddMenu:     {
-    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 8,
-    backgroundColor: colors.background, marginTop: 2,
-    elevation: 6, shadowColor: colors.shadow,
+    borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 8,
+    backgroundColor: COLORS.background, marginTop: 2,
+    elevation: 6, shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 6,
     zIndex: 999,
   },
@@ -735,52 +732,52 @@ const s = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 11,
     borderBottomWidth: 1, borderBottomColor: '#F8FAFC',
   },
-  ddItemText: { fontSize: 14, color: colors.textPrimary },
+  ddItemText: { fontSize: 14, color: COLORS.textPrimary },
 
   // Notes (kept for any multiline use)
   notesInput: {
-    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 8,
+    borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 8,
     paddingHorizontal: 12, paddingTop: 10, minHeight: 70,
-    fontSize: 13, color: colors.textPrimary, backgroundColor: colors.background,
+    fontSize: 13, color: COLORS.textPrimary, backgroundColor: COLORS.background,
   },
-  charCount: { fontSize: 10, color: colors.textMuted, textAlign: 'right', marginTop: 4 },
+  charCount: { fontSize: 10, color: COLORS.textMuted, textAlign: 'right', marginTop: 4 },
 
   // Report type pills
   pill:          { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20,
-                   borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.background },
-  pillActive:    { backgroundcolor: colors.primary, bordercolor: colors.primary },
-  pillText:      { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+                   borderWidth: 1, borderColor: COLORS.cardBorder, backgroundColor: COLORS.background },
+  pillActive:    { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  pillText:      { fontSize: 11, color: COLORS.textSecondary, fontWeight: '600' },
   pillTextActive:{ color: '#FFF' },
 
   // Emergency toggle
   toggleRow:  { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   checkbox:   { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5,
-                borderColor: colors.cardBorder, backgroundColor: colors.background,
+                borderColor: COLORS.cardBorder, backgroundColor: COLORS.background,
                 alignItems: 'center', justifyContent: 'center', marginRight: 8 },
-  checkboxOn: { backgroundcolor: colors.danger, bordercolor: colors.danger },
-  toggleLabel:{ fontSize: 14, color: colors.textPrimary, fontWeight: '600' },
+  checkboxOn: { backgroundColor: COLORS.danger, borderColor: COLORS.danger },
+  toggleLabel:{ fontSize: 14, color: COLORS.textPrimary, fontWeight: '600' },
   urgentBadge:{ marginLeft: 8, backgroundColor: '#FEE2E2', borderRadius: 6,
                 paddingHorizontal: 7, paddingVertical: 2 },
   urgentText: { fontSize: 9, fontWeight: '800', color: '#EF4444' },
 
   // File upload
   existingFileRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8,
-                      backgroundColor: colors.primaryLight, borderRadius: 8, padding: 8,
-                      borderWidth: 1, borderColor: colors.primaryLight },
-  existingFilePath: { flex: 1, fontSize: 11, color: colors.primaryDark, fontWeight: '600' },
+                      backgroundColor: COLORS.primaryLight, borderRadius: 8, padding: 8,
+                      borderWidth: 1, borderColor: COLORS.primaryLight },
+  existingFilePath: { flex: 1, fontSize: 11, color: COLORS.primaryDark, fontWeight: '600' },
   fileSavedBadge:   { backgroundColor: '#DCFCE7', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   fileSavedText:    { fontSize: 9, fontWeight: '800', color: '#15803D' },
   pickBtn:          { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center',
-                      borderWidth: 1.5, bordercolor: colors.primary, borderRadius: 10, borderStyle: 'dashed',
-                      paddingVertical: 14, backgroundColor: colors.primaryLight, marginBottom: 8 },
-  pickBtnText:      { fontSize: 13, color: colors.primary, fontWeight: '700' },
+                      borderWidth: 1.5, borderColor: COLORS.primary, borderRadius: 10, borderStyle: 'dashed',
+                      paddingVertical: 14, backgroundColor: COLORS.primaryLight, marginBottom: 8 },
+  pickBtnText:      { fontSize: 13, color: COLORS.primary, fontWeight: '700' },
   previewThumb:     { width: 48, height: 48, borderRadius: 8 },
-  selectedFileRow:  { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background,
+  selectedFileRow:  { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.background,
                       borderRadius: 8, padding: 8, marginBottom: 8,
-                      borderWidth: 1, borderColor: colors.cardBorder },
-  selectedFileName: { fontSize: 12, color: colors.textPrimary, fontWeight: '600' },
-  selectedFileHint: { fontSize: 10, color: colors.primary, marginTop: 2 },
-  fileDivider:      { height: 1, backgroundColor: colors.cardBorder, marginVertical: 12 },
+                      borderWidth: 1, borderColor: COLORS.cardBorder },
+  selectedFileName: { fontSize: 12, color: COLORS.textPrimary, fontWeight: '600' },
+  selectedFileHint: { fontSize: 10, color: COLORS.primary, marginTop: 2 },
+  fileDivider:      { height: 1, backgroundColor: COLORS.cardBorder, marginVertical: 12 },
   uploadBtn:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
                       gap: 8, backgroundColor: '#2563EB', borderRadius: 10,
                       paddingVertical: 13, marginTop: 4 },
@@ -789,7 +786,7 @@ const s = StyleSheet.create({
   // Update button
   updateBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, backgroundColor: colors.primaryDark,
+    gap: 8, backgroundColor: COLORS.primaryDark,
     marginHorizontal: 14, marginTop: 20, borderRadius: 12,
     paddingVertical: 15,
   },

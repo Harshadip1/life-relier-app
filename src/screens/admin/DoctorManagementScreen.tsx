@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { COLORS } from '../../utils/constants';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Image, Alert, ActivityIndicator
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../theme';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -51,9 +51,6 @@ function fmtTime(t: string | null): string {
 
 export default function DoctorManagementScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
-  
   // ─── States ───
   const [activeTab, setActiveTab] = useState('Schedules');
   const [doctors, setDoctors] = useState<DoctorDropdownItem[]>([]);
@@ -339,7 +336,7 @@ export default function DoctorManagementScreen({ navigation }: any) {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: THEME.screenBg },
   
   // Header
@@ -351,7 +348,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   // Tabs
   tabContainer: { flexDirection: 'row', marginHorizontal: 20, backgroundColor: '#E2E8F0', borderRadius: 12, padding: 4, marginBottom: 16 },
   tabBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
-  tabBtnActive: { backgroundColor: THEME.bg, elevation: 2, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
+  tabBtnActive: { backgroundColor: THEME.bg, elevation: 2, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
   tabText: { fontSize: 13, fontWeight: '600', color: THEME.textSecondary },
   tabTextActive: { color: THEME.primary },
 
@@ -374,10 +371,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   // Vertical Cards (For Schedules)
   cardVertical: { backgroundColor: THEME.bg, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: THEME.border },
-  cardHeaderFlex: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.divider, paddingBottom: 12 },
+  cardHeaderFlex: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.divider, paddingBottom: 12 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   bgSuccess: { backgroundColor: THEME.successBg },
-  bgMuted: { backgroundColor: colors.surfaceVariant },
+  bgMuted: { backgroundColor: COLORS.surfaceVariant },
   statusText: { fontSize: 10, fontWeight: '700' },
   textSuccess: { color: THEME.success },
   textMuted: { color: THEME.textSecondary },

@@ -3,11 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert,
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
-import { useTheme } from '../../theme';
 
 export default function PersonalInfoScreen({ navigation }: any) {
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
   const { user } = useAuth();
   const [name, setName] = useState(user?.name || 'Ubaid Jasnaik');
   const [email, setEmail] = useState(user?.email || 'ubaid@example.com');
@@ -73,14 +70,14 @@ function InputField({ label, value, onChangeText, icon, keyboardType = 'default'
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.card },
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.card },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
+    borderBottomColor: COLORS.divider,
   },
   backBtn: { marginRight: SPACING.md },
   headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
@@ -105,11 +102,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   label: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
   inputContainer: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: COLORS.background,
     borderRadius: BORDER_RADIUS.md,
     paddingHorizontal: SPACING.md,
     height: 56,
-    borderWidth: 1, borderColor: colors.cardBorder,
+    borderWidth: 1, borderColor: COLORS.cardBorder,
   },
   inputIcon: { marginRight: SPACING.sm },
   input: { flex: 1, fontSize: 15, color: COLORS.textPrimary, fontWeight: '500' },

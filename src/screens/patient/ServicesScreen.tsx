@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
-import { useTheme } from '../../theme';
 
 const SERVICES = [
   { id: 'book_test', title: 'Book Test', subtitle: 'Schedule a new lab test', icon: 'flask-plus-outline', color: '#0D9488', bg: '#CCFBF1' },
@@ -14,8 +13,6 @@ const SERVICES = [
 ];
 
 export default function ServicesScreen() {
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
   return (
     <ScrollView
       style={styles.root}
@@ -50,7 +47,7 @@ export default function ServicesScreen() {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: SPACING.md },
   pageTitle: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary },
@@ -63,7 +60,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-    shadowColor: colors.shadow,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,

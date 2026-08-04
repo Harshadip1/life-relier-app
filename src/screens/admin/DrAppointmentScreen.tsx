@@ -11,9 +11,6 @@ import {
   getAllDoctorSchedules,
   DoctorScheduleRecord,
 } from '../../services/doctorScheduleService';
-import { useTheme } from '../../theme';
-
-// TEAL is now colors.primary (set inside component)
 
 /** Convert ISO date string → "DD-MM-YYYY" for display — regex avoids timezone shifts */
 function fmtDate(iso: string): string {
@@ -35,8 +32,6 @@ function fmtTime(t: string | null): string {
 
 export default function DrAppointmentScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
-  const TEAL = colors.primary;
 
   const [schedules, setSchedules] = useState<DoctorScheduleRecord[]>([]);
   const [loading, setLoading]     = useState(false);
@@ -88,7 +83,7 @@ export default function DrAppointmentScreen({ navigation }: any) {
     <View style={styles.row}>
       <View style={styles.rowLeft}>
         <View style={styles.rowAvatar}>
-          <MaterialCommunityIcons name="doctor" size={20} color={TEAL} />
+          <MaterialCommunityIcons name="doctor" size={20} color={COLORS.primary} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.rowDoctor}>
@@ -122,7 +117,7 @@ export default function DrAppointmentScreen({ navigation }: any) {
           style={styles.editBtnMini}
           onPress={() => navigation.navigate('AddDoctorSchedule', { schedule: item })}
         >
-          <Feather name="edit-2" size={10} color={TEAL} />
+          <Feather name="edit-2" size={10} color={COLORS.primary} />
           <Text style={styles.editBtnText}>Edit</Text>
         </TouchableOpacity>
       </View>
@@ -146,10 +141,10 @@ export default function DrAppointmentScreen({ navigation }: any) {
 
       {/* Breadcrumb */}
       <View style={styles.breadcrumb}>
-        <Feather name="home" size={13} color={TEAL} />
+        <Feather name="home" size={13} color={COLORS.primary} />
         <Text style={styles.bcText}> Master</Text>
         <Feather name="chevron-right" size={13} color="#94A3B8" style={{ marginHorizontal: 2 }} />
-        <Text style={[styles.bcText, { color: TEAL, fontWeight: '700' }]}>Doctor Schedule</Text>
+        <Text style={[styles.bcText, { color: COLORS.primary, fontWeight: '700' }]}>Doctor Schedule</Text>
       </View>
 
       {/* Card */}
@@ -191,7 +186,7 @@ export default function DrAppointmentScreen({ navigation }: any) {
           <TextInput
             style={styles.searchInput}
             placeholder="Search by doctor or date..."
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={COLORS.textMuted}
             value={search}
             onChangeText={setSearch}
           />
@@ -205,7 +200,7 @@ export default function DrAppointmentScreen({ navigation }: any) {
         {/* ── Body states ── */}
         {loading && schedules.length === 0 ? (
           <View style={styles.centreBox}>
-            <ActivityIndicator size="large" color={TEAL} />
+            <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={styles.centreText}>Loading schedules…</Text>
           </View>
 
@@ -215,7 +210,7 @@ export default function DrAppointmentScreen({ navigation }: any) {
             <Text style={styles.emptyTitle}>Could not load data</Text>
             <Text style={styles.emptySubtitle}>{error}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={fetchSchedules}>
-              <Feather name="refresh-cw" size={14} color={TEAL} />
+              <Feather name="refresh-cw" size={14} color={COLORS.primary} />
               <Text style={styles.retryText}> Retry</Text>
             </TouchableOpacity>
           </View>
@@ -256,30 +251,30 @@ export default function DrAppointmentScreen({ navigation }: any) {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.surfaceVariant },
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.surfaceVariant },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingBottom: 12,
   },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
 
   breadcrumb: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#E8F5F4', paddingHorizontal: 16, paddingVertical: 8,
   },
-  bcText: { fontSize: 12, color: colors.textSecondary },
+  bcText: { fontSize: 12, color: COLORS.textSecondary },
 
   card: {
-    margin: 16, backgroundColor: colors.card,
+    margin: 16, backgroundColor: COLORS.card,
     borderRadius: 14, overflow: 'hidden',
-    elevation: 2, shadowColor: colors.shadow,
+    elevation: 2, shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
     flex: 1,
   },
-  cardHeader: { backgroundColor: TEAL, padding: 14 },
+  cardHeader: { backgroundColor: COLORS.primary, padding: 14 },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   cardTitle: { fontSize: 15, fontWeight: '700', color: '#FFF', marginRight: 8 },
   recordBadge: {
@@ -302,27 +297,27 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
-    margin: 14, backgroundColor: colors.background,
-    borderRadius: 10, borderWidth: 1, borderColor: colors.cardBorder,
+    margin: 14, backgroundColor: COLORS.background,
+    borderRadius: 10, borderWidth: 1, borderColor: COLORS.cardBorder,
     paddingHorizontal: 12, height: 44,
   },
-  searchInput: { flex: 1, fontSize: 14, color: colors.textPrimary },
+  searchInput: { flex: 1, fontSize: 14, color: COLORS.textPrimary },
 
   centreBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: 24 },
-  centreText: { marginTop: 12, fontSize: 14, color: colors.textSecondary },
+  centreText: { marginTop: 12, fontSize: 14, color: COLORS.textSecondary },
   emptyTitle: { fontSize: 17, fontWeight: '700', color: '#334155', marginTop: 16 },
-  emptySubtitle: { fontSize: 13, color: colors.textMuted, marginTop: 6, textAlign: 'center' },
+  emptySubtitle: { fontSize: 13, color: COLORS.textMuted, marginTop: 6, textAlign: 'center' },
   retryBtn: {
     flexDirection: 'row', alignItems: 'center',
-    marginTop: 20, borderWidth: 1.5, borderColor: TEAL,
+    marginTop: 20, borderWidth: 1.5, borderColor: COLORS.primary,
     borderRadius: 20, paddingHorizontal: 20, paddingVertical: 8,
   },
-  retryText: { fontSize: 13, fontWeight: '700', color: TEAL },
+  retryText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
 
   row: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: colors.divider,
+    borderBottomWidth: 1, borderBottomColor: COLORS.divider,
   },
   rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 },
   rowAvatar: {
@@ -330,9 +325,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#F0FDFA',
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  rowDoctor: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
-  rowTime:   { fontSize: 11, color: colors.textSecondary },
-  rowDate:   { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  rowDoctor: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 2 },
+  rowTime:   { fontSize: 11, color: COLORS.textSecondary },
+  rowDate:   { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
   statusPill: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
@@ -345,7 +340,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     borderWidth: 1,
-    borderColor: TEAL,
+    borderColor: COLORS.primary,
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -353,18 +348,18 @@ const makeStyles = (colors: any) => StyleSheet.create({
   editBtnText: {
     fontSize: 10,
     fontWeight: '700',
-    color: TEAL,
+    color: COLORS.primary,
   },
 
   scanFab: {
     position: 'absolute', bottom: 50, right: 20,
-    backgroundColor: TEAL, width: 64, height: 64, borderRadius: 32,
+    backgroundColor: COLORS.primary, width: 64, height: 64, borderRadius: 32,
     alignItems: 'center', justifyContent: 'center',
-    elevation: 6, shadowColor: colors.shadow,
+    elevation: 6, shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8,
   },
   scanLabel: { fontSize: 9, color: '#FFF', fontWeight: '700', marginTop: 2 },
 
-  footer: { backgroundColor: TEAL, paddingVertical: 12, alignItems: 'center' },
+  footer: { backgroundColor: COLORS.primary, paddingVertical: 12, alignItems: 'center' },
   footerText: { fontSize: 12, color: '#FFF', fontWeight: '500' },
 });
