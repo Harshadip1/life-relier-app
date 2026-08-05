@@ -161,7 +161,10 @@ export interface CenterItem {
 }
 
 export interface TestNameItem {
+  MainTestId:   number;
   MainTestName: string;
+  TestName:     string;   // alias for MainTestName
+  TestCode:     string;
 }
 
 export interface SubDeptItem {
@@ -239,10 +242,15 @@ export async function getCenters(branchId: number = 1): Promise<CenterItem[]> {
 export async function getTestNames(branchId: number = 1): Promise<TestNameItem[]> {
   try {
     const data = await postRaw<any>(`${API_BASE_URL}/api/TestStatus/GetTestName`, { BranchId: branchId });
-    if (Array.isArray(data)) return data;
-    if (data?.value && Array.isArray(data.value)) return data.value;
-    if (data?.data  && Array.isArray(data.data))  return data.data;
-    return [];
+    const raw: any[] = Array.isArray(data) ? data
+      : data?.value && Array.isArray(data.value) ? data.value
+      : data?.data  && Array.isArray(data.data)  ? data.data : [];
+    return raw.map(r => ({
+      MainTestId:   r.MainTestId   ?? r.mainTestId   ?? r.ID   ?? r.Id   ?? 0,
+      MainTestName: r.MainTestName ?? r.mainTestName ?? r.TestName ?? r.testName ?? '',
+      TestName:     r.MainTestName ?? r.mainTestName ?? r.TestName ?? r.testName ?? '',
+      TestCode:     r.TestCode     ?? r.testCode     ?? r.Code   ?? r.code     ?? '',
+    }));
   } catch { return []; }
 }
 

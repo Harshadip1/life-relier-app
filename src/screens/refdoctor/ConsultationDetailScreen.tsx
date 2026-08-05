@@ -172,14 +172,14 @@ export default function ConsultationDetailScreen({ navigation, route }: any) {
     load();
     getTestNames(1).then(setAllTests).catch(() => {
       setAllTests([
-        { MainTestName: 'Complete Blood Count (CBC)' },
-        { MainTestName: 'Lipid Profile' },
-        { MainTestName: 'Thyroid Profile (T3, T4, TSH)' },
-        { MainTestName: 'HbA1c (Glycated Hemoglobin)' },
-        { MainTestName: 'Liver Function Test (LFT)' },
-        { MainTestName: 'Kidney Function Test (KFT)' },
-        { MainTestName: 'Vitamin D3' },
-        { MainTestName: 'Vitamin B12' },
+        { MainTestId: 0, MainTestName: 'Complete Blood Count (CBC)',      TestName: 'Complete Blood Count (CBC)',      TestCode: 'CBC'  },
+        { MainTestId: 0, MainTestName: 'Lipid Profile',                   TestName: 'Lipid Profile',                   TestCode: 'LP'   },
+        { MainTestId: 0, MainTestName: 'Thyroid Profile (T3, T4, TSH)',   TestName: 'Thyroid Profile (T3, T4, TSH)',   TestCode: 'TFT'  },
+        { MainTestId: 0, MainTestName: 'HbA1c (Glycated Hemoglobin)',     TestName: 'HbA1c (Glycated Hemoglobin)',     TestCode: 'HBA1C'},
+        { MainTestId: 0, MainTestName: 'Liver Function Test (LFT)',       TestName: 'Liver Function Test (LFT)',       TestCode: 'LFT'  },
+        { MainTestId: 0, MainTestName: 'Kidney Function Test (KFT)',      TestName: 'Kidney Function Test (KFT)',      TestCode: 'KFT'  },
+        { MainTestId: 0, MainTestName: 'Vitamin D3',                      TestName: 'Vitamin D3',                      TestCode: 'VD3'  },
+        { MainTestId: 0, MainTestName: 'Vitamin B12',                     TestName: 'Vitamin B12',                     TestCode: 'VB12' },
       ]);
     });
   }, [load]));

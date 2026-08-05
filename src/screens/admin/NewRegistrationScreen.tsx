@@ -324,11 +324,31 @@ export default function NewRegistrationScreen({ navigation }: any) {
       setShowTestDrop(false);
       return;
     }
-    setSearchingTest(true);
     setShowTestDrop(true);
+
+    // 1. Instant local filter from pre-loaded allTests
+    const q = txt.trim().toLowerCase();
+    const local = allTests
+      .filter(t => t.TestName.toLowerCase().includes(q))
+      .slice(0, 12)
+      .map(t => ({
+        mainTestId:  t.MainTestId ?? 0,
+        displayText: t.TestName,
+        testName:    t.TestName,
+        testCode:    t.TestCode ?? '',
+      }));
+
+    if (local.length > 0) {
+      setTestResults(local);
+      setSearchingTest(false);
+      return;
+    }
+
+    // 2. Fallback to API if local yields nothing
+    setSearchingTest(true);
     try {
       const r = await searchTests(txt.trim());
-      setTestResults(r);
+      setTestResults(r.length > 0 ? r : []);
     } catch {
       setTestResults([]);
     } finally {
@@ -340,26 +360,30 @@ export default function NewRegistrationScreen({ navigation }: any) {
     if (!addedTests.includes(name)) {
       setAddedTests(prev => [...prev, name]);
       if (!testPrices[name]) {
-        const today = new Date().toISOString().split('T')[0];
+        // Look up price from preloaded allTests first
+        const found = allTests.find(t => t.TestName === name || t.MainTestName === name);
+        if (found && (found as any).Price > 0) {
+          setTestPrices(prev => ({ ...prev, [name]: (found as any).Price }));
+          return;
+        }
+        // Fallback: fetch from GetTestName with name filter
         (async () => {
           try {
-            const res = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
-              method: 'POST',
+            const res = await fetch(`${API_BASE_URL}/api/TestStatus/GetTestName`, {
+              method:  'POST',
               headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-              body: JSON.stringify({
-                BranchId: 1, FromDate: '2024-01-01', ToDate: today,
-                PatRegID: '', PatientName: '', DoctorName: '', TestName: name,
-                MobileNo: '', Barcode: '', CenterCode: '', SubDepartment: '', Status: 'All',
-              }),
+              body: JSON.stringify({ BranchId: 1, TestName: name }),
             });
             const data = await res.json();
-            const rows: any[] = Array.isArray(data) ? data : (data?.value ?? []);
-            if (rows.length > 0) {
-              const sorted = [...rows].sort((a, b) => (a.TestCharges ?? 0) - (b.TestCharges ?? 0));
-              const price = sorted[0]?.TestCharges ?? 0;
-              if (price > 0) setTestPrices(prev => ({ ...prev, [name]: price }));
-            }
-          } catch { /* silently ignore price fetch errors */ }
+            const rows: any[] = Array.isArray(data) ? data
+              : data?.value ? data.value
+              : data?.data  ? data.data : [];
+            const match = rows.find(r =>
+              (r.MainTestName ?? r.TestName ?? '').toLowerCase() === name.toLowerCase()
+            );
+            const price = match?.Price ?? match?.Amount ?? match?.TestCharges ?? 0;
+            if (price > 0) setTestPrices(prev => ({ ...prev, [name]: price }));
+          } catch { /* silently ignore */ }
         })();
       }
     }
