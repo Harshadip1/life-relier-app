@@ -316,6 +316,38 @@ export default function NewRegistrationScreen({ navigation }: any) {
     }
   };
 
+  // ── Common test code → name abbreviation map ──────────────────────────────
+  const TEST_CODE_MAP: Record<string, string[]> = {
+    'cbc':    ['complete blood count'],
+    'lft':    ['liver function test'],
+    'kft':    ['kidney function test'],
+    'rft':    ['kidney function test', 'renal function test'],
+    'tft':    ['thyroid', 'thyroid profile'],
+    'tsh':    ['thyroid'],
+    'hba1c':  ['glycosylated hemoglobin', 'glycated hemoglobin'],
+    'lp':     ['lipid profile'],
+    'bsf':    ['blood sugar fasting'],
+    'bspp':   ['blood sugar post prandial'],
+    'bsr':    ['blood sugar random'],
+    'esr':    ['esr'],
+    'crp':    ['c-reactive protein'],
+    'ure':    ['urine routine'],
+    'ecg':    ['ecgtest', 'ecg'],
+    'hiv':    ['hiv'],
+    'hb':     ['hemoglobin', 'complete blood count'],
+    'gram':   ['gram stain'],
+    'sono':   ['sonography'],
+    'usg':    ['sonography'],
+    'vd3':    ['vitamin d'],
+    'vb12':   ['vitamin b12', 'vitamin b 12'],
+    'psa':    ['prostate'],
+    'widal':  ['widal'],
+    'dengue': ['dengue'],
+    'malaria':['malaria'],
+    'uric':   ['uric acid'],
+    'sr':     ['serum creatinine'],
+  };
+
   // ── API test search ────────────────────────────────────────────────────────
   const searchByTest = async (txt: string) => {
     setTestSearch(txt);
@@ -326,19 +358,25 @@ export default function NewRegistrationScreen({ navigation }: any) {
     }
     setShowTestDrop(true);
 
-    // 1. Instant local filter from pre-loaded allTests (name OR code)
     const q = txt.trim().toLowerCase();
+
+    // Check if input matches a known code abbreviation
+    const codeAliases = TEST_CODE_MAP[q] ?? [];
+
+    // 1. Instant local filter — match by name, or by code alias
     const local = allTests
-      .filter(t =>
-        t.TestName.toLowerCase().includes(q) ||
-        t.MainTestName.toLowerCase().includes(q) ||
-        (t.TestCode ?? '').toLowerCase().includes(q)
-      )
+      .filter(t => {
+        const name = (t.TestName || t.MainTestName).toLowerCase();
+        // Direct name match
+        if (name.includes(q)) return true;
+        // Code alias match
+        return codeAliases.some(alias => name.includes(alias));
+      })
       .slice(0, 12)
       .map(t => ({
         mainTestId:  t.MainTestId ?? 0,
-        displayText: t.TestName,
-        testName:    t.TestName,
+        displayText: t.TestName || t.MainTestName,
+        testName:    t.TestName || t.MainTestName,
         testCode:    t.TestCode ?? '',
       }));
 

@@ -247,9 +247,9 @@ export async function getTestNames(branchId: number = 1): Promise<TestNameItem[]
       : data?.data  && Array.isArray(data.data)  ? data.data : [];
     return raw.map(r => ({
       MainTestId:   r.MainTestId   ?? r.mainTestId   ?? r.ID   ?? r.Id   ?? 0,
-      MainTestName: r.MainTestName ?? r.mainTestName ?? r.TestName ?? r.testName ?? '',
-      TestName:     r.MainTestName ?? r.mainTestName ?? r.TestName ?? r.testName ?? '',
-      TestCode:     r.TestCode     ?? r.testCode     ?? r.Code   ?? r.code     ?? '',
+      MainTestName: (r.MainTestName ?? r.mainTestName ?? r.TestName ?? '').trim(),
+      TestName:     (r.MainTestName ?? r.mainTestName ?? r.TestName ?? '').trim(),
+      TestCode:     (r.TestCode     ?? r.testCode     ?? r.Code   ?? '').trim(),
     }));
   } catch { return []; }
 }
