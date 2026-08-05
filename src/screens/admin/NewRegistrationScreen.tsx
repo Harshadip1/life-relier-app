@@ -326,10 +326,14 @@ export default function NewRegistrationScreen({ navigation }: any) {
     }
     setShowTestDrop(true);
 
-    // 1. Instant local filter from pre-loaded allTests
+    // 1. Instant local filter from pre-loaded allTests (name OR code)
     const q = txt.trim().toLowerCase();
     const local = allTests
-      .filter(t => t.TestName.toLowerCase().includes(q))
+      .filter(t =>
+        t.TestName.toLowerCase().includes(q) ||
+        t.MainTestName.toLowerCase().includes(q) ||
+        (t.TestCode ?? '').toLowerCase().includes(q)
+      )
       .slice(0, 12)
       .map(t => ({
         mainTestId:  t.MainTestId ?? 0,
@@ -741,8 +745,13 @@ export default function NewRegistrationScreen({ navigation }: any) {
                           </View>
                           <View style={{ flex: 1, marginLeft: 10 }}>
                             <Text style={[s.acName, alreadyAdded && { color: COLORS.primaryDark }]}>
-                              {t.displayText || t.testName}
+                              {t.testName}
                             </Text>
+                            {t.testCode ? (
+                              <Text style={{ fontSize: 10, color: COLORS.textMuted, marginTop: 2 }}>
+                                Code: {t.testCode}
+                              </Text>
+                            ) : null}
                           </View>
                           {alreadyAdded
                             ? <View style={[s.acBadge, { backgroundColor: COLORS.primaryDark }]}>
