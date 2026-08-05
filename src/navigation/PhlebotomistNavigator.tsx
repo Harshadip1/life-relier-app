@@ -48,7 +48,14 @@ function getTabStyle(route: any) {
 function SamplesStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="SamplesMain" component={PhlebotomistHomeScreen} />
+      <Stack.Screen name="SamplesMain"         component={PhlebotomistHomeScreen} />
+      <Stack.Screen name="NewRegistration"     component={NewRegistrationScreen} />
+      <Stack.Screen name="Appointments"        component={ShowAppointmentScreen} />
+      <Stack.Screen name="SearchAvailableSlots" component={SearchAvailableSlotsScreen} />
+      <Stack.Screen name="Reports"             component={CompletedReportsScreen} />
+      <Stack.Screen name="PendingReports"      component={PendingReportsScreen} />
+      <Stack.Screen name="Billing"             component={PatientsScreen} />
+      <Stack.Screen name="EditPatient"         component={EditPatientScreen} />
     </Stack.Navigator>
   );
 }

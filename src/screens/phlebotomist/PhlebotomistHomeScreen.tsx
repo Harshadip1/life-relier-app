@@ -48,7 +48,7 @@ interface SampleRow {
 
 const TABS = ['Pending', 'Collected', 'All'];
 
-export default function PhlebotomistHomeScreen() {
+export default function PhlebotomistHomeScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
 
@@ -163,6 +163,34 @@ export default function PhlebotomistHomeScreen() {
           </View>
           <Text style={[s.statValue, { color: T.danger }]}>{urgent}</Text>
           <Text style={s.statLabel}>Urgent</Text>
+        </View>
+      </View>
+
+      {/* Front Desk */}
+      <View style={s.fdSection}>
+        <View style={s.fdHeader}>
+          <MaterialCommunityIcons name="desk" size={16} color={T.primary} />
+          <Text style={s.fdTitle}>Front Desk</Text>
+        </View>
+        <View style={s.fdGrid}>
+          {[
+            { label: 'Register',     icon: 'account-plus-outline',    color: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD', screen: 'NewRegistration' },
+            { label: 'Appointment',  icon: 'calendar-plus-outline',   color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', screen: 'Appointments' },
+            { label: 'Report',       icon: 'file-chart-outline',      color: '#0F766E', bg: '#F0FDFA', border: '#CCFBF1', screen: 'Reports' },
+            { label: 'Billing',      icon: 'receipt-outline',         color: '#B45309', bg: '#FFFBEB', border: '#FDE68A', screen: 'Billing' },
+          ].map(item => (
+            <TouchableOpacity
+              key={item.label}
+              style={[s.fdCard, { backgroundColor: item.bg, borderColor: item.border }]}
+              onPress={() => navigation.navigate(item.screen)}
+              activeOpacity={0.75}
+            >
+              <View style={[s.fdIconBox, { backgroundColor: '#FFF' }]}>
+                <MaterialCommunityIcons name={item.icon as any} size={24} color={item.color} />
+              </View>
+              <Text style={[s.fdLabel, { color: item.color }]}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
@@ -352,6 +380,15 @@ const s = StyleSheet.create({
   statIconBox:   { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 8, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
   statValue:     { fontSize: 22, fontWeight: '800' },
   statLabel:     { fontSize: 11, color: T.sub, fontWeight: '500', marginTop: 2 },
+
+  // Front Desk
+  fdSection:     { marginHorizontal: 16, marginBottom: 14 },
+  fdHeader:      { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
+  fdTitle:       { fontSize: 14, fontWeight: '800', color: T.text, letterSpacing: 0.2 },
+  fdGrid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  fdCard:        { width: '47%', borderRadius: 14, borderWidth: 1, padding: 14, alignItems: 'flex-start' },
+  fdIconBox:     { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
+  fdLabel:       { fontSize: 13, fontWeight: '700' },
 
   // Search
   searchBar:     { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, backgroundColor: T.bg, borderWidth: 1, borderColor: T.border, borderRadius: 12, paddingHorizontal: 12, height: 44 },
