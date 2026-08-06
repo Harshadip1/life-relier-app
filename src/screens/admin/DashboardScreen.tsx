@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { COLORS } from '../../utils/constants';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Image,
+  TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+import { API_BASE_URL } from '../../utils/constants';
 
 // ─── Quick Actions ────────────────────────────────────────────────────────────
 const QUICK = [
@@ -28,6 +31,131 @@ function getGreeting(): string {
 export default function DashboardScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+
+  const [patientsRegistered, setPatientsRegistered] = useState<number | null>(null);
+  const [pendingCollections, setPendingCollections] = useState<number | null>(null);
+  const [pendingReports,     setPendingReports]     = useState<number | null>(null);
+  const [todayRevenue,       setTodayRevenue]       = useState<number | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  const fetchStats = useCallback(async () => {
+    setStatsLoading(true);
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const allTimeStart = '2024-01-01';
+    try {
+      // Patients registered — same API, same date range & grouping as PatientsScreen
+      const regRes = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          BranchId: 1,
+          FromDate: allTimeStart,
+          ToDate: today,
+          PatRegID: '',
+          PatientName: '',
+          DoctorName: '',
+          TestName: '',
+          MobileNo: '',
+          Barcode: '',
+          CenterCode: '',
+          SubDepartment: '',
+          Status: 'All',
+        }),
+      });
+      const regData = await regRes.json();
+      const regRows: any[] = Array.isArray(regData) ? regData : (regData?.value ?? []);
+      // Count unique PIDs — matches PatientsScreen grouping logic
+      const uniquePIDs = new Set(regRows.map((r: any) => r.PID));
+      setPatientsRegistered(uniquePIDs.size);
+    } catch {
+      setPatientsRegistered(null);
+    }
+
+    try {
+      // Pending collections — same API, date range & logic as SamplesScreen
+      const pendRes = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          BranchId: 1,
+          FromDate: today,
+          ToDate: today,
+          PatRegID: '',
+          PatientName: '',
+          DoctorName: '',
+          TestName: '',
+          MobileNo: '',
+          Barcode: '',
+          CenterCode: '',
+          SubDepartment: '',
+          Status: 'All',
+        }),
+      });
+      const pendData = await pendRes.json();
+      const rows: any[] = Array.isArray(pendData) ? pendData : (pendData?.value ?? []);
+      // Group by PID then count where IspheboAccept === 0 — matches SamplesScreen logic
+      const map = new Map<number, any>();
+      for (const r of rows) {
+        if (!map.has(r.PID)) map.set(r.PID, r);
+      }
+      const pendingCount = Array.from(map.values()).filter(r => r.IspheboAccept === 0).length;
+      setPendingCollections(pendingCount);
+    } catch {
+      setPendingCollections(null);
+    }
+
+    try {
+      // Pending Reports — same API & logic as PendingReportsScreen
+      // Uses 2024-01-01 → today, Status: 'Registered', groups by PID
+      const prRes = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          BranchId: 1,
+          FromDate: '2024-01-01',
+          ToDate: today,
+          PatRegID: '', PatientName: '', DoctorName: '', TestName: '',
+          MobileNo: '', Barcode: '', CenterCode: '', SubDepartment: '',
+          Status: 'Registered',
+        }),
+      });
+      const prData = await prRes.json();
+      const prRows: any[] = Array.isArray(prData) ? prData : (prData?.value ?? []);
+      const prMap = new Map<number, any>();
+      for (const r of prRows) { if (!prMap.has(r.PID)) prMap.set(r.PID, r); }
+      setPendingReports(Array.from(prMap.values()).filter(r => r.Status === 'Registered').length);
+    } catch {
+      setPendingReports(null);
+    }
+
+    try {
+      // Today's Revenue — same API & logic as CompletedReportsScreen (Today filter)
+      // Uses today → today, Status: 'All', sums PaidAmount
+      const revRes = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          BranchId: 1,
+          FromDate: today,
+          ToDate: today,
+          PatRegID: '', PatientName: '', DoctorName: '', TestName: '',
+          MobileNo: '', Barcode: '', CenterCode: '', SubDepartment: '',
+          Status: 'All',
+        }),
+      });
+      const revData = await revRes.json();
+      const revRows: any[] = Array.isArray(revData) ? revData : (revData?.value ?? []);
+      const total = revRows.reduce((sum: number, r: any) => sum + (r.PaidAmount ?? 0), 0);
+      setTodayRevenue(total);
+    } catch {
+      setTodayRevenue(null);
+    }
+
+    setStatsLoading(false);
+  }, []);
+
+  useFocusEffect(useCallback(() => { fetchStats(); }, [fetchStats]));
 
   const T = {
     primary:   COLORS.primary,
@@ -61,12 +189,6 @@ export default function DashboardScreen({ navigation }: any) {
             <Feather name="bell" size={20} color="#FFF" />
             <View style={styles.notifDot} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.avatarBtn} activeOpacity={0.8}>
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=100&auto=format&fit=crop' }}
-              style={styles.avatar}
-            />
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -75,19 +197,39 @@ export default function DashboardScreen({ navigation }: any) {
         {/* ── Stats Grid ── */}
         <View style={styles.statsGrid}>
           <StatCard
-            value="48"     label="Patients Registered"      icon="account-plus-outline"  color="#0F766E"  bg="#F0FDFA"  border="#CCFBF1"
+            value={statsLoading ? null : (patientsRegistered !== null ? String(patientsRegistered) : '—')}
+            label="Patients Registered (All)"
+            icon="account-plus-outline"
+            color="#0F766E"
+            bg="#F0FDFA"
+            border="#CCFBF1"
             onPress={() => navigation.navigate('PatientStatus')}
           />
           <StatCard
-            value="26"     label="Pending Collections"      icon="flask-outline"          color="#0369A1"  bg="#F0F9FF"  border="#BAE6FD"
+            value={statsLoading ? null : (pendingCollections !== null ? String(pendingCollections) : '—')}
+            label="Pending Collections (Today)"
+            icon="flask-outline"
+            color="#0369A1"
+            bg="#F0F9FF"
+            border="#BAE6FD"
             onPress={() => navigation.navigate('SampleCollection')}
           />
           <StatCard
-            value="14"     label="Pending Reports"          icon="file-clock-outline"     color="#DC2626"  bg="#FEF2F2"  border="#FEE2E2"
+            value={statsLoading ? null : (pendingReports !== null ? String(pendingReports) : '—')}
+            label="Pending Reports"
+            icon="file-clock-outline"
+            color="#DC2626"
+            bg="#FEF2F2"
+            border="#FEE2E2"
             onPress={() => navigation.navigate('PendingReports')}
           />
           <StatCard
-            value="₹42.5k" label="Today's Revenue"         icon="cash-multiple"          color="#15803D"  bg="#F0FDF4"  border="#BBF7D0"
+            value={statsLoading ? null : (todayRevenue !== null ? `₹${todayRevenue >= 1000 ? (todayRevenue / 1000).toFixed(1) + 'k' : todayRevenue.toFixed(0)}` : '—')}
+            label="Today's Revenue"
+            icon="cash-multiple"
+            color="#15803D"
+            bg="#F0FDF4"
+            border="#BBF7D0"
           />
         </View>
 
@@ -140,7 +282,10 @@ function StatCard({ value, label, icon, color, bg, border, onPress }: any) {
       <View style={[{ width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 10, elevation: 1, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }, { backgroundColor: COLORS.card }]}>
         <MaterialCommunityIcons name={icon} size={22} color={color} />
       </View>
-      <Text style={[{ fontSize: 22, fontWeight: '800' }, { color }]}>{value}</Text>
+      {value === null
+        ? <ActivityIndicator size="small" color={color} style={{ marginVertical: 4 }} />
+        : <Text style={[{ fontSize: 22, fontWeight: '800' }, { color }]}>{value}</Text>
+      }
       <Text style={{ fontSize: 11, color: COLORS.textSecondary, fontWeight: '500', marginTop: 2 }}>{label}</Text>
     </TouchableOpacity>
   );
@@ -194,7 +339,6 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
     overflow: 'hidden',
   },
-  avatar: { width: 38, height: 38 },
 
   scroll: { paddingHorizontal: 16, paddingTop: 20 },
 

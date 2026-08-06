@@ -459,14 +459,27 @@ export default function NewRegistrationScreen({ navigation }: any) {
 
   const handleNext = () => {
     if (step === 1) {
-      if (!patName.trim()) { Alert.alert('Required', 'Please enter patient name.'); return; }
-      if (!age.trim())     { Alert.alert('Required', 'Please enter age.');          return; }
-      if (mobile && mobile.length !== 10) { Alert.alert('Invalid Mobile', 'Mobile number must be exactly 10 digits.'); return; }
+      const missing: string[] = [];
+      if (!initial.trim())    missing.push('• Initial (Mr / Mrs / Ms …)');
+      if (!patName.trim())    missing.push('• Patient Name');
+      if (!gender.trim())     missing.push('• Gender');
+      if (!dob)               missing.push('• Date of Birth');
+      if (!age.trim())        missing.push('• Age');
+      if (!mobile.trim())     missing.push('• Mobile Number');
+      if (!refDoctor.trim())  missing.push('• Ref Doctor');
+      if (!address.trim())    missing.push('• Address');
+      if (missing.length > 0) {
+        Alert.alert('Required Fields Missing', `Please fill in the following fields:\n\n${missing.join('\n')}`);
+        return;
+      }
+      if (mobile.length !== 10) {
+        Alert.alert('Invalid Mobile', 'Mobile number must be exactly 10 digits.');
+        return;
+      }
     }
     if (step === 2 && addedTests.length === 0) {
-      Alert.alert('No Tests Added', 'Continue without tests?', [
-        { text: 'Go Back', style: 'cancel' },
-        { text: 'Continue', onPress: () => goToStep(3) },
+      Alert.alert('No Tests Added', 'Please add at least one test to proceed.', [
+        { text: 'OK', style: 'cancel' },
       ]);
       return;
     }
@@ -499,8 +512,25 @@ export default function NewRegistrationScreen({ navigation }: any) {
   };
 
   const handleSave = async () => {
-    if (!patName.trim()) { Alert.alert('Required', 'Please enter patient name.'); return; }
-    if (!age.trim())     { Alert.alert('Required', 'Please enter age.');          return; }
+    const missing: string[] = [];
+    if (!initial.trim())  missing.push('• Initial (Mr / Mrs / Ms …)');
+    if (!patName.trim())  missing.push('• Patient Name');
+    if (!gender.trim())   missing.push('• Gender');
+    if (!dob)             missing.push('• Date of Birth');
+    if (!age.trim())      missing.push('• Age');
+    if (!mobile.trim())   missing.push('• Mobile Number');
+    if (!refDoctor.trim()) missing.push('• Ref Doctor');
+    if (!address.trim())  missing.push('• Address');
+    if (addedTests.length === 0) missing.push('• At least one Test');
+    if (!paidAmt.trim() || parseFloat(paidAmt) < 0) missing.push('• Paid Amount');
+    if (missing.length > 0) {
+      Alert.alert('Required Fields Missing', `Please fill in the following fields:\n\n${missing.join('\n')}`);
+      return;
+    }
+    if (mobile.length !== 10) {
+      Alert.alert('Invalid Mobile', 'Mobile number must be exactly 10 digits.');
+      return;
+    }
     setRegistering(true);
     try {
       const data = await registerPatient({ Patname: patName.trim(), Age: parseInt(age, 10), Pataddress: address.trim() || 'N/A' });
