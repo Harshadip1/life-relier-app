@@ -1,78 +1,154 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { COLORS } from '../../utils/constants';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { API_BASE_URL } from '../../utils/constants';
 
-// Workflow steps — show them as a vertical pipeline
-const WORKFLOW = [
+// Workflow steps — stat values injected at runtime
+const WORKFLOW_META = [
   {
     step: 1,
     title:  'Sample Collection',
     sub:    'Collect patient samples in the lab or at home',
     icon:   'eyedropper-variant',
-    fam:    'material',
     color:  '#0369A1',
     bg:     '#F0F9FF',
     border: '#BAE6FD',
     screen: 'SampleCollection',
-    stat:   { value: '8', label: 'Pending' },
+    statLabel: 'Pending',
+    statKey:   'samplePending',
   },
   {
     step: 2,
     title:  'Accession',
     sub:    'Receive, label and route samples to departments',
     icon:   'line-scan',
-    fam:    'material',
     color:  '#6D28D9',
     bg:     '#F5F3FF',
     border: '#DDD6FE',
     screen: 'Accession',
-    stat:   { value: '24', label: 'Awaiting' },
+    statLabel: 'Awaiting',
+    statKey:   'sampleCollected',
   },
   {
     step: 3,
     title:  'Result Entry',
     sub:    'Enter test results for accessioned samples',
     icon:   'clipboard-edit-outline',
-    fam:    'material',
     color:  '#C2410C',
     bg:     '#FFF7ED',
     border: '#FED7AA',
     screen: 'ResultEntry',
-    stat:   { value: '18', label: 'Pending' },
+    statLabel: 'Pending',
+    statKey:   'processing',
   },
   {
     step: 4,
     title:  'Pending Reports',
     sub:    'Review entered results before approval',
     icon:   'file-clock-outline',
-    fam:    'material',
     color:  '#DC2626',
     bg:     '#FEF2F2',
     border: '#FEE2E2',
     screen: 'PendingReports',
-    stat:   { value: '14', label: 'Pending' },
+    statLabel: 'Pending',
+    statKey:   'pendingReports',
   },
   {
     step: 5,
     title:  'Report Approval',
     sub:    'Pathologist approval before releasing reports',
     icon:   'check-decagram-outline',
-    fam:    'material',
     color:  '#0F766E',
     bg:     '#F0FDFA',
     border: '#CCFBF1',
     screen: 'ReportApproval',
-    stat:   { value: '7', label: 'To Review' },
+    statLabel: 'To Review',
+    statKey:   'reportReady',
   },
 ];
+
+interface LabStats {
+  samplesToday:    number;
+  critical:        number;
+  samplePending:   number;  // IspheboAccept === 0 (not yet collected)
+  sampleCollected: number;  // IspheboAccept === 1 (collected, awaiting accession)
+  processing:      number;  // Status === 'Processing'
+  pendingReports:  number;  // Status === 'Registered' (all time)
+  reportReady:     number;  // Status === 'Report Ready'
+}
 
 export default function LaboratoryScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const T = { primary: COLORS.primary, bg: COLORS.background, card: COLORS.card, text: COLORS.textPrimary, sub: COLORS.textSecondary, muted: COLORS.textMuted, border: COLORS.cardBorder };
+
+  const [stats,   setStats]   = useState<LabStats | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchStats = useCallback(async () => {
+    setLoading(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      // ── Today's samples (all statuses) — same as SamplesScreen ──────────
+      const todayRes = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          BranchId: 1, FromDate: today, ToDate: today,
+          PatRegID: '', PatientName: '', DoctorName: '', TestName: '',
+          MobileNo: '', Barcode: '', CenterCode: '', SubDepartment: '', Status: 'All',
+        }),
+      });
+      const todayData = await todayRes.json();
+      const todayRows: any[] = Array.isArray(todayData) ? todayData : (todayData?.value ?? []);
+
+      // Group by PID — same as SamplesScreen
+      const pidMap = new Map<number, any>();
+      for (const r of todayRows) { if (!pidMap.has(r.PID)) pidMap.set(r.PID, r); }
+      const uniqueToday = Array.from(pidMap.values());
+
+      const samplesToday    = uniqueToday.length;
+      const critical        = uniqueToday.filter(r => r.Isemergency).length;
+      const samplePending   = uniqueToday.filter(r => r.IspheboAccept === 0).length;
+      const sampleCollected = uniqueToday.filter(r => r.IspheboAccept === 1).length;
+      const processing      = uniqueToday.filter(r => r.Status === 'Processing').length;
+      const reportReady     = uniqueToday.filter(r => r.Status === 'Report Ready').length;
+
+      // ── Pending reports (all time) — same as PendingReportsScreen ────────
+      const prRes = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          BranchId: 1, FromDate: '2024-01-01', ToDate: today,
+          PatRegID: '', PatientName: '', DoctorName: '', TestName: '',
+          MobileNo: '', Barcode: '', CenterCode: '', SubDepartment: '', Status: 'Registered',
+        }),
+      });
+      const prData = await prRes.json();
+      const prRows: any[] = Array.isArray(prData) ? prData : (prData?.value ?? []);
+      const prMap = new Map<number, any>();
+      for (const r of prRows) { if (!prMap.has(r.PID)) prMap.set(r.PID, r); }
+      const pendingReports = Array.from(prMap.values()).filter(r => r.Status === 'Registered').length;
+
+      setStats({ samplesToday, critical, samplePending, sampleCollected, processing, pendingReports, reportReady });
+    } catch {
+      setStats(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { fetchStats(); }, [fetchStats]));
+
+  const statVal = (key: keyof LabStats) =>
+    loading ? '…' : stats ? String(stats[key]) : '—';
+
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 0) }]}>
 
@@ -82,17 +158,25 @@ export default function LaboratoryScreen({ navigation }: any) {
           <Text style={styles.headerTitle}>Laboratory</Text>
           <Text style={styles.headerSub}>Sample-to-report workflow</Text>
         </View>
-        <TouchableOpacity style={styles.notifBtn}>
-          <Feather name="bell" size={22} color={COLORS.textPrimary} />
-          <View style={styles.notifDot} />
+        <TouchableOpacity style={styles.notifBtn} onPress={() => fetchStats()}>
+          <Feather name="refresh-cw" size={20} color={COLORS.textPrimary} />
         </TouchableOpacity>
       </View>
 
       {/* ── Summary Strip ── */}
       <View style={styles.summaryStrip}>
-        <SummaryPill value="56" label="Samples Today"   color="#0369A1" bg="#EFF6FF" />
-        <SummaryPill value="18" label="Pending Results" color="#C2410C" bg="#FFF7ED" />
-        <SummaryPill value="3"  label="Critical"        color="#DC2626" bg="#FEF2F2" />
+        <SummaryPill
+          value={loading ? '…' : stats ? String(stats.samplesToday) : '—'}
+          label="Samples Today" color="#0369A1" bg="#EFF6FF"
+        />
+        <SummaryPill
+          value={loading ? '…' : stats ? String(stats.processing) : '—'}
+          label="Pending Results" color="#C2410C" bg="#FFF7ED"
+        />
+        <SummaryPill
+          value={loading ? '…' : stats ? String(stats.critical) : '—'}
+          label="Critical" color="#DC2626" bg="#FEF2F2"
+        />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -103,7 +187,7 @@ export default function LaboratoryScreen({ navigation }: any) {
           {'  '}Lab Workflow
         </Text>
 
-        {WORKFLOW.map((w, i) => (
+        {WORKFLOW_META.map((w, i) => (
           <View key={w.step}>
             <TouchableOpacity
               style={[styles.workCard, { borderColor: w.border, borderLeftColor: w.color }]}
@@ -129,15 +213,20 @@ export default function LaboratoryScreen({ navigation }: any) {
               {/* Stat chip */}
               <View style={styles.workRight}>
                 <View style={[styles.statChip, { backgroundColor: w.bg }]}>
-                  <Text style={[styles.statChipValue, { color: w.color }]}>{w.stat.value}</Text>
-                  <Text style={[styles.statChipLabel, { color: w.color }]}>{w.stat.label}</Text>
+                  {loading
+                    ? <ActivityIndicator size="small" color={w.color} />
+                    : <Text style={[styles.statChipValue, { color: w.color }]}>
+                        {stats ? String(stats[w.statKey as keyof LabStats]) : '—'}
+                      </Text>
+                  }
+                  <Text style={[styles.statChipLabel, { color: w.color }]}>{w.statLabel}</Text>
                 </View>
                 <Feather name="chevron-right" size={18} color={COLORS.textMuted} style={{ marginTop: 6 }} />
               </View>
             </TouchableOpacity>
 
-            {/* connector arrow between cards — rendered below each card except the last */}
-            {i < WORKFLOW.length - 1 && (
+            {/* connector arrow between cards */}
+            {i < WORKFLOW_META.length - 1 && (
               <View style={styles.connector}>
                 <View style={styles.connectorLine} />
                 <MaterialCommunityIcons name="chevron-down" size={16} color={COLORS.textMuted} style={styles.connectorArrow} />
