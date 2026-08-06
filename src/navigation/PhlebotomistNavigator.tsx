@@ -15,6 +15,7 @@ import EditPatientScreen          from '../screens/admin/EditPatientScreen';
 import ShowAppointmentScreen      from '../screens/admin/ShowAppointmentScreen';
 import SearchAvailableSlotsScreen from '../screens/admin/SearchAvailableSlotsScreen';
 import CompletedReportsScreen     from '../screens/admin/CompletedReportsScreen';
+import BillingDeskScreen          from '../screens/shared/BillingDeskScreen';
 import PendingReportsScreen       from '../screens/admin/PendingReportsScreen';
 
 const Tab   = createBottomTabNavigator();
@@ -62,7 +63,7 @@ function FrontDeskStack() {
       <Stack.Screen name="SearchAvailableSlots" component={SearchAvailableSlotsScreen} />
       <Stack.Screen name="Reports"              component={CompletedReportsScreen} />
       <Stack.Screen name="PendingReports"       component={PendingReportsScreen} />
-      <Stack.Screen name="Billing"              component={PatientsScreen} />
+      <Stack.Screen name="Billing"              component={BillingDeskScreen} />
     </Stack.Navigator>
   );
 }
