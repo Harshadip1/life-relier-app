@@ -18,46 +18,51 @@ async function post<T>(endpoint: string, body: object): Promise<T> {
 export interface BillingPatient {
   PID:             number;
   PatRegID:        number;
-  PatientName:     string;
-  MobileNo:        string;
+  Patname:         string;       // API field
+  PatientName:     string;       // alias
   Patphoneno:      string;
+  MobileNo:        string;
   Patregdate:      string;
-  TestCharges:     number;
-  PaidAmount:      number;
-  DiscountAmount:  number;
-  OutstandingAmount: number;
-  PaymentStatus:   string;
+  intial:          string;
+  Age:             number;
+  sex:             string;
+  RefDr:           string;
+  CenterCode:      number;
   CenterName:      string;
-  Drname:          string;
+  testname:        string;       // comma-separated tests
+  TestCharges:     number;
+  OtherCharges:    number;
+  Charges:         number;       // total incl other charges
+  Discount:        number;
+  Paid:            number;
+  Balance:         number;       // outstanding
+  BillNo:          number;
+  ReceiptNumbers:  string;
+  TotalRecords:    number;
+  PaymentStatus:   string;
 }
 
 export interface PatientBill {
-  PID:             number;
-  PatientName:     string;
-  TestCharges:     number;
-  PaidAmount:      number;
-  DiscountAmount:  number;
-  OtherCharges:    number;
-  OutstandingAmount: number;
-  PaymentDetails:  PaymentRecord[];
-  Tests:           BillTest[];
+  Patient:  BillingPatient[];
+  Receipts: ReceiptRecord[];
 }
 
-export interface PaymentRecord {
-  RID:           number;
-  AmtPaid:       number;
-  PaymentType:   string;
-  TransDate:     string;
-  DisAmt:        number;
-  OtherCharges:  number;
-  Remark:        string;
-  Username:      string;
-}
-
-export interface BillTest {
-  MainTestName: string;
-  TestCharges:  number;
-  Status:       string;
+export interface ReceiptRecord {
+  RID:               number;
+  ReceiptNo:         number;
+  BillNo:            number;
+  billdate:          string;
+  BillAmt:           number;
+  AmtPaid:           number;
+  DisAmt:            number;
+  DiscountRemark:    string | null;
+  OtherCharges:      number;
+  OtherChargeRemark: string | null;
+  PaymentType:       string;
+  transdate:         string;
+  username:          string;
+  PrevBal:           number;
+  BalAmt:            number;
 }
 
 export interface BillingCenter {
@@ -159,16 +164,26 @@ export async function getBillingPatients(params: {
     : data?.value  ? data.value
     : data?.data   ? data.data
     : data?.Data   ? data.Data : [];
-  return list;
+  // Normalize field aliases
+  return list.map(r => ({
+    ...r,
+    PatientName:      r.Patname ?? r.PatientName ?? '',
+    PaidAmount:       r.Paid    ?? r.PaidAmount   ?? 0,
+    DiscountAmount:   r.Discount ?? r.DiscountAmount ?? 0,
+    OutstandingAmount: r.Balance ?? r.OutstandingAmount ?? 0,
+    PaymentStatus:    r.Balance > 0 ? 'Partial' : r.Paid > 0 ? 'Paid' : 'Unpaid',
+  }));
 }
 
 /** GET patient bill detail */
 export async function getPatientBill(PID: number, BranchId = 1): Promise<PatientBill | null> {
   const data = await post<any>('/api/BillingDesk/GetPatientBill', { PID, BranchId });
   if (!data) return null;
-  // Normalize
-  const bill = Array.isArray(data) ? data[0] : data?.value?.[0] ?? data?.data?.[0] ?? data;
-  return bill ?? null;
+  // API returns { Patient: [...], Receipts: [...] }
+  return {
+    Patient:  Array.isArray(data.Patient)  ? data.Patient  : [],
+    Receipts: Array.isArray(data.Receipts) ? data.Receipts : [],
+  };
 }
 
 /** GET billing centers */

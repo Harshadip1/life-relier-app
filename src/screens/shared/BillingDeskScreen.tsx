@@ -5,14 +5,19 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../../context/AuthContext";
 import { COLORS } from "../../utils/constants";
-import { getBillingPatients, getPatientBill, savePayment, updatePayment, saveRefund, deletePayment, BillingPatient, PatientBill, PaymentRecord } from "../../services/billingService";
+import { getBillingPatients, getPatientBill, savePayment, updatePayment, saveRefund, deletePayment, BillingPatient, PatientBill, ReceiptRecord } from "../../services/billingService";
 
 const PAYMENT_TYPES  = ["Cash","Cheque","Card","Online"];
 const STATUS_FILTERS = ["All","Paid","Unpaid","Partial"];
 
-function toDate(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function toDate(d: Date) { return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function fmtDate(iso: string) { if (!iso) return "---"; try { return new Date(iso).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}); } catch { return iso; } }
-function fmtAmt(n: any) { return `Rs ${Number(n??0).toFixed(0)}`; }
+function fmtAmt(n: any) { return "Rs "+Number(n??0).toFixed(0); }
+function statusColor(paid: number, balance: number) {
+  if (balance > 0 && paid > 0) return { color:"#F59E0B", bg:"#FFFBEB", label:"Partial" };
+  if (balance <= 0 && paid > 0) return { color:COLORS.success, bg:"#ECFDF5", label:"Paid" };
+  return { color:COLORS.danger, bg:"#FEF2F2", label:"Unpaid" };
+}
 
 export default function BillingDeskScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -28,7 +33,7 @@ export default function BillingDeskScreen({ navigation }: any) {
   const [bill,setBill]             = useState<PatientBill|null>(null);
   const [billLoading,setBillLoad]  = useState(false);
   const [showPay,setShowPay]       = useState(false);
-  const [editPay,setEditPay]       = useState<PaymentRecord|null>(null);
+  const [editPay,setEditPay]       = useState<ReceiptRecord|null>(null);
   const [showRefund,setShowRefund] = useState(false);
   const [amtPaid,setAmtPaid]       = useState("");
   const [disAmt,setDisAmt]         = useState("0");
@@ -55,7 +60,10 @@ export default function BillingDeskScreen({ navigation }: any) {
     finally { setBillLoad(false); }
   };
 
-  const outstanding = (selected?.TestCharges??0)-(selected?.PaidAmount??0)-(selected?.DiscountAmount??0);
+  const selCharges  = selected?.Charges  ?? 0;
+  const selPaid     = selected?.Paid     ?? 0;
+  const selDiscount = selected?.Discount ?? 0;
+  const selBalance  = selected?.Balance  ?? 0;
 
   const handleSavePayment = async () => {
     if (!selected) return;
@@ -84,8 +92,7 @@ export default function BillingDeskScreen({ navigation }: any) {
   };
 
   const openAddPayment = () => { setAmtPaid(""); setDisAmt("0"); setOtherAmt("0"); setPayType("Cash"); setRemark(""); setEditPay(null); setShowPay(true); };
-  const openEditPayment = (p:PaymentRecord) => { setAmtPaid(String(p.AmtPaid)); setDisAmt(String(p.DisAmt??0)); setOtherAmt(String(p.OtherCharges??0)); setPayType(p.PaymentType); setRemark(p.Remark??""); setEditPay(p); setShowPay(true); };
-  const sc = (st:string) => st==="Paid"?{color:COLORS.success,bg:"#ECFDF5"}:st==="Partial"?{color:"#F59E0B",bg:"#FFFBEB"}:{color:COLORS.danger,bg:"#FEF2F2"};
+  const openEditPayment = (p:ReceiptRecord) => { setAmtPaid(String(p.AmtPaid)); setDisAmt(String(p.DisAmt??0)); setOtherAmt(String(p.OtherCharges??0)); setPayType(p.PaymentType); setRemark(p.DiscountRemark??""); setEditPay(p); setShowPay(true); };
 
   return (
     <View style={[s.root,{paddingTop:Math.max(insets.top,0)}]}>
@@ -117,25 +124,25 @@ export default function BillingDeskScreen({ navigation }: any) {
       </View>
 
       {loading?<View style={s.centre}><ActivityIndicator size="large" color={COLORS.primary}/></View>:
-        <FlatList data={patients} keyExtractor={(_,i)=>String(i)} contentContainerStyle={{padding:16}}
+        <FlatList data={patients} keyExtractor={(item)=>String(item.PID)} contentContainerStyle={{padding:16}}
           ListFooterComponent={<View style={{height:80}}/>}
           ListEmptyComponent={<View style={s.centre}><MaterialCommunityIcons name="receipt-text-outline" size={52} color={COLORS.textMuted}/><Text style={s.emptyTxt}>No billing records found</Text></View>}
           renderItem={({item})=>{
-            const c=sc(item.PaymentStatus??"Unpaid");
-            const due=(item.TestCharges??0)-(item.PaidAmount??0)-(item.DiscountAmount??0);
+            const c=statusColor(item.Paid??0, item.Balance??0);
             return(
               <TouchableOpacity style={s.card} onPress={()=>openBill(item)} activeOpacity={0.8}>
                 <View style={s.cardTop}>
-                  <View style={s.avatar}><Text style={s.avatarTxt}>{(item.PatientName||"?").charAt(0).toUpperCase()}</Text></View>
+                  <View style={s.avatar}><Text style={s.avatarTxt}>{((item.Patname||item.PatientName)||"?").charAt(0).toUpperCase()}</Text></View>
                   <View style={{flex:1}}>
-                    <Text style={s.name}>{item.PatientName}</Text>
-                    <Text style={s.meta}>PT{String(item.PatRegID||item.PID).padStart(6,"0")}  {item.MobileNo||item.Patphoneno||"---"}</Text>
+                    <Text style={s.name}>{item.intial} {item.Patname}</Text>
+                    <Text style={s.meta}>PT{String(item.PatRegID||item.PID).padStart(6,"0")}  {item.Patphoneno||"---"}</Text>
                     <Text style={s.meta}>{item.CenterName}  {fmtDate(item.Patregdate)}</Text>
+                    <Text style={s.tests} numberOfLines={1}>{item.testname}</Text>
                   </View>
-                  <View style={[s.badge,{backgroundColor:c.bg}]}><Text style={[s.badgeTxt,{color:c.color}]}>{item.PaymentStatus??"Unpaid"}</Text></View>
+                  <View style={[s.badge,{backgroundColor:c.bg}]}><Text style={[s.badgeTxt,{color:c.color}]}>{c.label}</Text></View>
                 </View>
                 <View style={s.amtRow}>
-                  {([["Total",item.TestCharges,COLORS.textPrimary],["Paid",item.PaidAmount,COLORS.success],["Disc",item.DiscountAmount,"#F59E0B"],["Due",due,due>0?COLORS.danger:COLORS.success]] as [string,any,string][]).map(([lbl,val,col])=>(
+                  {([["Total",item.Charges,COLORS.textPrimary],["Paid",item.Paid,COLORS.success],["Disc",item.Discount,"#F59E0B"],["Due",item.Balance,item.Balance>0?COLORS.danger:COLORS.success]] as [string,any,string][]).map(([lbl,val,col])=>(
                     <View key={lbl} style={s.amtItem}><Text style={s.amtLabel}>{lbl}</Text><Text style={[s.amtVal,{color:col}]}>{fmtAmt(val)}</Text></View>
                   ))}
                 </View>
@@ -146,95 +153,90 @@ export default function BillingDeskScreen({ navigation }: any) {
       }
 
       <Modal visible={!!selected} transparent animationType="slide" onRequestClose={()=>setSelected(null)}>
-        <View style={s.overlay}>
-          <View style={[s.sheet,{paddingBottom:Math.max(insets.bottom,20)}]}>
-            <View style={s.drag}/>
-            <TouchableOpacity style={s.closeX} onPress={()=>setSelected(null)}><Feather name="x" size={22} color={COLORS.textSecondary}/></TouchableOpacity>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={s.sheetTitle}>{selected?.PatientName}</Text>
-              <Text style={s.sheetSub}>PT{String(selected?.PatRegID||selected?.PID||0).padStart(6,"0")}  {selected?.CenterName}</Text>
-              <View style={s.summaryBox}>
-                {([["Total Charges",selected?.TestCharges,COLORS.textPrimary],["Amount Paid",selected?.PaidAmount,COLORS.success],["Discount",selected?.DiscountAmount,"#F59E0B"],["Outstanding",outstanding,outstanding>0?COLORS.danger:COLORS.success]] as [string,any,string][]).map(([l,v,c])=>(
-                  <View key={l} style={s.sumRow}><Text style={s.sumLabel}>{l}</Text><Text style={[s.sumVal,{color:c}]}>{fmtAmt(v)}</Text></View>
-                ))}
-              </View>
-              <View style={{flexDirection:"row",gap:10,marginBottom:18}}>
-                <TouchableOpacity style={[s.actionBtn,{backgroundColor:COLORS.primary}]} onPress={openAddPayment}>
-                  <Feather name="plus" size={15} color="#FFF"/><Text style={s.actionBtnTxt}>Add Payment</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[s.actionBtn,{backgroundColor:"#F59E0B"}]} onPress={()=>{setRemark("");setPayType("Cash");setShowRefund(true);}}>
-                  <MaterialCommunityIcons name="cash-refund" size={15} color="#FFF"/><Text style={s.actionBtnTxt}>Refund</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={s.secLabel}>Payment History</Text>
-              {billLoading?<ActivityIndicator color={COLORS.primary} style={{marginTop:12}}/>:
-                (bill?.PaymentDetails??[]).length===0?<Text style={s.emptyTxt}>No payments recorded yet</Text>:
-                (bill?.PaymentDetails??[]).map((p,i)=>(
-                  <View key={i} style={s.payRow}>
-                    <View style={{flex:1}}>
-                      <Text style={s.payAmt}>{fmtAmt(p.AmtPaid)}<Text style={s.payType}>  ({p.PaymentType})</Text></Text>
-                      <Text style={s.paySub}>{fmtDate(p.TransDate)}  {p.Username}</Text>
-                      {!!p.Remark&&<Text style={s.paySub}>{p.Remark}</Text>}
-                      {p.DisAmt>0&&<Text style={s.paySub}>Disc: {fmtAmt(p.DisAmt)}</Text>}
-                    </View>
-                    <TouchableOpacity style={s.iconAct} onPress={()=>openEditPayment(p)}><Feather name="edit-2" size={14} color={COLORS.primary}/></TouchableOpacity>
-                    <TouchableOpacity style={s.iconAct} onPress={()=>Alert.alert("Delete Payment","Delete this payment?",[{text:"Cancel",style:"cancel"},{text:"Delete",style:"destructive",onPress:async()=>{try{await deletePayment(p.RID);openBill(selected!);load();}catch(e:any){Alert.alert("Error",e.message);}}}])}><Feather name="trash-2" size={14} color={COLORS.danger}/></TouchableOpacity>
+        <View style={s.overlay}><View style={[s.sheet,{paddingBottom:Math.max(insets.bottom,20)}]}>
+          <View style={s.drag}/>
+          <TouchableOpacity style={s.closeX} onPress={()=>setSelected(null)}><Feather name="x" size={22} color={COLORS.textSecondary}/></TouchableOpacity>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={s.sheetTitle}>{selected?.intial} {selected?.Patname}</Text>
+            <Text style={s.sheetSub}>PT{String(selected?.PatRegID||selected?.PID||0).padStart(6,"0")}  {selected?.CenterName}  Dr: {(selected?.RefDr||"").trim()}</Text>
+            <View style={s.summaryBox}>
+              {([["Total",selCharges,COLORS.textPrimary],["Paid",selPaid,COLORS.success],["Discount",selDiscount,"#F59E0B"],["Balance Due",selBalance,selBalance>0?COLORS.danger:COLORS.success]] as [string,number,string][]).map(([l,v,c])=>(
+                <View key={l} style={s.sumRow}><Text style={s.sumLabel}>{l}</Text><Text style={[s.sumVal,{color:c}]}>{fmtAmt(v)}</Text></View>
+              ))}
+            </View>
+            <Text style={s.sheetSub}>Tests: {selected?.testname}</Text>
+            <View style={{flexDirection:"row",gap:10,marginVertical:16}}>
+              <TouchableOpacity style={[s.actionBtn,{backgroundColor:COLORS.primary}]} onPress={openAddPayment}>
+                <Feather name="plus" size={15} color="#FFF"/><Text style={s.actionBtnTxt}>Add Payment</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.actionBtn,{backgroundColor:"#F59E0B"}]} onPress={()=>{setRemark("");setPayType("Cash");setShowRefund(true);}}>
+                <MaterialCommunityIcons name="cash-refund" size={15} color="#FFF"/><Text style={s.actionBtnTxt}>Refund</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={s.secLabel}>Receipt History</Text>
+            {billLoading?<ActivityIndicator color={COLORS.primary} style={{marginTop:12}}/>:
+              (bill?.Receipts??[]).length===0?<Text style={s.emptyTxt}>No receipts yet</Text>:
+              (bill?.Receipts??[]).map((r,i)=>(
+                <View key={r.RID} style={s.payRow}>
+                  <View style={{flex:1}}>
+                    <Text style={s.payAmt}>{fmtAmt(r.AmtPaid)}<Text style={s.payType}>  ({r.PaymentType})</Text></Text>
+                    <Text style={s.paySub}>{fmtDate(r.transdate)}  by {r.username}  Rcpt#{r.ReceiptNo}</Text>
+                    {(r.DisAmt>0)&&<Text style={s.paySub}>Disc: {fmtAmt(r.DisAmt)}</Text>}
+                    {!!r.DiscountRemark&&<Text style={s.paySub}>{r.DiscountRemark}</Text>}
                   </View>
-                ))
-              }
-            </ScrollView>
-          </View>
-        </View>
+                  <TouchableOpacity style={s.iconAct} onPress={()=>openEditPayment(r)}><Feather name="edit-2" size={14} color={COLORS.primary}/></TouchableOpacity>
+                  <TouchableOpacity style={s.iconAct} onPress={()=>Alert.alert("Delete Receipt","Delete receipt #"+r.ReceiptNo+"?",[{text:"Cancel",style:"cancel"},{text:"Delete",style:"destructive",onPress:async()=>{try{await deletePayment(r.RID);openBill(selected!);load();}catch(e:any){Alert.alert("Error",e.message);}}}])}><Feather name="trash-2" size={14} color={COLORS.danger}/></TouchableOpacity>
+                </View>
+              ))
+            }
+          </ScrollView>
+        </View></View>
       </Modal>
 
       <Modal visible={showPay} transparent animationType="slide" onRequestClose={()=>setShowPay(false)}>
-        <View style={s.overlay}>
-          <View style={[s.sheet,{paddingBottom:Math.max(insets.bottom,20)}]}>
-            <View style={s.drag}/>
-            <Text style={s.sheetTitle}>{editPay?"Edit Payment":"Add Payment"}</Text>
-            <Text style={s.sheetSub}>{selected?.PatientName}  Due: {fmtAmt(outstanding)}</Text>
-            <ScrollView style={{marginTop:16}}>
-              <Text style={s.fldLabel}>Amount Paid *</Text>
-              <TextInput style={s.input} value={amtPaid} onChangeText={setAmtPaid} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textMuted}/>
-              <Text style={s.fldLabel}>Discount Amount</Text>
-              <TextInput style={s.input} value={disAmt} onChangeText={setDisAmt} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textMuted}/>
-              <Text style={s.fldLabel}>Other Charges</Text>
-              <TextInput style={s.input} value={otherAmt} onChangeText={setOtherAmt} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textMuted}/>
-              <Text style={s.fldLabel}>Payment Type</Text>
-              <View style={s.ptRow}>{PAYMENT_TYPES.map(pt=><TouchableOpacity key={pt} style={[s.ptBtn,payType===pt&&s.ptActive]} onPress={()=>setPayType(pt)}><Text style={[s.ptTxt,payType===pt&&s.ptActiveTxt]}>{pt}</Text></TouchableOpacity>)}</View>
-              <Text style={s.fldLabel}>Remark</Text>
-              <TextInput style={[s.input,{height:70}]} value={remark} onChangeText={setRemark} multiline placeholder="Optional..." placeholderTextColor={COLORS.textMuted}/>
-              <View style={{flexDirection:"row",gap:10,marginTop:16}}>
-                <TouchableOpacity style={[s.actionBtn,{flex:1,backgroundColor:COLORS.textSecondary}]} onPress={()=>setShowPay(false)}><Text style={s.actionBtnTxt}>Cancel</Text></TouchableOpacity>
-                <TouchableOpacity style={[s.actionBtn,{flex:2,backgroundColor:COLORS.primary}]} onPress={handleSavePayment} disabled={saving}>
-                  {saving?<ActivityIndicator color="#FFF" size="small"/>:<Text style={s.actionBtnTxt}>{editPay?"Update":"Save Payment"}</Text>}
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
+        <View style={s.overlay}><View style={[s.sheet,{paddingBottom:Math.max(insets.bottom,20)}]}>
+          <View style={s.drag}/>
+          <Text style={s.sheetTitle}>{editPay?"Edit Receipt":"Add Payment"}</Text>
+          <Text style={s.sheetSub}>{selected?.intial} {selected?.Patname}  Balance: {fmtAmt(selBalance)}</Text>
+          <ScrollView style={{marginTop:16}}>
+            <Text style={s.fldLabel}>Amount Paid *</Text>
+            <TextInput style={s.input} value={amtPaid} onChangeText={setAmtPaid} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textMuted}/>
+            <Text style={s.fldLabel}>Discount</Text>
+            <TextInput style={s.input} value={disAmt} onChangeText={setDisAmt} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textMuted}/>
+            <Text style={s.fldLabel}>Other Charges</Text>
+            <TextInput style={s.input} value={otherAmt} onChangeText={setOtherAmt} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textMuted}/>
+            <Text style={s.fldLabel}>Payment Type</Text>
+            <View style={s.ptRow}>{PAYMENT_TYPES.map(pt=><TouchableOpacity key={pt} style={[s.ptBtn,payType===pt&&s.ptActive]} onPress={()=>setPayType(pt)}><Text style={[s.ptTxt,payType===pt&&s.ptActiveTxt]}>{pt}</Text></TouchableOpacity>)}</View>
+            <Text style={s.fldLabel}>Remark</Text>
+            <TextInput style={[s.input,{height:65}]} value={remark} onChangeText={setRemark} multiline placeholder="Optional..." placeholderTextColor={COLORS.textMuted}/>
+            <View style={{flexDirection:"row",gap:10,marginTop:16}}>
+              <TouchableOpacity style={[s.actionBtn,{flex:1,backgroundColor:COLORS.textSecondary}]} onPress={()=>setShowPay(false)}><Text style={s.actionBtnTxt}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={[s.actionBtn,{flex:2,backgroundColor:COLORS.primary}]} onPress={handleSavePayment} disabled={saving}>
+                {saving?<ActivityIndicator color="#FFF" size="small"/>:<Text style={s.actionBtnTxt}>{editPay?"Update":"Save"}</Text>}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View></View>
       </Modal>
 
       <Modal visible={showRefund} transparent animationType="slide" onRequestClose={()=>setShowRefund(false)}>
-        <View style={s.overlay}>
-          <View style={[s.sheet,{paddingBottom:Math.max(insets.bottom,20)}]}>
-            <View style={s.drag}/>
-            <Text style={s.sheetTitle}>Process Refund</Text>
-            <Text style={s.sheetSub}>{selected?.PatientName}</Text>
-            <View style={{marginTop:16}}>
-              <Text style={s.fldLabel}>Payment Type</Text>
-              <View style={s.ptRow}>{PAYMENT_TYPES.map(pt=><TouchableOpacity key={pt} style={[s.ptBtn,payType===pt&&s.ptActive]} onPress={()=>setPayType(pt)}><Text style={[s.ptTxt,payType===pt&&s.ptActiveTxt]}>{pt}</Text></TouchableOpacity>)}</View>
-              <Text style={s.fldLabel}>Remark</Text>
-              <TextInput style={[s.input,{height:70}]} value={remark} onChangeText={setRemark} multiline placeholder="Reason for refund..." placeholderTextColor={COLORS.textMuted}/>
-              <View style={{flexDirection:"row",gap:10,marginTop:16}}>
-                <TouchableOpacity style={[s.actionBtn,{flex:1,backgroundColor:COLORS.textSecondary}]} onPress={()=>setShowRefund(false)}><Text style={s.actionBtnTxt}>Cancel</Text></TouchableOpacity>
-                <TouchableOpacity style={[s.actionBtn,{flex:2,backgroundColor:"#F59E0B"}]} onPress={handleRefund} disabled={saving}>
-                  {saving?<ActivityIndicator color="#FFF" size="small"/>:<Text style={s.actionBtnTxt}>Process Refund</Text>}
-                </TouchableOpacity>
-              </View>
+        <View style={s.overlay}><View style={[s.sheet,{paddingBottom:Math.max(insets.bottom,20)}]}>
+          <View style={s.drag}/>
+          <Text style={s.sheetTitle}>Process Refund</Text>
+          <Text style={s.sheetSub}>{selected?.intial} {selected?.Patname}</Text>
+          <View style={{marginTop:16}}>
+            <Text style={s.fldLabel}>Payment Type</Text>
+            <View style={s.ptRow}>{PAYMENT_TYPES.map(pt=><TouchableOpacity key={pt} style={[s.ptBtn,payType===pt&&s.ptActive]} onPress={()=>setPayType(pt)}><Text style={[s.ptTxt,payType===pt&&s.ptActiveTxt]}>{pt}</Text></TouchableOpacity>)}</View>
+            <Text style={s.fldLabel}>Remark</Text>
+            <TextInput style={[s.input,{height:70}]} value={remark} onChangeText={setRemark} multiline placeholder="Reason..." placeholderTextColor={COLORS.textMuted}/>
+            <View style={{flexDirection:"row",gap:10,marginTop:16}}>
+              <TouchableOpacity style={[s.actionBtn,{flex:1,backgroundColor:COLORS.textSecondary}]} onPress={()=>setShowRefund(false)}><Text style={s.actionBtnTxt}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={[s.actionBtn,{flex:2,backgroundColor:"#F59E0B"}]} onPress={handleRefund} disabled={saving}>
+                {saving?<ActivityIndicator color="#FFF" size="small"/>:<Text style={s.actionBtnTxt}>Process Refund</Text>}
+              </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </View></View>
       </Modal>
     </View>
   );
@@ -252,7 +254,7 @@ const s = StyleSheet.create({
   searchBtn:     { height:40, width:40, backgroundColor:COLORS.primary, borderRadius:8, alignItems:"center", justifyContent:"center" },
   chip:          { paddingHorizontal:14, paddingVertical:7, borderRadius:18, borderWidth:1, borderColor:COLORS.border, backgroundColor:COLORS.surface },
   chipActive:    { backgroundColor:COLORS.primary, borderColor:COLORS.primary },
-  chipText:      { fontSize:13, color:COLORS.textSecondary, fontWeight:"500" },
+  chipText:      { fontSize:12, color:COLORS.textSecondary, fontWeight:"600" },
   chipTextActive:{ color:"#FFF", fontWeight:"700" },
   searchBar:     { flexDirection:"row", alignItems:"center", marginHorizontal:16, marginVertical:8, backgroundColor:COLORS.surface, borderWidth:1, borderColor:COLORS.border, borderRadius:12, paddingHorizontal:12, height:44 },
   searchInput:   { flex:1, fontSize:13, color:COLORS.textPrimary },
@@ -263,8 +265,9 @@ const s = StyleSheet.create({
   avatar:        { width:44, height:44, borderRadius:22, backgroundColor:COLORS.primaryLight, alignItems:"center", justifyContent:"center", marginRight:12 },
   avatarTxt:     { fontSize:18, fontWeight:"800", color:COLORS.primaryDark },
   name:          { fontSize:14, fontWeight:"700", color:COLORS.textPrimary, marginBottom:2 },
-  meta:          { fontSize:11, color:COLORS.textSecondary, marginBottom:2 },
-  badge:         { paddingHorizontal:8, paddingVertical:4, borderRadius:10 },
+  meta:          { fontSize:11, color:COLORS.textSecondary, marginBottom:1 },
+  tests:         { fontSize:11, color:COLORS.textMuted, marginTop:2 },
+  badge:         { paddingHorizontal:8, paddingVertical:4, borderRadius:10, alignSelf:"flex-start" },
   badgeTxt:      { fontSize:11, fontWeight:"700" },
   amtRow:        { flexDirection:"row", paddingHorizontal:14, paddingVertical:10 },
   amtItem:       { flex:1, alignItems:"center" },
@@ -274,10 +277,10 @@ const s = StyleSheet.create({
   sheet:         { backgroundColor:COLORS.surface, borderTopLeftRadius:22, borderTopRightRadius:22, padding:20, maxHeight:"92%" },
   drag:          { width:36, height:4, backgroundColor:COLORS.border, borderRadius:2, alignSelf:"center", marginBottom:16 },
   closeX:        { position:"absolute", top:18, right:18, zIndex:1 },
-  sheetTitle:    { fontSize:17, fontWeight:"800", color:COLORS.textPrimary },
-  sheetSub:      { fontSize:12, color:COLORS.textSecondary, marginTop:3, marginBottom:12 },
-  summaryBox:    { backgroundColor:COLORS.background, borderRadius:12, padding:14, marginBottom:16, borderWidth:1, borderColor:COLORS.border },
-  sumRow:        { flexDirection:"row", justifyContent:"space-between", paddingVertical:5, borderBottomWidth:1, borderBottomColor:COLORS.divider },
+  sheetTitle:    { fontSize:17, fontWeight:"800", color:COLORS.textPrimary, marginBottom:4 },
+  sheetSub:      { fontSize:12, color:COLORS.textSecondary, marginBottom:10 },
+  summaryBox:    { backgroundColor:COLORS.background, borderRadius:12, padding:14, marginBottom:12, borderWidth:1, borderColor:COLORS.border },
+  sumRow:        { flexDirection:"row", justifyContent:"space-between", paddingVertical:6, borderBottomWidth:1, borderBottomColor:COLORS.divider },
   sumLabel:      { fontSize:13, color:COLORS.textSecondary },
   sumVal:        { fontSize:14, fontWeight:"700" },
   actionBtn:     { flex:1, flexDirection:"row", alignItems:"center", justifyContent:"center", borderRadius:10, paddingVertical:12, gap:6 },
