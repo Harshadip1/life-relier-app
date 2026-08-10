@@ -59,6 +59,7 @@ export default function DoctorAppointmentsScreen({ navigation }: any) {
   const [appts,      setAppts]      = useState<Appointment[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error,      setError]      = useState<string | null>(null);
 
   const doctorName = user?.name || 'Dr. Girish Patil';
 
@@ -81,80 +82,25 @@ export default function DoctorAppointmentsScreen({ navigation }: any) {
         const drNameInAppt = (a.DoctorName ?? '').trim().toLowerCase();
         const loggedDrName = doctorName.trim().toLowerCase();
         
-        // Match doctor name or fallback check
+        // Match doctor name only
         const isAssignedDoctor = drNameInAppt.includes(loggedDrName) || 
-          loggedDrName.includes(drNameInAppt) ||
-          drNameInAppt.includes('girish') || drNameInAppt.includes('patil');
+          loggedDrName.includes(drNameInAppt);
 
         return apptDay === today && isAssignedDoctor;
       });
 
-      // If backend has no appointments for today, provide doctor-specific sample appointments
+      // If backend has no appointments for today, show empty state
       if (mine.length === 0) {
-        const sample: Appointment[] = [
-          {
-            AppointmentId: 101,
-            DrId: 1,
-            Name: 'Rudra Sheth',
-            Mobile: '9876543210',
-            AppointmentDate: `${today}T10:00:00`,
-            Slot: '10:00 AM',
-            Age: 28,
-            Status: 'Pending',
-            DoctorName: doctorName,
-            Address: 'Satellite, Ahmedabad',
-            GenderId: 1,
-          },
-          {
-            AppointmentId: 102,
-            DrId: 1,
-            Name: 'Priya Sharma',
-            Mobile: '9823456789',
-            AppointmentDate: `${today}T11:30:00`,
-            Slot: '11:30 AM',
-            Age: 34,
-            Status: 'Pending',
-            DoctorName: doctorName,
-            Address: 'Kothrud, Pune',
-            GenderId: 2,
-          },
-          {
-            AppointmentId: 103,
-            DrId: 1,
-            Name: 'Rajesh Patel',
-            Mobile: '9900112233',
-            AppointmentDate: `${today}T02:00:00`,
-            Slot: '02:00 PM',
-            Age: 45,
-            Status: 'Completed',
-            DoctorName: doctorName,
-            Address: 'Viman Nagar, Pune',
-            GenderId: 1,
-          },
-        ];
-        setAppts(sample);
+        setAppts([]);
       } else {
         setAppts(mine);
       }
     } catch (e: any) {
-      // Fallback sample appointments on network failure
-      const today = new Date().toISOString().split('T')[0];
-      setAppts([
-        {
-          AppointmentId: 101, DrId: 1, Name: 'Rudra Sheth', Mobile: '9876543210',
-          AppointmentDate: `${today}T10:00:00`, Slot: '10:00 AM', Age: 28,
-          Status: 'Pending', DoctorName: doctorName, Address: 'Satellite, Ahmedabad', GenderId: 1,
-        },
-        {
-          AppointmentId: 102, DrId: 1, Name: 'Priya Sharma', Mobile: '9823456789',
-          AppointmentDate: `${today}T11:30:00`, Slot: '11:30 AM', Age: 34,
-          Status: 'Pending', DoctorName: doctorName, Address: 'Kothrud, Pune', GenderId: 2,
-        },
-      ]);
+      setError(e?.message ?? 'Failed to load appointments.');
     } finally { setLoading(false); setRefreshing(false); }
   }, [doctorName]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(useCallback(() => { load(); return () => {}; }, [load]));
 
   const h = new Date().getHours();
   const greeting = h < 12 ? 'Good Morning 🌅' : h < 17 ? 'Good Afternoon ☀️' : 'Good Evening 🌆';
@@ -202,6 +148,16 @@ export default function DoctorAppointmentsScreen({ navigation }: any) {
         <View style={s.centre}>
           <ActivityIndicator size="large" color={T.primary} />
           <Text style={s.centreText}>Loading today's appointments…</Text>
+        </View>
+      ) : error ? (
+        <View style={s.centre}>
+          <MaterialCommunityIcons name="cloud-off-outline" size={52} color={T.muted} />
+          <Text style={s.centreText}>Could not load appointments</Text>
+          <Text style={[s.centreText, { color: T.danger }]}>{error}</Text>
+          <TouchableOpacity style={[s.retryBtn, { marginTop: 12 }]} onPress={() => load(true)}>
+            <Feather name="refresh-cw" size={14} color={T.primary} />
+            <Text style={[s.retryTxt, { color: T.primary }]}> Retry</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <FlatList
@@ -280,5 +236,7 @@ const s = StyleSheet.create({
   metaText:    { fontSize: 11, color: T.muted, marginLeft: 3 },
   badge:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
   dot:         { width: 6, height: 6, borderRadius: 3, marginRight: 4 },
-  badgeTxt:    { fontSize: 10, fontWeight: '700' },
+  badgeTxt:     { fontSize: 10, fontWeight: '700' },
+  retryBtn:     { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: T.primary, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 7 },
+  retryTxt:     { fontSize: 13, fontWeight: '700' },
 });

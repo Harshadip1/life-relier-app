@@ -87,6 +87,7 @@ export default function ConsultationDetailScreen({ navigation, route }: any) {
   const [activeTab,  setActiveTab]   = useState('Profile');
   const [patients,   setPatients]    = useState<PatientRow[]>([]);
   const [loading,    setLoading]     = useState(true);
+  const [error,      setError]       = useState<string | null>(null);
   const [allTests,   setAllTests]    = useState<TestNameItem[]>([]);
 
   // Diagnosis fields
@@ -130,41 +131,8 @@ export default function ConsultationDetailScreen({ navigation, route }: any) {
       const data = await res.json();
       const rows: PatientRow[] = Array.isArray(data) ? data : (data?.value ?? []);
       setPatients(rows);
-    } catch {
-      // Sample clinical history for doctor testing
-      const today = new Date().toISOString().split('T')[0];
-      setPatients([
-        {
-          PID: appointment?.AppointmentId || 101,
-          PatRegID: 10001,
-          PatientName: patName,
-          Patphoneno: appointment?.Mobile || '9876543210',
-          sex: appointment?.GenderId === 2 ? 'Female' : 'Male',
-          Age: appointment?.Age || 30,
-          MDY: 'yrs',
-          Status: 'Report Ready',
-          Patregdate: `${today}T09:30:00`,
-          MainTestName: 'Complete Blood Count (CBC)',
-          Drname: appointment?.DoctorName || 'Dr. Girish Patil',
-          BarcodeID: 'BC99001',
-          Patrepstatus: true,
-        },
-        {
-          PID: appointment?.AppointmentId || 101,
-          PatRegID: 10001,
-          PatientName: patName,
-          Patphoneno: appointment?.Mobile || '9876543210',
-          sex: appointment?.GenderId === 2 ? 'Female' : 'Male',
-          Age: appointment?.Age || 30,
-          MDY: 'yrs',
-          Status: 'Processing',
-          Patregdate: `${today}T09:30:00`,
-          MainTestName: 'Lipid Profile',
-          Drname: appointment?.DoctorName || 'Dr. Girish Patil',
-          BarcodeID: 'BC99002',
-          Patrepstatus: false,
-        },
-      ]);
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to load patient data.');
     } finally { setLoading(false); }
   }, [appointment, patName]);
 
@@ -182,6 +150,7 @@ export default function ConsultationDetailScreen({ navigation, route }: any) {
         { MainTestId: 0, MainTestName: 'Vitamin B12',                     TestName: 'Vitamin B12',                     TestCode: 'VB12' },
       ]);
     });
+    return () => {};
   }, [load]));
 
   const latest = patients[0];
@@ -246,6 +215,16 @@ export default function ConsultationDetailScreen({ navigation, route }: any) {
 
       {loading ? (
         <View style={s.centre}><ActivityIndicator size="large" color={T.primary} /><Text style={s.centreText}>Loading consultation workspace…</Text></View>
+      ) : error ? (
+        <View style={s.centre}>
+          <MaterialCommunityIcons name="cloud-off-outline" size={52} color={T.muted} />
+          <Text style={s.centreText}>Could not load patient data</Text>
+          <Text style={[s.centreText, { color: T.danger }]}>{error}</Text>
+          <TouchableOpacity style={[s.retryBtn, { marginTop: 12 }]} onPress={load}>
+            <Feather name="refresh-cw" size={14} color={T.primary} />
+            <Text style={[s.retryTxt, { color: T.primary }]}> Retry</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
@@ -659,4 +638,6 @@ const s = StyleSheet.create({
   completeBtnTxt:{ color: '#FFF', fontSize: 15, fontWeight: '700' },
   doneChip:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ECFDF5', borderRadius: 12, paddingVertical: 14, gap: 8, borderWidth: 1, borderColor: '#BBF7D0' },
   doneTxt:       { color: T.green, fontSize: 15, fontWeight: '700' },
+  retryBtn:      { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: T.primary, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 7 },
+  retryTxt:      { fontSize: 13, fontWeight: '700' },
 });

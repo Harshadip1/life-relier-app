@@ -176,11 +176,12 @@ export default function TestChargeDetailScreen({ navigation }: any) {
     try {
       // API body: { MainTestId?, RateTypeId, BranchId: 1 }
       const data = await getAllTestCharges({
-        RateTypeId: rateTypeId,
-        MainTestId: mainTestId ?? undefined,
+        RateTypeId: rateTypeId ?? 1,
+        MainTestId: mainTestId ?? 0,
+        SubDeptId:  subDeptId  ?? 0,
       });
-      // SubDeptId filter is client-side (not in API)
-      const filtered = data.filter(t => t.SubDeptId === subDeptId);
+      // Client-side SubDept filter if selected
+      const filtered = subDeptId ? data.filter(t => t.SubDeptId === subDeptId) : data;
       setResults(filtered);
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Failed to fetch test charges.');

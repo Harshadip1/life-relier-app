@@ -74,7 +74,7 @@
 
 | Endpoint | Method | Body | Response | Used In |
 |---|---|---|---|---|
-| `/api/DoctorSchedule/GetAllDoctorSchedule` | POST | `{ BranchId }` | `[{ scheduleId, DrId, StartDate, EndDate, StartTime, EndTime, BranchId, IsActive }]` | DrAppointmentScreen, DoctorManagementScreen |
+| `/api/DoctorSchedule/GetAllDoctorSchedule` | POST | `{ BranchId }` | `[{ scheduleId, DrId, StartDate, EndDate, StartTime, EndTime, BranchId, IsActive }]` | DoctorAppointmentScreen, DoctorManagementScreen |
 | `/api/DoctorSchedule/GetDoctorScheduleById` | POST | `{ scheduleId, BranchId }` | `[DoctorSchedule]` | doctorScheduleService |
 | `/api/DoctorSchedule/SaveDoctorSchedule` | POST | `{ DrId, StartDate, EndDate, StartTime, EndTime, BranchId, CreatedBy, IsActive }` | `{ Message }` | AddDoctorScheduleScreen |
 | `/api/DoctorSchedule/UpdateDoctorSchedule` | POST | `{ scheduleId, DrId, ..., UpdatedBy, IsActive }` | `{ Message }` | AddDoctorScheduleScreen |
@@ -98,11 +98,11 @@
 
 | Endpoint | Method | Body | Response | Used In |
 |---|---|---|---|---|
-| `/api/DrAppointment/GetAllAppointment` | POST | `{ BranchId }` | `{ value: [{ AppointmentId, DrId, Name, Mobile, AppointmentDate, Slot, Status, DoctorName, Age, GenderId, ... }], Count }` | AppointmentRecordsScreen, ShowAppointmentScreen, DoctorAppointmentsScreen |
+| `/api/DrAppointment/GetAllAppointment` | POST | `{ BranchId }` | `{ value: [{ AppointmentId, DrId, Name, Mobile, AppointmentDate, Slot, Status, DoctorName, Age, GenderId, ... }], Count }` | AppointmentRecordsScreen, AppointmentListScreen, DoctorAppointmentsScreen |
 | `/api/DrAppointment/GetAppointmentById` | POST | `{ AppointmentId, BranchId }` | `[AppointmentRecord]` | doctorScheduleService |
 | `/api/DrAppointment/SaveAppointment` | POST | `{ DrId, Name, FirstName, LastName, Mobile, AppointmentDate, Slot, Address, GenderId, InitialId, BirthDate, BranchId, CreatedBy, Email?, Remark?, ReferingDoctorId? }` | `{ Message, AppointmentId }` | SearchAvailableSlotsScreen, BookAppointmentScreen |
 | `/api/DrAppointment/UpdateAppointment` | POST | `{ AppointmentId, UpdatedBy, ...SavePayload }` | `{ Message }` | SearchAvailableSlotsScreen |
-| `/api/DrAppointment/DeleteAppointment` | POST | `{ AppointmentId, BranchId }` | `{ Message }` | ShowAppointmentScreen |
+| `/api/DrAppointment/DeleteAppointment` | POST | `{ AppointmentId, BranchId }` | `{ Message }` | AppointmentListScreen |
 
 ---
 
@@ -111,7 +111,7 @@
 | Endpoint | Method | Body | Response | Used In |
 |---|---|---|---|---|
 | `/api/AddReferingDoctor/GetAll` | POST | `{ Branchid }` | `{ value: [{ dr_codeid, DoctorCode, DoctorName, DoctorPhoneno, Doctoremail, address1, city, DrType, contactperson, ratetypeid, PRO, Branchid, Createdon }], Count }` | ReferralDoctorScreen |
-| `/api/AddReferingDoctor/GetById` | POST | `{ dr_codeid, Branchid }` | `[ReferingDoctorRecord]` | referingDoctorService |
+| `/api/AddReferingDoctor/GetById` | POST | `{ dr_codeid, Branchid }` | `[ReferringDoctorRecord]` | referringDoctorService |
 | `/api/AddReferingDoctor/GetPRO` | POST | `{ branchId }` | `[{ ReferingDoctorId, DoctorName }]` | SearchAvailableSlotsScreen |
 | `/api/AddReferingDoctor/Save` | POST | `{ DoctorCode, DoctorName, DoctorPhoneno, Doctoremail, address1, city, DrType, contactperson, ratetypeid, PRO, Branchid, Createdon }` | `{ Message }` | ReferralDoctorScreen |
 | `/api/AddReferingDoctor/Update` | POST | `{ dr_codeid, DoctorCode, DoctorName, DoctorPhoneno, Doctoremail, address1, city, DrType, contactperson, ratetypeid, PRO, Branchid, Updatedby, Updatedon }` | `{ Message }` | ReferralDoctorScreen |

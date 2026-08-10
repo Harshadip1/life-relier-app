@@ -15,8 +15,8 @@ const BASE = `${API_BASE_URL}/api/AddReferingDoctor`;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface ReferingDoctorRecord {
-  ReferingDoctorId?: number;
+export interface ReferringDoctorRecord {
+  ReferringDoctorId?: number;
   dr_codeid?:        number;
   DoctorCode:        string | number;
   DoctorName:        string;
@@ -35,12 +35,12 @@ export interface ReferingDoctorRecord {
   [key: string]:     any;
 }
 
-export interface ReferingDoctorProItem {
-  ReferingDoctorId: number;
+export interface ReferringDoctorProItem {
+  ReferringDoctorId: number;
   DoctorName:       string;
 }
 
-export interface SaveReferingDoctorPayload {
+export interface SaveReferringDoctorPayload {
   DoctorCode:     string;
   DoctorName:     string;
   DoctorPhoneno?: string;
@@ -55,7 +55,7 @@ export interface SaveReferingDoctorPayload {
   Createdon:      string;
 }
 
-export interface UpdateReferingDoctorPayload {
+export interface UpdateReferringDoctorPayload {
   dr_codeid:      number;
   DoctorCode:     number | string;
   DoctorName:     string;
@@ -99,7 +99,7 @@ async function post<T = any>(path: string, body: object): Promise<T> {
 
 // ─── API functions ────────────────────────────────────────────────────────────
 
-export async function getAllReferingDoctors(branchId: number = 1): Promise<ReferingDoctorRecord[]> {
+export async function getAllReferringDoctors(branchId: number = 1): Promise<ReferringDoctorRecord[]> {
   const data = await post<any>('GetAll', { Branchid: branchId });
   if (Array.isArray(data)) return data;
   if (data?.value && Array.isArray(data.value)) return data.value;
@@ -107,14 +107,14 @@ export async function getAllReferingDoctors(branchId: number = 1): Promise<Refer
   return [];
 }
 
-export async function getReferingDoctorById(id: number, branchId: number = 1): Promise<ReferingDoctorRecord | null> {
+export async function getReferringDoctorById(id: number, branchId: number = 1): Promise<ReferringDoctorRecord | null> {
   const data = await post<any>('GetById', { dr_codeid: id, Branchid: branchId });
   if (Array.isArray(data) && data.length > 0) return data[0];
-  if (data?.dr_codeid || data?.ReferingDoctorId) return data;
+  if (data?.dr_codeid || data?.ReferringDoctorId) return data;
   return null;
 }
 
-export async function getReferingDoctorPro(branchId: number = 1): Promise<ReferingDoctorProItem[]> {
+export async function getReferringDoctorPro(branchId: number = 1): Promise<ReferringDoctorProItem[]> {
   try {
     const data = await post<any>('GetPRO', { branchId });
     if (Array.isArray(data)) return data;
@@ -123,14 +123,14 @@ export async function getReferingDoctorPro(branchId: number = 1): Promise<Referi
   } catch { return []; }
 }
 
-export async function saveReferingDoctor(payload: SaveReferingDoctorPayload): Promise<any> {
+export async function saveReferringDoctor(payload: SaveReferringDoctorPayload): Promise<any> {
   return post('Save', payload);
 }
 
-export async function updateReferingDoctor(payload: UpdateReferingDoctorPayload): Promise<any> {
+export async function updateReferringDoctor(payload: UpdateReferringDoctorPayload): Promise<any> {
   return post('Update', payload);
 }
 
-export async function deleteReferingDoctor(id: number, branchId: number = 1): Promise<any> {
+export async function deleteReferringDoctor(id: number, branchId: number = 1): Promise<any> {
   return post('Delete', { dr_codeid: String(id), Branchid: branchId });
 }

@@ -118,12 +118,12 @@ MasterStack
 | Screen | Purpose |
 |---|---|
 | DoctorManagementScreen | Doctors, Schedules, Slots tabs |
-| DrAppointmentScreen | Doctor schedule list |
+| DoctorAppointmentScreen | Doctor schedule list |
 | AddDoctorScheduleScreen | Add/edit doctor schedule |
 | AddDoctorSlotScreen | Add consultation slot duration |
 | AppointmentRecordsScreen | Appointment desk — filter by date/doctor |
 | SearchAvailableSlotsScreen | Book new appointment with slot grid |
-| ShowAppointmentScreen | View/delete all appointments with date filter |
+| AppointmentListScreen | View/delete all appointments with date filter |
 
 ### Master — Test & Other
 | Screen | Purpose |
@@ -240,7 +240,7 @@ Base URL: `https://dn8labapi.liferelier.in`
 | `editPatientService.ts` | Patient grid, get patient, update patient |
 | `doctorScheduleService.ts` | Schedules, slots, appointments |
 | `testChargesService.ts` | Test charges, centers, test names, rate types, sub depts |
-| `referingDoctorService.ts` | Referring doctor CRUD |
+| `referringDoctorService.ts` | Referring doctor CRUD |
 | `apiService.ts` | Axios instance with interceptors |
 
 ### Context

@@ -9,14 +9,14 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
 import {
-  getAllReferingDoctors,
-  saveReferingDoctor,
-  updateReferingDoctor,
-  deleteReferingDoctor,
-  ReferingDoctorRecord,
-  SaveReferingDoctorPayload,
-  UpdateReferingDoctorPayload,
-} from '../../services/referingDoctorService';
+  getAllReferringDoctors,
+  saveReferringDoctor,
+  updateReferringDoctor,
+  deleteReferringDoctor,
+  ReferringDoctorRecord,
+  SaveReferringDoctorPayload,
+  UpdateReferringDoctorPayload,
+} from '../../services/referringDoctorService';
 const DR_TYPES = ['DR', 'MR', 'TPA', 'OTHER'];
 
 function Field({ label, required, children }: any) {
@@ -32,12 +32,12 @@ export default function ReferralDoctorScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
-  const [records,    setRecords]    = useState<ReferingDoctorRecord[]>([]);
+  const [records,    setRecords]    = useState<ReferringDoctorRecord[]>([]);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [search,     setSearch]     = useState('');
   const [showModal,  setShowModal]  = useState(false);
-  const [editItem,   setEditItem]   = useState<ReferingDoctorRecord | null>(null);
+  const [editItem,   setEditItem]   = useState<ReferringDoctorRecord | null>(null);
   const [saving,     setSaving]     = useState(false);
 
   // form fields — exact Bruno field names
@@ -56,7 +56,7 @@ export default function ReferralDoctorScreen({ navigation }: any) {
   // ── fetch ─────────────────────────────────────────────────────────────────
   const fetchRecords = useCallback(async () => {
     setLoading(true); setError(null);
-    try { setRecords(await getAllReferingDoctors(1)); }
+    try { setRecords(await getAllReferringDoctors(1)); }
     catch (err: any) { setError(err?.message ?? 'Failed to load referring doctors.'); }
     finally { setLoading(false); }
   }, []);
@@ -79,7 +79,7 @@ export default function ReferralDoctorScreen({ navigation }: any) {
     setShowModal(true);
   };
 
-  const openEdit = (item: ReferingDoctorRecord) => {
+  const openEdit = (item: ReferringDoctorRecord) => {
     setEditItem(item);
     setDoctorCode(String(item.DoctorCode ?? ''));
     setDoctorName(item.DoctorName ?? '');
@@ -101,7 +101,7 @@ export default function ReferralDoctorScreen({ navigation }: any) {
     setSaving(true);
     try {
       if (editItem) {
-        const payload: UpdateReferingDoctorPayload = {
+        const payload: UpdateReferringDoctorPayload = {
           dr_codeid:     editItem.dr_codeid ?? 0,
           DoctorCode:    parseInt(doctorCode) || doctorCode.trim(),
           DoctorName:    doctorName.trim(),
@@ -117,10 +117,10 @@ export default function ReferralDoctorScreen({ navigation }: any) {
           Updatedby:     user?.name ?? 'admin',
           Updatedon:     now,
         };
-        await updateReferingDoctor(payload);
+        await updateReferringDoctor(payload);
         Alert.alert('Success', 'Updated successfully.');
       } else {
-        const payload: SaveReferingDoctorPayload = {
+        const payload: SaveReferringDoctorPayload = {
           DoctorCode:    doctorCode.trim(),
           DoctorName:    doctorName.trim(),
           DoctorPhoneno: doctorPhoneno.trim() || undefined,
@@ -134,7 +134,7 @@ export default function ReferralDoctorScreen({ navigation }: any) {
           Branchid:      1,
           Createdon:     now,
         };
-        await saveReferingDoctor(payload);
+        await saveReferringDoctor(payload);
         Alert.alert('Success', 'Saved successfully.');
       }
       setShowModal(false);
@@ -145,12 +145,12 @@ export default function ReferralDoctorScreen({ navigation }: any) {
   };
 
   // ── delete ────────────────────────────────────────────────────────────────
-  const handleDelete = (item: ReferingDoctorRecord) => {
+  const handleDelete = (item: ReferringDoctorRecord) => {
     Alert.alert('Delete', `Delete "${item.DoctorName}"?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         try {
-          await deleteReferingDoctor(item.dr_codeid ?? 0, 1);
+          await deleteReferringDoctor(item.dr_codeid ?? 0, 1);
           setRecords(p => p.filter(r => r.dr_codeid !== item.dr_codeid));
         } catch (err: any) { Alert.alert('Error', err?.message ?? 'Could not delete.'); }
       }},

@@ -103,24 +103,20 @@ export default function BillingDeskScreen({ navigation }: any) {
       </View>
 
       <View style={s.filterRow}>
-        <TextInput style={s.dateInput} value={fromDate} onChangeText={setFromDate} placeholder="YYYY-MM-DD" placeholderTextColor={COLORS.textMuted}/>
-        <Text style={{color:COLORS.textSecondary,marginHorizontal:4}}>to</Text>
-        <TextInput style={s.dateInput} value={toDate2} onChangeText={setToDate2} placeholder="YYYY-MM-DD" placeholderTextColor={COLORS.textMuted}/>
+        <View style={{flex:1, flexDirection:'row', alignItems:'center', gap:8}}>
+          <TextInput style={[s.dateInput, {flex:1, flexShrink:1}]} value={fromDate} onChangeText={setFromDate} placeholder="YYYY-MM-DD" placeholderTextColor={COLORS.textMuted}/>
+          <Text style={{color:COLORS.textSecondary, marginHorizontal:4, fontSize:12, fontWeight:'600'}}>to</Text>
+          <TextInput style={[s.dateInput, {flex:1, flexShrink:1}]} value={toDate2} onChangeText={setToDate2} placeholder="YYYY-MM-DD" placeholderTextColor={COLORS.textMuted}/>
+        </View>
         <TouchableOpacity style={s.searchBtn} onPress={load}><Feather name="search" size={16} color="#FFF"/></TouchableOpacity>
       </View>
 
-      <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {STATUS_FILTERS.map(f=>(
-            <TouchableOpacity key={f} style={[s.chip,statusFilter===f&&s.chipActive]} onPress={()=>setStatus(f)}>
-              <Text style={[s.chipText,statusFilter===f&&s.chipTextActive]}>{f}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+      <View style={s.filterTabsRow}>
+        {STATUS_FILTERS.map(f=>(
+          <TouchableOpacity key={f} style={[s.chip,statusFilter===f&&s.chipActive]} onPress={()=>setStatus(f)}>
+            <Text style={[s.chipText,statusFilter===f&&s.chipTextActive]}>{f}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <View style={s.searchBar}>
@@ -256,9 +252,10 @@ const s = StyleSheet.create({
   headerTitle:   { fontSize:18, fontWeight:"800", color:"#FFF" },
   headerSub:     { fontSize:12, color:"rgba(255,255,255,0.8)", marginTop:2 },
   filterRow:     { flexDirection:"row", alignItems:"center", padding:12, backgroundColor:COLORS.surface, borderBottomWidth:1, borderBottomColor:COLORS.border, gap:6 },
-  dateInput:     { flex:1, height:40, borderWidth:1, borderColor:COLORS.border, borderRadius:8, paddingHorizontal:10, fontSize:13, color:COLORS.textPrimary, backgroundColor:COLORS.background },
+  filterTabsRow:{ flexDirection:"row", alignItems:"center", marginHorizontal:16, marginBottom:12, gap:12 },
+  dateInput:     { height:40, borderWidth:1, borderColor:COLORS.border, borderRadius:8, paddingHorizontal:10, fontSize:13, color:COLORS.textPrimary, backgroundColor:COLORS.background },
   searchBtn:     { height:40, width:40, backgroundColor:COLORS.primary, borderRadius:8, alignItems:"center", justifyContent:"center" },
-  chip:          { paddingHorizontal:14, paddingVertical:7, borderRadius:18, borderWidth:1, borderColor:COLORS.border, backgroundColor:COLORS.surface },
+  chip:          { flex:1, paddingHorizontal:14, paddingVertical:12, borderRadius:18, borderWidth:1, borderColor:COLORS.border, backgroundColor:COLORS.surface, alignItems:"center", justifyContent:"center", minHeight:48 },
   chipActive:    { backgroundColor:COLORS.primary, borderColor:COLORS.primary },
   chipText:      { fontSize:12, color:COLORS.textSecondary, fontWeight:"600" },
   chipTextActive:{ color:"#FFF", fontWeight:"700" },

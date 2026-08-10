@@ -7,12 +7,12 @@ import { COLORS } from '../utils/constants';
 
 import PhlebotomistHomeScreen     from '../screens/phlebotomist/PhlebotomistHomeScreen';
 import PhlebotomistSettingsScreen from '../screens/phlebotomist/PhlebotomistSettingsScreen';
-import FliboFrontDeskScreen       from '../screens/phlebotomist/FliboFrontDeskScreen';
+import PhlebotomistFrontDeskScreen from '../screens/phlebotomist/PhlebotomistFrontDeskScreen';
 
 import NewRegistrationScreen      from '../screens/admin/NewRegistrationScreen';
 import PatientsScreen             from '../screens/admin/PatientsScreen';
 import EditPatientScreen          from '../screens/admin/EditPatientScreen';
-import ShowAppointmentScreen      from '../screens/admin/ShowAppointmentScreen';
+import AppointmentListScreen      from '../screens/admin/AppointmentListScreen';
 import SearchAvailableSlotsScreen from '../screens/admin/SearchAvailableSlotsScreen';
 import CompletedReportsScreen     from '../screens/admin/CompletedReportsScreen';
 import BillingDeskScreen          from '../screens/shared/BillingDeskScreen';
@@ -55,11 +55,11 @@ function FrontDeskStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {/* Root — Front Desk landing page */}
-      <Stack.Screen name="FrontDeskMain"        component={FliboFrontDeskScreen} />
+      <Stack.Screen name="FrontDeskMain"        component={PhlebotomistFrontDeskScreen} />
       <Stack.Screen name="NewRegistration"      component={NewRegistrationScreen} />
       <Stack.Screen name="PatientStatus"        component={PatientsScreen} />
       <Stack.Screen name="EditPatient"          component={EditPatientScreen} />
-      <Stack.Screen name="Appointments"         component={ShowAppointmentScreen} />
+      <Stack.Screen name="Appointments"         component={AppointmentListScreen} />
       <Stack.Screen name="SearchAvailableSlots" component={SearchAvailableSlotsScreen} />
       <Stack.Screen name="Reports"              component={CompletedReportsScreen} />
       <Stack.Screen name="PendingReports"       component={PendingReportsScreen} />

@@ -108,13 +108,13 @@ export default function TestChargesScreen({ navigation }: any) {
       .catch(() => {});
   }, []);
 
-  // ── Search (requires both filters — same as website) ──
-  const handleSearch = async () => {
-    if (!filterRateTypeId) { Alert.alert('Required', 'Please select a Rate Type.'); return; }
-    if (!filterSubDeptId)  { Alert.alert('Required', 'Please select a Sub Department.'); return; }
+  // ── Load on mount and focus — no filters required ──
+  const handleSearch = async (rateId?: number | null) => {
     setLoading(true); setError(null);
     try {
-      const data = await getAllTestCharges({ RateTypeId: filterRateTypeId });
+      const data = await getAllTestCharges(
+        rateId ? { RateTypeId: rateId } : { RateTypeId: 1 }
+      );
       setRecords(data);
       setSearched(true);
     } catch (err: any) {
@@ -123,6 +123,8 @@ export default function TestChargesScreen({ navigation }: any) {
       setLoading(false);
     }
   };
+
+  useFocusEffect(useCallback(() => { handleSearch(); }, []));
 
   const handleClear = () => {
     setFilterRateTypeId(null); setFilterRateTypeName('');
@@ -201,7 +203,8 @@ export default function TestChargesScreen({ navigation }: any) {
         Alert.alert('Success', 'Test charge saved successfully.');
       }
       setShowModal(false);
-      if (filterRateTypeId && filterSubDeptId) handleSearch();
+      if (filterRateTypeId && filterSubDeptId) handleSearch(filterRateTypeId);
+      else handleSearch();
     } catch (err: any) {
       Alert.alert('Error', err?.message ?? 'Could not save test charge.');
     } finally {
@@ -267,7 +270,7 @@ export default function TestChargesScreen({ navigation }: any) {
 
             {/* Search + Clear */}
             <View style={st.filterBtns}>
-              <TouchableOpacity style={[st.searchBtn, loading && { opacity: 0.7 }]} onPress={handleSearch} disabled={loading}>
+              <TouchableOpacity style={[st.searchBtn, loading && { opacity: 0.7 }]} onPress={() => handleSearch(filterRateTypeId)} disabled={loading}>
                 {loading ? <ActivityIndicator size={14} color="#FFF" /> : <Feather name="search" size={14} color="#FFF" />}
                 <Text style={st.searchBtnTxt}>{loading ? ' Searching…' : ' Search'}</Text>
               </TouchableOpacity>
