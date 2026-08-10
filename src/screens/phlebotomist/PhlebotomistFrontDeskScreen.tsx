@@ -41,7 +41,7 @@ const ITEMS = [
   },
 ];
 
-export default function FliboFrontDeskScreen({ navigation }: any) {
+export default function PhlebotomistFrontDeskScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 

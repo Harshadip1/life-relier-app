@@ -24,12 +24,12 @@ import PendingReportsScreen   from '../screens/admin/PendingReportsScreen'; // P
 
 // â”€â”€ Master children â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import DoctorManagementScreen from '../screens/admin/DoctorManagementScreen';
-import DrAppointmentScreen    from '../screens/admin/DrAppointmentScreen';
+import DoctorAppointmentScreen from '../screens/admin/DoctorAppointmentScreen';
 import AddDoctorScheduleScreen from '../screens/admin/AddDoctorScheduleScreen';
 import AddDoctorSlotScreen    from '../screens/admin/AddDoctorSlotScreen';
 import AppointmentRecordsScreen   from '../screens/admin/AppointmentRecordsScreen';
 import SearchAvailableSlotsScreen from '../screens/admin/SearchAvailableSlotsScreen';
-import ShowAppointmentScreen      from '../screens/admin/ShowAppointmentScreen';
+import AppointmentListScreen      from '../screens/admin/AppointmentListScreen';
 import TestChargesScreen          from '../screens/admin/TestChargesScreen';
 import TestChargeDetailScreen     from '../screens/admin/TestChargeDetailScreen';
 import PackagesScreen             from '../screens/admin/PackagesScreen';
@@ -141,7 +141,7 @@ function MasterStack() {
       {/* Doctor Management */}
       <Stack.Screen name="DoctorManagement"     component={DoctorManagementScreen} />
       {/* 1. Doctor Schedule */}
-      <Stack.Screen name="DrAppointment"        component={DrAppointmentScreen} />
+      <Stack.Screen name="DrAppointment"        component={DoctorAppointmentScreen} />
       <Stack.Screen name="AddDoctorSchedule"    component={AddDoctorScheduleScreen} />
       {/* 2. Dr Slot */}
       <Stack.Screen name="DrSlot"               component={AddDoctorSlotScreen} />
@@ -150,7 +150,7 @@ function MasterStack() {
       <Stack.Screen name="AppointmentRecords"   component={AppointmentRecordsScreen} />
       <Stack.Screen name="SearchAvailableSlots" component={SearchAvailableSlotsScreen} />
       {/* 4. Show Appointment */}
-      <Stack.Screen name="ShowAppointment"      component={ShowAppointmentScreen} />
+      <Stack.Screen name="ShowAppointment"      component={AppointmentListScreen} />
       <Stack.Screen name="ReferralDoctor"       component={ReferralDoctorScreen} />
 
       {/* Test Management */}

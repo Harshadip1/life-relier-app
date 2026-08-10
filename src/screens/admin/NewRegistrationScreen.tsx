@@ -14,8 +14,8 @@ import {
   getInitials, searchPatient, searchPatientByMobile, searchTests,
   InitialItem, SearchPatientItem, TestResult,
 } from '../../services/registrationService';
-import { getTestNames, getAllTestCharges, TestNameItem } from '../../services/testChargesService';
-import { getAllReferingDoctors, ReferingDoctorRecord } from '../../services/referingDoctorService';
+import { getTestNames, TestNameItem } from '../../services/testChargesService';
+import { getAllReferringDoctors, ReferringDoctorRecord } from '../../services/referringDoctorService';
 import { API_BASE_URL , COLORS} from '../../utils/constants';
 
 const T = {
@@ -213,7 +213,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const [updating,     setUpdating]     = useState(false);
   const [regNo,        setRegNo]        = useState<string>('—');
   const [initialsList, setInitialsList] = useState<InitialItem[]>([]);
-  const [doctorsList,  setDoctorsList]  = useState<ReferingDoctorRecord[]>([]);
+  const [doctorsList,  setDoctorsList]  = useState<ReferringDoctorRecord[]>([]);
 
   // ── Patient search (auto-fill) ─────────────────────────────────────────────
   const [patSearch,        setPatSearch]        = useState('');
@@ -231,7 +231,10 @@ export default function NewRegistrationScreen({ navigation }: any) {
 
   useEffect(() => {
     getInitials().then(d => { if (d.length) setInitialsList(d); }).catch(() => {});
-    getAllReferingDoctors(1).then(d => setDoctorsList(d)).catch(() => {});;
+<<<<<<< HEAD
+    // Load referring doctors from real API — always prepend "Self"
+    getAllReferringDoctors(1).then(d => setDoctorsList(d)).catch(() => {});;
+    // Load all test names once for local filtering
     getTestNames(1).then(d => setAllTests(d)).catch(() => {});
     // Load test charges to build name->price map
     getAllTestCharges().then(charges => {

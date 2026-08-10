@@ -95,21 +95,21 @@ export default function PhlebotomistSettingsScreen() {
             icon="hospital-building-outline"
             label="My Branch"
             sub="Life Relier Diagnostics — Branch 1"
-            onPress={() => {}}
+            onPress={() => Alert.alert('My Branch', 'Branch details coming soon.')}
           />
           <View style={s.divider} />
           <MenuItem
             icon="clock-time-eight-outline"
             label="Shift Timing"
             sub="07:00 AM – 03:00 PM"
-            onPress={() => {}}
+            onPress={() => Alert.alert('Shift Timing', 'Shift timing settings coming soon.')}
           />
           <View style={s.divider} />
           <MenuItem
             icon="map-marker-outline"
             label="Collection Centers"
             sub="Assigned centers for sample pickup"
-            onPress={() => {}}
+            onPress={() => Alert.alert('Collection Centers', 'Assigned centers list coming soon.')}
           />
         </View>
 

@@ -33,7 +33,7 @@ function formatSlot(slot: string): string {
   return `${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ampm}`;
 }
 
-export default function ShowAppointmentScreen({ navigation }: any) {
+export default function AppointmentListScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [date, setDate]               = useState<Date | null>(null); // null = show all
   const [showPicker, setShowPicker]   = useState(false);
@@ -75,7 +75,7 @@ export default function ShowAppointmentScreen({ navigation }: any) {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { fetchAppointments(); }, [fetchAppointments]));
+  useFocusEffect(useCallback(() => { fetchAppointments(); return () => {}; }, [fetchAppointments]));
 
   // Sort appointments by date descending (most recent first)
   const sorted = [...appointments].sort((a, b) => {
@@ -122,7 +122,7 @@ export default function ShowAppointmentScreen({ navigation }: any) {
           text: 'Delete', style: 'destructive',
           onPress: async () => {
             try {
-              await deleteAppointment(item.AppointmentId, 1);
+              await deleteAppointment(item.AppointmentId, item.BranchId);
               setAppointments(prev => prev.filter(a => a.AppointmentId !== item.AppointmentId));
             } catch (err: any) {
               Alert.alert('Error', err?.message ?? 'Could not delete.');
@@ -141,7 +141,7 @@ export default function ShowAppointmentScreen({ navigation }: any) {
           <Feather name="arrow-left" size={22} color="#0F172A" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Show Appointment</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => Alert.alert('Filter', 'Filter options coming soon.')}>
           <Feather name="filter" size={22} color="#0F172A" />
         </TouchableOpacity>
       </View>
@@ -203,7 +203,7 @@ export default function ShowAppointmentScreen({ navigation }: any) {
             )}
 
             {/* Doctor dropdown */}
-            <Text style={[styles.label, { marginTop: 16 }]}>Collection Person (Doctor)</Text>
+            <Text style={[styles.label, { marginTop: 16 }]}>Collection Person</Text>
             <TouchableOpacity style={styles.dropdown} onPress={() => setShowDropdown(!showDropdown)}>
               <Text style={[styles.dropdownText, !selectedDrName && { color: COLORS.textMuted }]}>
                 {selectedDrName || 'Select...'}

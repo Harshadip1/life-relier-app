@@ -1,6 +1,7 @@
 import { User, UserRole } from '../utils/types';
 
-// Mock user database - credentials stored here, not shown in UI
+// Mock user database - DEMO ONLY. Remove before production.
+// Credentials are stored here for local development/demo purposes only.
 interface DBUser {
   id: string;
   username: string;

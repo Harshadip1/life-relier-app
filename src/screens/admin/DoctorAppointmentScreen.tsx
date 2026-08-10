@@ -30,7 +30,7 @@ function fmtTime(t: string | null): string {
   } catch { return t; }
 }
 
-export default function DrAppointmentScreen({ navigation }: any) {
+export default function DoctorAppointmentScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
 
   const [schedules, setSchedules] = useState<DoctorScheduleRecord[]>([]);

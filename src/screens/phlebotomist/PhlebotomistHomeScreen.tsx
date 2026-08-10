@@ -101,7 +101,7 @@ export default function PhlebotomistHomeScreen({ navigation }: any) {
     } finally { setLoading(false); setRefreshing(false); }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(useCallback(() => { load(); return () => {}; }, [load]));
 
   const displayed = samples.filter(s => {
     const q = search.toLowerCase();

@@ -19,7 +19,7 @@ import {
   SaveAppointmentPayload,
   DrSlotRecord,
 } from '../../services/doctorScheduleService';
-import { getReferingDoctorPro, ReferingDoctorProItem } from '../../services/referingDoctorService';
+import { getReferringDoctorPro, ReferringDoctorProItem } from '../../services/referringDoctorService';
 import { useAuth } from '../../context/AuthContext';
 const INITIALS = [{ id: 1, label: 'Mr' }, { id: 2, label: 'Mrs' }, { id: 3, label: 'Ms' }, { id: 4, label: 'Dr' }];
 const GENDERS  = [{ id: 1, label: 'Male' }, { id: 2, label: 'Female' }, { id: 3, label: 'Other' }];
@@ -141,7 +141,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
   const [saving, setSaving]           = useState(false);
 
   // Referring doctor state
-  const [referringDoctors, setReferringDoctors] = useState<ReferingDoctorProItem[]>([]);
+  const [referringDoctors, setReferringDoctors] = useState<ReferringDoctorProItem[]>([]);
   const [referringDrId, setReferringDrId]       = useState<number | null>(null);
   const [referringDrLabel, setReferringDrLabel] = useState('');
 
@@ -152,7 +152,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
       .catch(() => {})
       .finally(() => setLoadingDr(false));
     // Load referring doctors from the dedicated endpoint
-    getReferingDoctorPro(1).then(setReferringDoctors).catch(() => {});
+    getReferringDoctorPro(1).then(setReferringDoctors).catch(() => {});
   }, []);
 
   // ── Search: fetch schedule + slot duration → generate time grid ──────────
@@ -279,7 +279,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
       GenderId:        genderId,
       InitialId:       initialId,
       BirthDate:       toAPIDate(birthDate),
-      BranchId:        1,
+      BranchId:        match.BranchId,
       CreatedBy:       user?.name || 'Admin',
       Email:           email.trim() || '',
       Remark:          remark.trim() || '',
@@ -516,7 +516,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
                 placeholder="Select..."
                 options={[
                   { id: 0, label: 'None' },
-                  ...referringDoctors.map(d => ({ id: d.ReferingDoctorId, label: d.DoctorName })),
+                  ...referringDoctors.map(d => ({ id: d.ReferringDoctorId, label: d.DoctorName })),
                 ]}
                 onSelect={(o: any) => {
                   if (o.id === 0) { setReferringDrId(null); setReferringDrLabel(''); }

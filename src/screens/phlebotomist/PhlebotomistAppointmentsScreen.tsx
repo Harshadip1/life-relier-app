@@ -227,8 +227,8 @@ export default function PhlebotomistAppointmentsScreen({ navigation }: any) {
         </TouchableOpacity>
         <Text style={s.headerTitle}>Appointments</Text>
         <View style={{ flexDirection: 'row', gap: 12 }}>
-          <TouchableOpacity><Feather name="search" size={20} color="#FFF" /></TouchableOpacity>
-          <TouchableOpacity><Feather name="filter" size={20} color="#FFF" /></TouchableOpacity>
+          <TouchableOpacity onPress={() => Alert.alert('Search', 'Search coming soon.')}><Feather name="search" size={20} color="#FFF" /></TouchableOpacity>
+          <TouchableOpacity onPress={() => Alert.alert('Filter', 'Filter coming soon.')}><Feather name="filter" size={20} color="#FFF" /></TouchableOpacity>
         </View>
       </View>
 

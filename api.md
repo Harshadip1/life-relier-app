@@ -97,11 +97,11 @@
 
 | Endpoint | Method | Body | Response | Used In |
 |---|---|---|---|---|
-| `/api/DrAppointment/GetAllAppointment` | `POST` | `{ BranchId }` | `[{ AppointmentId, DrId, Name, Mobile, AppointmentDate, Slot, Status, DoctorName, ... }]` | `AppointmentRecordsScreen`, `ShowAppointmentScreen` |
+| `/api/DrAppointment/GetAllAppointment` | `POST` | `{ BranchId }` | `[{ AppointmentId, DrId, Name, Mobile, AppointmentDate, Slot, Status, DoctorName, ... }]` | `AppointmentRecordsScreen`, `AppointmentListScreen` |
 | `/api/DrAppointment/GetAppointmentById` | `POST` | `{ AppointmentId, BranchId }` | `[AppointmentRecord]` | `doctorScheduleService` |
 | `/api/DrAppointment/SaveAppointment` | `POST` | `{ DrId, Name, FirstName, LastName, Mobile, AppointmentDate, Slot, Address, GenderId, InitialId, BirthDate, BranchId, CreatedBy }` | `{ Message, AppointmentId }` | `SearchAvailableSlotsScreen`, `BookAppointmentScreen` |
 | `/api/DrAppointment/UpdateAppointment` | `POST` | `{ AppointmentId, UpdatedBy, ...SavePayload }` | `{ Message }` | `SearchAvailableSlotsScreen` |
-| `/api/DrAppointment/DeleteAppointment` | `POST` | `{ AppointmentId, BranchId }` | `{ Message }` | `ShowAppointmentScreen` |
+| `/api/DrAppointment/DeleteAppointment` | `POST` | `{ AppointmentId, BranchId }` | `{ Message }` | `AppointmentListScreen` |
 
 ---
 
@@ -110,7 +110,7 @@
 | Endpoint | Method | Body | Response | Used In |
 |---|---|---|---|---|
 | `/api/AddReferingDoctor/GetAll` | `POST` | `{ Branchid }` | `{ value: [{ dr_codeid, DoctorCode, DoctorName, DoctorPhoneno, Doctoremail, address1, city, DrType, contactperson, ratetypeid, PRO, Branchid, Createdon }], Count }` | `ReferralDoctorScreen` |
-| `/api/AddReferingDoctor/GetById` | `POST` | `{ dr_codeid, Branchid }` | `[ReferingDoctorRecord]` | `referingDoctorService` |
+| `/api/AddReferingDoctor/GetById` | `POST` | `{ dr_codeid, Branchid }` | `[ReferringDoctorRecord]` | `referringDoctorService` |
 | `/api/AddReferingDoctor/GetPRO` | `POST` | `{ branchId }` | `[{ ReferingDoctorId, DoctorName }]` | `SearchAvailableSlotsScreen` |
 | `/api/AddReferingDoctor/Save` | `POST` | `{ DoctorCode, DoctorName, DoctorPhoneno, Doctoremail, address1, city, DrType, contactperson, ratetypeid, PRO, Branchid, Createdon }` | `{ Message }` | `ReferralDoctorScreen` |
 | `/api/AddReferingDoctor/Update` | `POST` | `{ dr_codeid, DoctorCode, DoctorName, DoctorPhoneno, Doctoremail, address1, city, DrType, contactperson, ratetypeid, PRO, Branchid, Updatedby, Updatedon }` | `{ Message }` | `ReferralDoctorScreen` |
