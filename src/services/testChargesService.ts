@@ -42,66 +42,52 @@ export async function getPackages(branchId: number = 1): Promise<Package[]> {
  * Body: { MainTestId, RateTypeId, BranchId } — filtered search
  */
 /**
- * POST /api/TestCharges/GetAllTestCharges
- * NOTE: Backend GetAllTestCharges returns "No data found" regardless of params.
- * Workaround: Fetch all test names first, then fetch each charge by MainTestId.
+ * Fetch all test charges by scanning IDs via GetTestChargesById.
+ * GetAllTestCharges endpoint always returns "No data found" — server bug.
  */
 export async function getAllTestCharges(params?: {
   RateTypeId?: number;
   MainTestId?: number | null;
   BranchId?: number;
 }): Promise<TestCharge[]> {
-  // If specific MainTestId given, use GetTestChargesById directly
+  const branchId = params?.BranchId ?? 1;
+
+  // If specific MainTestId given, fetch just that one
   if (params?.MainTestId) {
     try {
       const response = await api.post<any>('/api/TestCharges/GetTestChargesById', {
-        BranchId: params.BranchId ?? 1,
-        TestChargeId: params.MainTestId,
+        BranchId: branchId, TestChargeId: params.MainTestId,
       });
-      const data = response.data;
-      const list = Array.isArray(data) ? data : (data?.data ?? []);
-      return list;
+      const d = response.data;
+      return Array.isArray(d) ? d : (d?.data ?? []);
     } catch { return []; }
   }
 
-  // Otherwise fetch by ID range — get test names to know how many tests exist
-  try {
-    const testNames = await postRaw<any>(`${API_BASE_URL}/api/TestStatus/GetTestName`, { BranchId: params?.BranchId ?? 1 });
-    const names: any[] = Array.isArray(testNames) ? testNames
-      : testNames?.value && Array.isArray(testNames.value) ? testNames.value
-      : testNames?.data  && Array.isArray(testNames.data)  ? testNames.data : [];
+  // Fetch IDs 1–30 all in parallel (fast, single round-trip)
+  const maxId = 30;
+  const ids = Array.from({ length: maxId }, (_, i) => i + 1);
 
-    // Fetch charges for IDs 1 to ~50 (adjust as needed)
-    const maxId = Math.max(50, names.length * 4);
-    const results: TestCharge[] = [];
-    const batchSize = 10;
+  const settled = await Promise.allSettled(
+    ids.map(id =>
+      api.post<any>('/api/TestCharges/GetTestChargesById', {
+        BranchId: branchId, TestChargeId: id,
+      })
+    )
+  );
 
-    for (let id = 1; id <= maxId; id += batchSize) {
-      const batch = Array.from({ length: batchSize }, (_, i) => id + i);
-      const settled = await Promise.allSettled(
-        batch.map(tcId =>
-          api.post<any>('/api/TestCharges/GetTestChargesById', {
-            BranchId: params?.BranchId ?? 1,
-            TestChargeId: tcId,
-          })
-        )
-      );
-      for (const r of settled) {
-        if (r.status === 'fulfilled') {
-          const d = r.value.data;
-          const list = Array.isArray(d) ? d : (d?.data ?? []);
-          for (const item of list) {
-            if (item && item.TestChargeId) {
-              // Apply RateTypeId filter if provided
-              if (params?.RateTypeId && item.RateTypeId !== params.RateTypeId) continue;
-              results.push(item);
-            }
-          }
-        }
+  const results: TestCharge[] = [];
+  for (const r of settled) {
+    if (r.status === 'fulfilled') {
+      const d = r.value.data;
+      const list: any[] = Array.isArray(d) ? d : (d?.data ?? []);
+      for (const item of list) {
+        if (!item?.TestChargeId) continue;
+        if (params?.RateTypeId && item.RateTypeId !== params.RateTypeId) continue;
+        results.push(item);
       }
     }
-    return results;
-  } catch { return []; }
+  }
+  return results;
 }
 
 /**
