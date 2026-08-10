@@ -14,7 +14,7 @@ import {
   getInitials, searchPatient, searchPatientByMobile, searchTests,
   InitialItem, SearchPatientItem, TestResult,
 } from '../../services/registrationService';
-import { getTestNames, TestNameItem } from '../../services/testChargesService';
+import { getTestNames, getAllTestCharges, TestNameItem } from '../../services/testChargesService';
 import { getAllReferingDoctors, ReferingDoctorRecord } from '../../services/referingDoctorService';
 import { API_BASE_URL , COLORS} from '../../utils/constants';
 
@@ -182,6 +182,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const [addedTests,    setAddedTests]   = useState<string[]>([]);
   const [testPrices,    setTestPrices]   = useState<Record<string, number>>({});
   const [allTests,      setAllTests]     = useState<TestNameItem[]>([]);
+  const [chargeMap,     setChargeMap]    = useState<Record<string, number>>({}); // testName -> price
   const [testResults,   setTestResults]  = useState<TestResult[]>([]);
   const [searchingTest, setSearchingTest]= useState(false);
   const [showTestDrop,  setShowTestDrop] = useState(false);
@@ -230,10 +231,16 @@ export default function NewRegistrationScreen({ navigation }: any) {
 
   useEffect(() => {
     getInitials().then(d => { if (d.length) setInitialsList(d); }).catch(() => {});
-    // Load referring doctors from real API — always prepend "Self"
     getAllReferingDoctors(1).then(d => setDoctorsList(d)).catch(() => {});;
-    // Load all test names once for local filtering
     getTestNames(1).then(d => setAllTests(d)).catch(() => {});
+    // Load test charges to build name->price map
+    getAllTestCharges().then(charges => {
+      const map: Record<string, number> = {};
+      charges.forEach(c => {
+        if (c.TestName && c.Amount > 0) map[c.TestName.trim().toLowerCase()] = c.Amount;
+      });
+      setChargeMap(map);
+    }).catch(() => {});
   }, []);
 
   // ── Auto-fill all fields from a searched patient ───────────────────────────
@@ -398,35 +405,15 @@ export default function NewRegistrationScreen({ navigation }: any) {
     }
   };
 
-  const handleTestSelect = (name: string) => {
+  const handleTestSelect = (name: string, mainTestId?: number) => {
     if (!addedTests.includes(name)) {
       setAddedTests(prev => [...prev, name]);
       if (!testPrices[name]) {
-        // Look up price from preloaded allTests first
-        const found = allTests.find(t => t.TestName === name || t.MainTestName === name);
-        if (found && (found as any).Price > 0) {
-          setTestPrices(prev => ({ ...prev, [name]: (found as any).Price }));
-          return;
+        // Look up price from preloaded chargeMap (testName -> Amount from TestCharges API)
+        const price = chargeMap[name.trim().toLowerCase()] ?? 0;
+        if (price > 0) {
+          setTestPrices(prev => ({ ...prev, [name]: price }));
         }
-        // Fallback: fetch from GetTestName with name filter
-        (async () => {
-          try {
-            const res = await fetch(`${API_BASE_URL}/api/TestStatus/GetTestName`, {
-              method:  'POST',
-              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-              body: JSON.stringify({ BranchId: 1, TestName: name }),
-            });
-            const data = await res.json();
-            const rows: any[] = Array.isArray(data) ? data
-              : data?.value ? data.value
-              : data?.data  ? data.data : [];
-            const match = rows.find(r =>
-              (r.MainTestName ?? r.TestName ?? '').toLowerCase() === name.toLowerCase()
-            );
-            const price = match?.Price ?? match?.Amount ?? match?.TestCharges ?? 0;
-            if (price > 0) setTestPrices(prev => ({ ...prev, [name]: price }));
-          } catch { /* silently ignore */ }
-        })();
       }
     }
     setTestSearch('');

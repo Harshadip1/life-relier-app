@@ -113,7 +113,7 @@ export default function TestChargesScreen({ navigation }: any) {
     setLoading(true); setError(null);
     try {
       const data = await getAllTestCharges(
-        rateId ? { RateTypeId: rateId } : undefined
+        rateId ? { RateTypeId: rateId } : { RateTypeId: 1 }
       );
       setRecords(data);
       setSearched(true);

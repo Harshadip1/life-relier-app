@@ -42,52 +42,31 @@ export async function getPackages(branchId: number = 1): Promise<Package[]> {
  * Body: { MainTestId, RateTypeId, BranchId } — filtered search
  */
 /**
- * Fetch all test charges by scanning IDs via GetTestChargesById.
- * GetAllTestCharges endpoint always returns "No data found" — server bug.
+ * POST /api/TestCharges/GetAllTestCharges
+ * Requires specific body shape: SubDeptId/MainTestId/PackageId must be 0 for "all"
  */
 export async function getAllTestCharges(params?: {
   RateTypeId?: number;
   MainTestId?: number | null;
+  SubDeptId?: number;
   BranchId?: number;
 }): Promise<TestCharge[]> {
-  const branchId = params?.BranchId ?? 1;
-
-  // If specific MainTestId given, fetch just that one
-  if (params?.MainTestId) {
-    try {
-      const response = await api.post<any>('/api/TestCharges/GetTestChargesById', {
-        BranchId: branchId, TestChargeId: params.MainTestId,
-      });
-      const d = response.data;
-      return Array.isArray(d) ? d : (d?.data ?? []);
-    } catch { return []; }
-  }
-
-  // Fetch IDs 1–30 all in parallel (fast, single round-trip)
-  const maxId = 30;
-  const ids = Array.from({ length: maxId }, (_, i) => i + 1);
-
-  const settled = await Promise.allSettled(
-    ids.map(id =>
-      api.post<any>('/api/TestCharges/GetTestChargesById', {
-        BranchId: branchId, TestChargeId: id,
-      })
-    )
-  );
-
-  const results: TestCharge[] = [];
-  for (const r of settled) {
-    if (r.status === 'fulfilled') {
-      const d = r.value.data;
-      const list: any[] = Array.isArray(d) ? d : (d?.data ?? []);
-      for (const item of list) {
-        if (!item?.TestChargeId) continue;
-        if (params?.RateTypeId && item.RateTypeId !== params.RateTypeId) continue;
-        results.push(item);
-      }
-    }
-  }
-  return results;
+  const body = {
+    SubDeptId:    params?.SubDeptId  ?? 0,
+    MainTestId:   params?.MainTestId ?? 0,
+    PackageId:    0,
+    RateTypeId:   params?.RateTypeId ?? 1,
+    RateTypeName: '',
+    BranchId:     params?.BranchId  ?? 1,
+  };
+  try {
+    const response = await api.post<any>('/api/TestCharges/GetAllTestCharges', body);
+    const data = response.data;
+    const list: any[] = Array.isArray(data) ? data
+      : data?.value ? data.value
+      : data?.data  ? data.data : [];
+    return list.filter(item => item && (item.TestChargeId || item.TestName));
+  } catch { return []; }
 }
 
 /**
