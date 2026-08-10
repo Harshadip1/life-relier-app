@@ -180,6 +180,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
 
   const [testSearch,    setTestSearch]   = useState('');
   const [addedTests,    setAddedTests]   = useState<string[]>([]);
+  const [addedTestIds,  setAddedTestIds] = useState<Record<string, number>>({});  // name → MainTestId
   const [testPrices,    setTestPrices]   = useState<Record<string, number>>({});
   const [allTests,      setAllTests]     = useState<TestNameItem[]>([]);
   const [testResults,   setTestResults]  = useState<TestResult[]>([]);
@@ -243,20 +244,28 @@ export default function NewRegistrationScreen({ navigation }: any) {
     setShowNameDrop(false);
     setNameResults([]);
     setMobileMessage(null);
+    
+    // Populate all fields from the search result
     setRegNo(String(p.PPID));
     if (p.intial)          setInitial(p.intial);
     if (p.Patname)         setPatName(p.Patname);
     if (p.sex)             setGender(p.sex);
     if (p.Age != null)     setAge(String(p.Age));
+    if (p.MDY)             setAgeType(p.MDY);
     if (p.MobileNo)        setMobile(p.MobileNo);
     if (p.Email)           setEmail(p.Email);
     if (p.Pataddress)      setAddress(p.Pataddress);
     if (p.PatientCardNo)   setPatCardNo(p.PatientCardNo);
     if (p.PatientCardExpNo)setCardExp(p.PatientCardExpNo);
+    if (p.RefDoctor || p.DoctorName) {
+      const doctorName = p.RefDoctor ?? p.DoctorName;
+      if (doctorName) setRefDoctor(doctorName);
+    }
     if (p.DateOfBirth) {
       const d = new Date(p.DateOfBirth);
       if (!isNaN(d.getTime())) setDob(d);
     }
+    
     Alert.alert('✅ Patient Loaded', `Data auto-filled for ${p.Patname ?? 'Patient'} (ID: ${p.PPID})`);
   };
 
@@ -398,14 +407,26 @@ export default function NewRegistrationScreen({ navigation }: any) {
     }
   };
 
-  const handleTestSelect = (name: string) => {
+  const handleTestSelect = (name: string, mainTestId?: number) => {
     if (!addedTests.includes(name)) {
       setAddedTests(prev => [...prev, name]);
-      if (!testPrices[name]) {
-        // Look up price from preloaded allTests first
+      // Store MainTestId for this test so it can be sent in the registration payload
+      if (mainTestId && mainTestId > 0) {
+        setAddedTestIds(prev => ({ ...prev, [name]: mainTestId }));
+      } else {
+        // Fallback: look up from allTests
         const found = allTests.find(t => t.TestName === name || t.MainTestName === name);
-        if (found && (found as any).Price > 0) {
-          setTestPrices(prev => ({ ...prev, [name]: (found as any).Price }));
+        if (found?.MainTestId) {
+          setAddedTestIds(prev => ({ ...prev, [name]: found.MainTestId }));
+        }
+      }
+      // Price lookup: try to get from preloaded allTests first
+      if (!testPrices[name]) {
+        const found = allTests.find(t => t.TestName === name || t.MainTestName === name);
+        // Extract price from multiple possible field names
+        const price = found?.Price ?? found?.Amount ?? (found as any).price ?? (found as any).amount ?? 0;
+        if (price > 0) {
+          setTestPrices(prev => ({ ...prev, [name]: price }));
           return;
         }
         // Fallback: fetch from GetTestName with name filter
@@ -423,7 +444,8 @@ export default function NewRegistrationScreen({ navigation }: any) {
             const match = rows.find(r =>
               (r.MainTestName ?? r.TestName ?? '').toLowerCase() === name.toLowerCase()
             );
-            const price = match?.Price ?? match?.Amount ?? match?.TestCharges ?? 0;
+            // Try multiple price field names from the API response
+            const price = match?.Price ?? match?.price ?? match?.MRP ?? match?.mrp ?? match?.Rate ?? match?.rate ?? match?.Amount ?? match?.amount ?? match?.TestCharges ?? 0;
             if (price > 0) setTestPrices(prev => ({ ...prev, [name]: price }));
           } catch { /* silently ignore */ }
         })();
@@ -499,7 +521,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
     setSymptoms(''); setTherapy(''); setFsTime('');
     setLastPeriod(null); setClinicalHist('');
     setRepPrint(false); setRepEmail(false); setRepWhatsapp(false); setRepOnline(false);
-    setTestSearch(''); setAddedTests([]);
+    setTestSearch(''); setAddedTests([]); setAddedTestIds({});
     setTestResults([]); setShowTestDrop(false);
     setPayType('Cash'); setOtherCharge('0'); setOtherRemark('');
     setDiscType('Amt'); setDiscAmt('0'); setPaidAmt('0.00');
@@ -513,14 +535,14 @@ export default function NewRegistrationScreen({ navigation }: any) {
 
   const handleSave = async () => {
     const missing: string[] = [];
-    if (!initial.trim())  missing.push('• Initial (Mr / Mrs / Ms …)');
-    if (!patName.trim())  missing.push('• Patient Name');
-    if (!gender.trim())   missing.push('• Gender');
-    if (!dob)             missing.push('• Date of Birth');
-    if (!age.trim())      missing.push('• Age');
-    if (!mobile.trim())   missing.push('• Mobile Number');
+    if (!initial.trim())   missing.push('• Initial (Mr / Mrs / Ms …)');
+    if (!patName.trim())   missing.push('• Patient Name');
+    if (!gender.trim())    missing.push('• Gender');
+    if (!dob)              missing.push('• Date of Birth');
+    if (!age.trim())       missing.push('• Age');
+    if (!mobile.trim())    missing.push('• Mobile Number');
     if (!refDoctor.trim()) missing.push('• Ref Doctor');
-    if (!address.trim())  missing.push('• Address');
+    if (!address.trim())   missing.push('• Address');
     if (addedTests.length === 0) missing.push('• At least one Test');
     if (!paidAmt.trim() || parseFloat(paidAmt) < 0) missing.push('• Paid Amount');
     if (missing.length > 0) {
@@ -531,18 +553,103 @@ export default function NewRegistrationScreen({ navigation }: any) {
       Alert.alert('Invalid Mobile', 'Mobile number must be exactly 10 digits.');
       return;
     }
+
     setRegistering(true);
     try {
-      const data = await registerPatient({ Patname: patName.trim(), Age: parseInt(age, 10), Pataddress: address.trim() || 'N/A' });
+      // Resolve referring doctor code (dr_codeid) from the loaded list
+      const doctorMatch = doctorsList.find(
+        d => d.DoctorName?.toLowerCase() === refDoctor.toLowerCase()
+      );
+      const doctorCode = doctorMatch?.dr_codeid ?? doctorMatch?.ReferingDoctorId ?? null;
+
+      // Format DOB as ISO date string (YYYY-MM-DD)
+      const dobISO = dob ? `${dob.getFullYear()}-${String(dob.getMonth() + 1).padStart(2, '0')}-${String(dob.getDate()).padStart(2, '0')}` : null;
+
+      // Format last period date
+      const lastPeriodISO = lastPeriod
+        ? `${lastPeriod.getFullYear()}-${String(lastPeriod.getMonth() + 1).padStart(2, '0')}-${String(lastPeriod.getDate()).padStart(2, '0')}`
+        : null;
+
+      // Build report type string from checkboxes
+      const reportType = [
+        repPrint    ? 'Print'    : '',
+        repEmail    ? 'Email'    : '',
+        repWhatsapp ? 'WhatsApp' : '',
+        repOnline   ? 'Online'   : '',
+      ].filter(Boolean).join(',') || 'Print';
+
+      const data = await registerPatient({
+        // ── Core patient demographics ──────────────────────────────────────
+        Patname:           patName.trim(),
+        Age:               parseInt(age, 10),
+        MDY:               ageType,
+        Pataddress:        address.trim() || 'N/A',
+        BranchId:          1,
+        BranchID:          1,
+        intial:            initial.trim(),
+        sex:               gender,
+        MobileNo:          mobile.trim(),
+        Patphoneno:        mobile.trim(),
+        Email:             email.trim(),
+        EmailID:           email.trim(),
+        DateOfBirth:       dobISO,
+        // ── Referring doctor ───────────────────────────────────────────────
+        RefDoctor:         refDoctor.trim(),
+        DoctorCode:        doctorCode,
+        // ── Patient card / hospital ────────────────────────────────────────
+        PatientCardNo:     patCardNo.trim(),
+        PatientCardExpNo:  cardExp.trim(),
+        HospitalNo:        hospitalId.trim(),
+        // ── Clinical ──────────────────────────────────────────────────────
+        Weights:           weight.trim(),
+        Heights:           height.trim(),
+        Disease:           disease.trim(),
+        Symptoms:          symptoms.trim(),
+        Therapy:           therapy.trim(),
+        FSTime:            fsTime.trim(),
+        LastPeriod:        lastPeriodISO,
+        ClinicalHist:      clinicalHist.trim(),
+        // ── Report flags ───────────────────────────────────────────────────
+        ReportType:        reportType,
+        Isemergency:       emergency,
+        // ── Tests — send both TestNames (strings) AND TestList (objects with IDs)
+        // TestList is the format the backend uses to create billing/test records
+        // that make the patient appear in GetPatientTestStatus.
+        TestNames:  addedTests,
+        TestList:   addedTests.map(name => ({
+          MainTestId:   addedTestIds[name] ?? allTests.find(t => t.TestName === name || t.MainTestName === name)?.MainTestId ?? 0,
+          TestName:     name,
+          TestType:     'Test',
+          PackageId:    0,
+          PackageCode:  '',
+          MTCode:       '',
+          Amount:       testPrices[name] ?? 0,
+          ClientRate:   testPrices[name] ?? 0,
+        })),
+        // ── Payment / billing ──────────────────────────────────────────────
+        PaymentType:       payType,
+        TotalAmount:       grossTotal,
+        PaidAmount:        parseFloat(paidAmt) || 0,
+        DiscountAmount:    parseFloat(discAmt) || 0,
+        OtherCharges:      parseFloat(otherCharge) || 0,
+        OtherChargeRemark: otherRemark.trim(),
+        Remark:            remark.trim(),
+        RateType:          rateType,
+        Status:            'Registered',
+      });
+
       const pid = String(data?.PID ?? data?.PPID ?? data?.PatRegID ?? '—');
       setRegNo(pid);
-      Alert.alert('✅ ' + (data?.Message ?? 'Patient Registered'),
+      Alert.alert(
+        '✅ ' + (data?.Message ?? 'Patient Registered'),
         `Patient ID : ${data?.PID ?? '—'}\nReg Number : ${data?.PrefixRegNumber ?? '—'}\nReceipt No : ${data?.ReceiptNo ?? '—'}\nBill No    : ${data?.BillNo ?? '—'}`,
         [{ text: 'New Patient', onPress: handleClear }, { text: 'Done', onPress: () => navigation.goBack() }]
       );
     } catch (err: any) {
       Alert.alert('Registration Failed', err?.message ?? 'Could not connect to server.');
-    } finally { setRegistering(false); }
+    } finally {
+      setRegistering(false);
+    }
   };
 
   const handleUpdate = async () => {
@@ -801,7 +908,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
                             i < Math.min(testResults.length, 10) - 1 && s.acRowBorder,
                             alreadyAdded && { backgroundColor: COLORS.primaryLight },
                           ]}
-                          onPress={() => !alreadyAdded && handleTestSelect(t.testName)}
+                          onPress={() => !alreadyAdded && handleTestSelect(t.testName, t.mainTestId)}
                           activeOpacity={alreadyAdded ? 1 : 0.75}
                         >
                           <View style={[s.testIconBox, { backgroundColor: alreadyAdded ? COLORS.primaryLight : '#F0F9FF' }]}>
@@ -902,7 +1009,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
               </View>
               <View style={s.discRow}>
                 <Text style={s.fieldLabel}>Disc Type</Text>
-                <View style={{ marginLeft: 12 }}>
+                <View style={{ flexDirection: 'row', marginLeft: 10, gap: 14 }}>
                   {DISC_TYPES.map(dt => (
                     <TouchableOpacity key={dt} style={s.radioRow} onPress={() => setDiscType(dt)}>
                       <View style={[s.radioOuter, discType===dt && s.radioOuterOn]}>{discType===dt && <View style={s.radioInner} />}</View>
@@ -911,10 +1018,14 @@ export default function NewRegistrationScreen({ navigation }: any) {
                   ))}
                 </View>
                 <View style={{ flex: 1 }} />
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={s.fieldLabel}>Disc Amt</Text>
-                  <TextInput style={[s.input, { width: 80, textAlign: 'right' }]} value={discAmt} onChangeText={setDiscAmt} keyboardType="numeric" placeholderTextColor={COLORS.textMuted} />
-                </View>
+                <Text style={[s.fieldLabel, { marginRight: 6, alignSelf: 'center' }]}>Disc Amt</Text>
+                <TextInput
+                  style={[s.input, { width: 80, textAlign: 'right' }]}
+                  value={discAmt}
+                  onChangeText={setDiscAmt}
+                  keyboardType="numeric"
+                  placeholderTextColor={COLORS.textMuted}
+                />
               </View>
               <View style={s.netAmtRow}>
                 <Text style={s.netAmtLabel}>Net Amount</Text>
@@ -938,14 +1049,15 @@ export default function NewRegistrationScreen({ navigation }: any) {
                 <Text style={s.fieldLabel}>Remark <Text style={{ color: COLORS.danger }}>*</Text></Text>
                 <TextInput style={[s.input, { marginTop: 4 }]} placeholder="Remark" placeholderTextColor={COLORS.textMuted} value={remark} onChangeText={setRemark} />
               </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                <Checkbox value={emergency} onToggle={() => setEmergency(!emergency)} label="Emergency" />
+              </View>
               <View style={s.uploadRow}>
                 <Text style={s.uploadLabel}>Upload Prescription</Text>
                 <TouchableOpacity style={s.chooseFileBtn} onPress={handleChoosePrescription} activeOpacity={0.8}>
                   <MaterialCommunityIcons name="paperclip" size={14} color={COLORS.primaryDark} />
                   <Text style={s.chooseFileTxt}> {prescriptionFile ?? 'Choose File'}</Text>
                 </TouchableOpacity>
-                <View style={{ width: 12 }} />
-                <Checkbox value={emergency} onToggle={() => setEmergency(!emergency)} label="Emergency" />
               </View>
               <View style={[s.uploadRow, { marginBottom: 14 }]}>
                 <Text style={s.uploadLabel}>Upload Photo</Text>
@@ -1052,7 +1164,7 @@ const s = StyleSheet.create({
   amountLabel:   { fontSize: 13, color: COLORS.textPrimary, fontWeight: '600', width: 100 },
   amountValueBox:{ flex: 1, borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 6, paddingHorizontal: 10, height: 38, justifyContent: 'center', backgroundColor: '#F0FDFA' },
   amountValue:   { fontSize: 15, fontWeight: '800', color: COLORS.primary },
-  discRow:     { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
+  discRow:     { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   radioRow:    { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   radioOuter:  { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: COLORS.cardBorder, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
   radioOuterOn:{ borderColor: COLORS.primary },

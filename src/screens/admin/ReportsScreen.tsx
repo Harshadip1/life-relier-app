@@ -99,16 +99,18 @@ export default function ReportsScreen({ navigation }: any) {
       </View>
 
       {/* Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}
-        style={styles.tabsScroll} contentContainerStyle={{ paddingHorizontal: 20, alignItems: 'center' }}>
-        {TABS.map(tab => (
-          <TouchableOpacity key={tab}
-            style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
-            onPress={() => { setActiveTab(tab); load(tab); }}>
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={{ height: 44 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}
+          style={styles.tabsScroll} contentContainerStyle={{ paddingHorizontal: 20, alignItems: 'center', flexGrow: 1 }}>
+          {TABS.map(tab => (
+            <TouchableOpacity key={tab}
+              style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
+              onPress={() => { setActiveTab(tab); load(tab); }}>
+              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* List */}
       {loading ? (
@@ -196,19 +198,19 @@ function SummaryCard({ label, value, color, bg }: any) {
 
 const styles = StyleSheet.create({
   root:        { flex: 1, backgroundColor: THEME.screenBg },
-  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 },
+  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 8 },
   backBtn:     { padding: 4, marginLeft: -4 },
   headerTitle: { fontSize: 20, fontWeight: '700', color: THEME.textPrimary },
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.bg, marginHorizontal: 20, borderRadius: 12, paddingHorizontal: 14, height: 48, borderWidth: 1, borderColor: THEME.border, marginBottom: 16 },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.bg, marginHorizontal: 20, borderRadius: 12, paddingHorizontal: 14, height: 48, borderWidth: 1, borderColor: THEME.border, marginBottom: 8 },
   searchIcon:  { marginRight: 10 },
   searchInput: { flex: 1, fontSize: 13, color: THEME.textPrimary },
-  tabsScroll:  { height: 52, marginBottom: 8 },
+  tabsScroll:  { marginBottom: 0 },
   tabBtn:      { height: 36, paddingHorizontal: 16, borderRadius: 18, borderWidth: 1, borderColor: THEME.border, marginRight: 10, backgroundColor: THEME.bg, justifyContent: 'center' },
   tabBtnActive:{ backgroundColor: THEME.primary, borderColor: THEME.primary },
   tabText:     { fontSize: 13, color: THEME.textSecondary, fontWeight: '500' },
   tabTextActive:{ color: '#FFF', fontWeight: '600' },
-  scrollContent:{ paddingHorizontal: 20 },
-  summaryGrid: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  scrollContent:{ paddingHorizontal: 20, paddingTop: 8 },
+  summaryGrid: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   summaryCard: { flex: 1, padding: 12, borderRadius: 12, alignItems: 'center' },
   summaryValue:{ fontSize: 20, fontWeight: '800' },
   summaryLabel:{ fontSize: 10, fontWeight: '600', marginTop: 2 },

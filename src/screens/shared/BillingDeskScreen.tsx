@@ -109,13 +109,19 @@ export default function BillingDeskScreen({ navigation }: any) {
         <TouchableOpacity style={s.searchBtn} onPress={load}><Feather name="search" size={16} color="#FFF"/></TouchableOpacity>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{paddingLeft:16,marginBottom:8}} contentContainerStyle={{gap:8,paddingRight:16}}>
-        {STATUS_FILTERS.map(f=>(
-          <TouchableOpacity key={f} style={[s.chip,statusFilter===f&&s.chipActive]} onPress={()=>setStatus(f)}>
-            <Text style={[s.chipText,statusFilter===f&&s.chipTextActive]}>{f}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8 }}
+        >
+          {STATUS_FILTERS.map(f=>(
+            <TouchableOpacity key={f} style={[s.chip,statusFilter===f&&s.chipActive]} onPress={()=>setStatus(f)}>
+              <Text style={[s.chipText,statusFilter===f&&s.chipTextActive]}>{f}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       <View style={s.searchBar}>
         <Feather name="search" size={15} color={COLORS.textMuted} style={{marginRight:8}}/>

@@ -36,6 +36,8 @@ export default function DashboardScreen({ navigation }: any) {
   const [pendingCollections, setPendingCollections] = useState<number | null>(null);
   const [pendingReports,     setPendingReports]     = useState<number | null>(null);
   const [todayRevenue,       setTodayRevenue]       = useState<number | null>(null);
+  const [urgentSamples,      setUrgentSamples]      = useState<number | null>(null);
+  const [criticalResults,    setCriticalResults]    = useState<number | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
 
   const fetchStats = useCallback(async () => {
@@ -127,6 +129,54 @@ export default function DashboardScreen({ navigation }: any) {
       setPendingReports(Array.from(prMap.values()).filter(r => r.Status === 'Registered').length);
     } catch {
       setPendingReports(null);
+    }
+
+    try {
+      // Urgent Samples — same API & logic as SamplesScreen
+      // Today only, Status: 'All', group by PID, count Isemergency === true
+      const usRes = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          BranchId: 1,
+          FromDate: today,
+          ToDate: today,
+          PatRegID: '', PatientName: '', DoctorName: '', TestName: '',
+          MobileNo: '', Barcode: '', CenterCode: '', SubDepartment: '',
+          Status: 'All',
+        }),
+      });
+      const usData = await usRes.json();
+      const usRows: any[] = Array.isArray(usData) ? usData : (usData?.value ?? []);
+      const usMap = new Map<number, any>();
+      for (const r of usRows) { if (!usMap.has(r.PID)) usMap.set(r.PID, r); }
+      setUrgentSamples(Array.from(usMap.values()).filter(r => r.Isemergency === true).length);
+    } catch {
+      setUrgentSamples(null);
+    }
+
+    try {
+      // Critical Results — all-time records with Isemergency === true across any status
+      // Mirrors PendingReportsScreen "Urgent" summary card logic (Status: 'All', all dates)
+      const crRes = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          BranchId: 1,
+          FromDate: '2024-01-01',
+          ToDate: today,
+          PatRegID: '', PatientName: '', DoctorName: '', TestName: '',
+          MobileNo: '', Barcode: '', CenterCode: '', SubDepartment: '',
+          Status: 'All',
+        }),
+      });
+      const crData = await crRes.json();
+      const crRows: any[] = Array.isArray(crData) ? crData : (crData?.value ?? []);
+      const crMap = new Map<number, any>();
+      for (const r of crRows) { if (!crMap.has(r.PID)) crMap.set(r.PID, r); }
+      setCriticalResults(Array.from(crMap.values()).filter(r => r.Isemergency === true).length);
+    } catch {
+      setCriticalResults(null);
     }
 
     try {
@@ -254,12 +304,30 @@ export default function DashboardScreen({ navigation }: any) {
 
         {/* ── Critical Alerts ── */}
         <SectionTitle title="Critical Alerts" style={{ marginTop: 24 }} />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
-          <AlertCard number="3"  label="Critical Results"  icon="alert-circle-outline" color="#DC2626" bg="#FEF2F2" border="#FEE2E2" />
-          <AlertCard number="14" label="Pending Reports"   icon="file-alert-outline"   color="#F59E0B" bg="#FFFBEB" border="#FDE68A"
-            onPress={() => navigation.navigate('PendingReports')} />
-          <AlertCard number="5"  label="Urgent Samples"   icon="test-tube"            color="#0369A1" bg="#F0F9FF" border="#BAE6FD" />
-        </ScrollView>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+          <AlertCard
+            number={statsLoading ? null : (criticalResults !== null ? String(criticalResults) : '—')}
+            label="Critical Results"
+            icon="alert-circle-outline"
+            color="#7C3AED" bg="#F5F3FF" border="#DDD6FE"
+            onPress={() => navigation.navigate('PendingReports')}
+          />
+          <AlertCard
+            number={statsLoading ? null : (urgentSamples !== null ? String(urgentSamples) : '—')}
+            label="Urgent Samples"
+            icon="test-tube"
+            color="#DC2626" bg="#FEF2F2" border="#FEE2E2"
+            urgent
+            onPress={() => navigation.navigate('SampleCollection')}
+          />
+          <AlertCard
+            number={statsLoading ? null : (pendingReports !== null ? String(pendingReports) : '—')}
+            label="Pending Reports"
+            icon="file-alert-outline"
+            color="#F59E0B" bg="#FFFBEB" border="#FDE68A"
+            onPress={() => navigation.navigate('PendingReports')}
+          />
+        </View>
 
         <View style={{ height: 110 }} />
       </ScrollView>
@@ -291,16 +359,34 @@ function StatCard({ value, label, icon, color, bg, border, onPress }: any) {
   );
 }
 
-function AlertCard({ number, label, icon, color, bg, border, onPress }: any) {
+function AlertCard({ number, label, icon, color, bg, border, onPress, urgent }: any) {
   return (
     <TouchableOpacity
-      style={[{ width: 120, borderRadius: 14, borderWidth: 1, padding: 14, marginRight: 12, alignItems: 'center', elevation: 0 }, { backgroundColor: bg, borderColor: border }]}
+      style={[
+        {
+          flex: urgent ? 1.15 : 1,
+          borderRadius: 14, borderWidth: urgent ? 2 : 1,
+          padding: 14, marginHorizontal: 5,
+          alignItems: 'center', elevation: urgent ? 3 : 0,
+          shadowColor: urgent ? '#DC2626' : COLORS.shadow,
+          shadowOffset: { width: 0, height: urgent ? 4 : 1 },
+          shadowOpacity: urgent ? 0.18 : 0.06,
+          shadowRadius: urgent ? 8 : 3,
+        },
+        { backgroundColor: bg, borderColor: border },
+      ]}
       activeOpacity={0.8} onPress={onPress}
     >
-      <View style={[{ width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10, elevation: 1, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }, { backgroundColor: COLORS.card }]}>
+      <View style={[
+        { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10, elevation: 1, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 },
+        { backgroundColor: COLORS.card },
+      ]}>
         <MaterialCommunityIcons name={icon} size={24} color={color} />
       </View>
-      <Text style={[{ fontSize: 26, fontWeight: '900', marginBottom: 2 }, { color }]}>{number}</Text>
+      {number === null
+        ? <ActivityIndicator size="small" color={color} style={{ marginVertical: 4 }} />
+        : <Text style={[{ fontSize: urgent ? 28 : 26, fontWeight: '900', marginBottom: 2 }, { color }]}>{number}</Text>
+      }
       <Text style={{ fontSize: 11, color: COLORS.textSecondary, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
     </TouchableOpacity>
   );
