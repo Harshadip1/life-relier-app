@@ -279,7 +279,7 @@ export default function SearchAvailableSlotsScreen({ navigation }: any) {
       GenderId:        genderId,
       InitialId:       initialId,
       BirthDate:       toAPIDate(birthDate),
-      BranchId:        match.BranchId,
+      BranchId:        1,
       CreatedBy:       user?.name || 'Admin',
       Email:           email.trim() || '',
       Remark:          remark.trim() || '',

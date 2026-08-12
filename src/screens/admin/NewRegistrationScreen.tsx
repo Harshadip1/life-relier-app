@@ -14,7 +14,7 @@ import {
   getInitials, searchPatient, searchPatientByMobile, searchTests,
   InitialItem, SearchPatientItem, TestResult,
 } from '../../services/registrationService';
-import { getTestNames, TestNameItem } from '../../services/testChargesService';
+import { getTestNames, getAllTestCharges, TestNameItem } from '../../services/testChargesService';
 import { getAllReferringDoctors, ReferringDoctorRecord } from '../../services/referringDoctorService';
 import { API_BASE_URL , COLORS} from '../../utils/constants';
 
@@ -231,7 +231,6 @@ export default function NewRegistrationScreen({ navigation }: any) {
 
   useEffect(() => {
     getInitials().then(d => { if (d.length) setInitialsList(d); }).catch(() => {});
-<<<<<<< HEAD
     // Load referring doctors from real API — always prepend "Self"
     getAllReferringDoctors(1).then(d => setDoctorsList(d)).catch(() => {});;
     // Load all test names once for local filtering
