@@ -8,6 +8,12 @@ import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs([
+  'InteractionManager has been deprecated',
+]);
+
 SplashScreen.preventAutoHideAsync();
 
 function AppInner() {

@@ -236,3 +236,9 @@ export async function getCancellationStatuses(PIDs: number[], BranchId = 1): Pro
     : data?.data  ? data.data : [];
   return list;
 }
+
+/** GENERATE BILL / RECEIPT */
+export async function generateBillDocument(payload: { BranchId: number; DocumentType: string; ReceiptNo: number; }): Promise<any> {
+  const data = await post<any>('/api/BillingDesk/GenerateBill', payload);
+  return data;
+}

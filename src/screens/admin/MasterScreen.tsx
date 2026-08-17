@@ -37,27 +37,7 @@ const SECTIONS = [
       { label: 'Tube Master',     icon: 'test-tube-empty',         color: '#065F46', bg: '#ECFDF5', screen: 'TubeMaster'        },
     ],
   },
-  {
-    title:  'Laboratory',
-    icon:   'microscope',
-    color:  '#0891B2',
-    bg:     '#ECFEFF',
-    items: [
-      { label: 'Collection Centers', icon: 'map-marker-outline',   color: '#0891B2', bg: '#ECFEFF', screen: 'CollectionCenter'  },
-      { label: 'Instruments',        icon: 'robot-industrial-outline', color: '#6D28D9', bg: '#F5F3FF', screen: 'Instruments'   },
-    ],
-  },
-  {
-    title:  'Staff',
-    icon:   'account-group-outline',
-    color:  '#7C3AED',
-    bg:     '#F5F3FF',
-    items: [
-      { label: 'Staff',        icon: 'account-multiple-outline',   color: '#7C3AED', bg: '#F5F3FF', screen: 'StaffManagement'   },
-      { label: 'Roles',        icon: 'shield-account-outline',     color: '#1D4ED8', bg: '#EFF6FF', screen: 'Roles'             },
-      { label: 'Permissions',  icon: 'lock-outline',               color: '#15803D', bg: '#F0FDF4', screen: 'Permissions'       },
-    ],
-  },
+
 ];
 
 export default function MasterScreen({ navigation }: any) {

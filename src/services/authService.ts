@@ -2,6 +2,8 @@ import { LoginCredentials, AuthResponse, User, UserRole } from '../utils/types';
 import { API_BASE_URL } from '../utils/constants';
 import { authenticateUser } from './mockDatabase';
 
+import { Alert } from 'react-native';
+
 /**
  * POST /api/ManageUser/Login
  * Body   : { UserName: string, Password: string }
@@ -53,6 +55,7 @@ export async function loginUser(
     throw new Error(msg);
   }
 
+
   // ── Normalise API response → AuthResponse ─────────────────────────────────
   //
   // The backend may return the user fields at the top level or nested.
@@ -60,25 +63,80 @@ export async function loginUser(
   //   { token, userId, userName, role, fullName, email, ... }   ← flat
   //   { token, user: { id, name, email, role, ... } }           ← nested
   //   { Token, UserId, UserName, Role, ... }                     ← Pascal case
+  //   [ { menuName: "...", canView: true }, ... ]                ← Menu array
   //
 
   const raw = data ?? {};
+  let role: UserRole = 'admin';
+
+  // Extract menus regardless of whether it's an Array, Dictionary, or nested Array
+  let menuList: any[] = [];
+  if (Array.isArray(data)) {
+    menuList = data;
+  } else if (data && typeof data === 'object') {
+    if (Array.isArray(data.permissions)) menuList = data.permissions;
+    else if (Array.isArray(data.menuPermissions)) menuList = data.menuPermissions;
+    else if (Array.isArray(data.data)) menuList = data.data;
+    else if (Array.isArray(data.Data)) menuList = data.Data;
+    else if (Array.isArray(data.menus)) menuList = data.menus;
+    else if (Array.isArray(data.menuList)) menuList = data.menuList;
+    else if (Array.isArray(data.response)) menuList = data.response;
+    else {
+      const values = Object.values(data);
+      if (values.length > 0 && values[0] && typeof values[0] === 'object' && 'menuName' in (values[0] as any)) {
+        menuList = values;
+      }
+    }
+  }
+
+  // Resolve role from object as a strong fallback
+  const rawRole: string =
+    (raw.roleName || raw.RoleName || raw.role || raw.Role || raw.userRole || raw.UserRole || raw.userType || raw.UserType || 'admin')
+      .toString()
+      .toLowerCase();
+
+  const stringRole =
+    rawRole.includes('patient')               ? 'patient'
+    : (rawRole.includes('phlebotomist') || rawRole.includes('collection') || rawRole.includes('phlebo')) ? 'phlebotomist'
+    : (rawRole.includes('refdoctor') || rawRole.includes('referring') || rawRole.includes('ref doctor')) ? 'refdoctor'
+    : (rawRole.includes('doctor') || rawRole.includes('main doctor')) ? 'doctor'
+    : 'admin';
+
+  // If the backend provided a clear explicit role, trust it over menu inferences.
+  // Phlebotomists often have some billing permissions (for home collection payments),
+  // which can falsely flag them as Admins if we strictly rely on menu inference.
+  if (stringRole !== 'admin') {
+    role = stringRole as UserRole;
+  } else if (menuList.length > 0) {
+    // Fallback: Infer role based on menus ONLY if roleName was missing or "admin"
+    const hasAccess = (item: any) => item.canView === true || item.canView === 1 || item.canView === "true";
+    
+    const hasAdminPowers = menuList.some(m => 
+      m.menuName && 
+      (m.menuName.toLowerCase() === 'billing' || m.menuName.toLowerCase() === 'account section') && 
+      hasAccess(m)
+    );
+
+    const isPhlebo = menuList.some(m => 
+      m.pageUrl && 
+      m.pageUrl.toLowerCase().includes('phlebotomist') && 
+      hasAccess(m)
+    );
+
+    if (hasAdminPowers) {
+      role = 'admin';
+    } else if (isPhlebo) {
+      role = 'phlebotomist';
+    } else {
+      role = 'patient';
+    }
+  } else {
+    role = 'admin';
+  }
 
   // Resolve token
   const token: string =
     raw.token || raw.Token || raw.accessToken || raw.AccessToken || 'no-token';
-
-  // Resolve role — default to 'admin' if the API doesn't return one yet
-  const rawRole: string =
-    (raw.role || raw.Role || raw.userRole || raw.UserRole || 'admin')
-      .toString()
-      .toLowerCase();
-
-  const role: UserRole =
-    rawRole === 'patient'                     ? 'patient'
-    : rawRole === 'phlebotomist'              ? 'phlebotomist'
-    : rawRole === 'refdoctor' || rawRole === 'doctor' ? 'refdoctor'
-    : 'admin';
 
   // Resolve user fields (handle both flat and nested)
   const nested = raw.user || raw.User || {};

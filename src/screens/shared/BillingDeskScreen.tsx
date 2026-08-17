@@ -1,11 +1,13 @@
-﻿import React, { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../../context/AuthContext";
 import { COLORS } from "../../utils/constants";
-import { getBillingPatients, getPatientBill, savePayment, updatePayment, saveRefund, deletePayment, BillingPatient, PatientBill, ReceiptRecord } from "../../services/billingService";
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { getBillingPatients, getPatientBill, savePayment, updatePayment, saveRefund, deletePayment, getBillingCenters, BillingPatient, PatientBill, ReceiptRecord, BillingCenter, generateBillDocument } from "../../services/billingService";
 
 const PAYMENT_TYPES  = ["Cash","Cheque","Card","Online"];
 const STATUS_FILTERS = ["All","Paid","Unpaid","Partial"];
@@ -40,24 +42,101 @@ export default function BillingDeskScreen({ navigation }: any) {
   const [otherAmt,setOtherAmt]     = useState("0");
   const [payType,setPayType]       = useState("Cash");
   const [remark,setRemark]         = useState("");
+  const [searchName,setSearchName] = useState("");
+  const [searchMobile,setSearchMobile] = useState("");
+  const [searchRegNo,setSearchRegNo] = useState("");
+  const [searchCenter,setSearchCenter] = useState<number>(0);
+  const [centers,setCenters] = useState<BillingCenter[]>([]);
+  const [showCenter, setShowCenter] = useState(false);
+  const [filterExpanded, setFilterExpanded] = useState(true);
   const [saving,setSaving]         = useState(false);
+
+  const [selectedReceipt, setSelectedReceipt] = useState<number|null>(null);
+  const [generating, setGenerating] = useState(false);
+
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+  const [previewReceipt, setPreviewReceipt] = useState<ReceiptRecord|null>(null);
+
+
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const rows = await getBillingPatients({ BranchId:1, FromDate:fromDate, ToDate:toDate2, PaymentStatus:statusFilter, PatientName:search });
+      const rows = await getBillingPatients({ 
+        BranchId:1, 
+        FromDate:fromDate, 
+        ToDate:toDate2, 
+        PaymentStatus:statusFilter, 
+        PatientName:searchName,
+        MobileNo: searchMobile,
+        PatRegID: searchRegNo ? Number(searchRegNo) : 0,
+        CenterCode: searchCenter
+      });
       setPatients(rows);
     } catch (e:any) { Alert.alert("Error", e.message||"Failed to load"); }
     finally { setLoading(false); }
-  }, [fromDate,toDate2,statusFilter,search]);
+  }, [fromDate,toDate2,statusFilter,searchName,searchMobile,searchRegNo,searchCenter]);
 
-  useFocusEffect(useCallback(()=>{ load(); },[load]));
+  useFocusEffect(useCallback(()=>{ 
+    getBillingCenters(1).then(c => setCenters(c)).catch(()=>{});
+    load(); 
+  },[load]));
 
   const openBill = async (p: BillingPatient) => {
-    setSelected(p); setBillLoad(true); setBill(null);
-    try { setBill(await getPatientBill(p.PID)); }
+    if (selected?.PID === p.PID) {
+      setSelected(null);
+      setBill(null);
+      return;
+    }
+    setSelected(p); setBillLoad(true); setBill(null); setSelectedReceipt(null);
+    try { 
+      const b = await getPatientBill(p.PID);
+      setBill(b); 
+      if (b?.Receipts?.length && b.Receipts.length > 0) setSelectedReceipt(b.Receipts[0].ReceiptNo);
+    }
     catch { setBill(null); }
     finally { setBillLoad(false); }
+  };
+
+  const handleGenerateBill = async (p: BillingPatient) => {
+    if (!selectedReceipt) { Alert.alert('Error', 'Please select a receipt first'); return; }
+    setGenerating(true);
+    try {
+      const url = 'https://dn8labapi.liferelier.in/api/ReceiptTemplate/Generate';
+      const fileUri = (FileSystem.documentDirectory || '') + 'Receipt_' + selectedReceipt + '.pdf';
+      const payload = JSON.stringify({ BranchId: 1, DocumentType: 'RECEIPT', ReceiptNo: selectedReceipt });
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const base64data = (reader.result as string).split(',')[1];
+            await FileSystem.writeAsStringAsync(fileUri, base64data, { encoding: 'base64' });
+            if (await Sharing.isAvailableAsync()) {
+              await Sharing.shareAsync(fileUri);
+            } else {
+              Alert.alert('Success', 'PDF downloaded to ' + fileUri);
+            }
+          } catch(e:any) {
+            Alert.alert('Error', 'Failed to save or share PDF: ' + e.message);
+          }
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        Alert.alert('Error', 'Failed to generate PDF. Server returned ' + response.status);
+      }
+    } catch (e:any) {
+      Alert.alert('Error', e.message || 'Failed to download receipt');
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const selCharges  = selected?.Charges  ?? 0;
@@ -102,27 +181,69 @@ export default function BillingDeskScreen({ navigation }: any) {
         <TouchableOpacity style={s.iconBtn} onPress={load}><Feather name="refresh-cw" size={18} color="#FFF"/></TouchableOpacity>
       </View>
 
-      <View style={s.filterRow}>
-        <View style={{flex:1, flexDirection:'row', alignItems:'center', gap:8}}>
-          <TextInput style={[s.dateInput, {flex:1, flexShrink:1}]} value={fromDate} onChangeText={setFromDate} placeholder="YYYY-MM-DD" placeholderTextColor={COLORS.textMuted}/>
-          <Text style={{color:COLORS.textSecondary, marginHorizontal:4, fontSize:12, fontWeight:'600'}}>to</Text>
-          <TextInput style={[s.dateInput, {flex:1, flexShrink:1}]} value={toDate2} onChangeText={setToDate2} placeholder="YYYY-MM-DD" placeholderTextColor={COLORS.textMuted}/>
-        </View>
-        <TouchableOpacity style={s.searchBtn} onPress={load}><Feather name="search" size={16} color="#FFF"/></TouchableOpacity>
-      </View>
+      <View style={s.filterCard}>
+        <TouchableOpacity style={s.filterHeader} onPress={() => setFilterExpanded(!filterExpanded)} activeOpacity={0.7}>
+          <View style={{flexDirection:"row", alignItems:"center"}}>
+            <Feather name="search" size={16} color="#FFF" style={{marginRight:8}} />
+            <Text style={s.filterHeaderTxt}>Bill Desk Search</Text>
+          </View>
+          <Feather name={filterExpanded ? "chevron-up" : "chevron-down"} size={20} color="#FFF" />
+        </TouchableOpacity>
+        
+        {filterExpanded && (
+          <View style={s.filterBody}>
+            <Text style={s.fldLabel}>From Date *</Text>
+            <View style={s.inputWrapper}>
+              <Feather name="calendar" size={16} color={COLORS.textMuted} style={s.inputIcon} />
+              <TextInput style={s.inputInner} value={fromDate} onChangeText={setFromDate} placeholder="YYYY-MM-DD" placeholderTextColor={COLORS.textMuted}/>
+            </View>
 
-      <View style={s.filterTabsRow}>
-        {STATUS_FILTERS.map(f=>(
-          <TouchableOpacity key={f} style={[s.chip,statusFilter===f&&s.chipActive]} onPress={()=>setStatus(f)}>
-            <Text style={[s.chipText,statusFilter===f&&s.chipTextActive]}>{f}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+            <Text style={s.fldLabel}>To Date *</Text>
+            <View style={s.inputWrapper}>
+              <Feather name="calendar" size={16} color={COLORS.textMuted} style={s.inputIcon} />
+              <TextInput style={s.inputInner} value={toDate2} onChangeText={setToDate2} placeholder="YYYY-MM-DD" placeholderTextColor={COLORS.textMuted}/>
+            </View>
 
-      <View style={s.searchBar}>
-        <Feather name="search" size={15} color={COLORS.textMuted} style={{marginRight:8}}/>
-        <TextInput style={s.searchInput} placeholder="Search patient name or mobile..." placeholderTextColor={COLORS.textMuted} value={search} onChangeText={setSearch} onSubmitEditing={load} returnKeyType="search"/>
-        {search.length>0&&<TouchableOpacity onPress={()=>setSearch("")}><Feather name="x" size={14} color={COLORS.textMuted}/></TouchableOpacity>}
+            <Text style={s.fldLabel}>Center</Text>
+            <TouchableOpacity style={[s.input, {justifyContent:'center'}]} onPress={()=>setShowCenter(true)}>
+              <Text style={{color:searchCenter===0?COLORS.textMuted:COLORS.textPrimary}}>{searchCenter===0?"All Center":centers.find(c=>c.CenterCode===searchCenter)?.CenterName||"All Center"}</Text>
+            </TouchableOpacity>
+
+            <Text style={s.fldLabel}>Patient Name</Text>
+            <TextInput style={s.input} value={searchName} onChangeText={setSearchName} placeholder="Patient Name" placeholderTextColor={COLORS.textMuted}/>
+
+            <Text style={s.fldLabel}>Mobile No</Text>
+            <TextInput style={s.input} value={searchMobile} onChangeText={setSearchMobile} keyboardType="phone-pad" placeholder="Mobile" placeholderTextColor={COLORS.textMuted}/>
+
+            <Text style={s.fldLabel}>Reg No</Text>
+            <TextInput style={s.input} value={searchRegNo} onChangeText={setSearchRegNo} keyboardType="numeric" placeholder="Reg No" placeholderTextColor={COLORS.textMuted}/>
+
+            <Text style={s.fldLabel}>Payment Status</Text>
+            <View style={s.radioRow}>
+              {["All","Pending","Paid"].map(opt => (
+                <TouchableOpacity key={opt} style={s.radioOption} onPress={()=>setStatus(opt)}>
+                  <MaterialCommunityIcons name={statusFilter===opt ? "radiobox-marked" : "radiobox-blank"} size={20} color={statusFilter===opt ? COLORS.primary : COLORS.textMuted}/>
+                  <Text style={s.radioTxt}>{opt}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={{flexDirection:"row", gap:10, marginTop:16}}>
+              <TouchableOpacity style={s.btnPrimary} onPress={() => { setFilterExpanded(false); load(); }}>
+                <Feather name="search" size={16} color="#FFF"/>
+                <Text style={s.btnPrimaryTxt}>Search</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.btnSecondary} onPress={() => {
+                setFromDate(toDate(new Date(today.getFullYear(),today.getMonth(),1)));
+                setToDate2(toDate(today));
+                setSearchCenter(0); setSearchName(""); setSearchMobile(""); setSearchRegNo(""); setStatus("All");
+              }}>
+                <Feather name="refresh-ccw" size={16} color="#FFF"/>
+                <Text style={s.btnPrimaryTxt}>Reset</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
 
       {loading?<View style={s.centre}><ActivityIndicator size="large" color={COLORS.primary}/></View>:
@@ -131,6 +252,59 @@ export default function BillingDeskScreen({ navigation }: any) {
           ListEmptyComponent={<View style={s.centre}><MaterialCommunityIcons name="receipt-text-outline" size={52} color={COLORS.textMuted}/><Text style={s.emptyTxt}>No billing records found</Text></View>}
           renderItem={({item})=>{
             const c=statusColor(item.Paid??0, item.Balance??0);
+            const isExp = selected?.PID === item.PID;
+            if (isExp) {
+              return (
+                <View style={s.cardExpanded}>
+                  <View style={s.expActionRow}>
+                    <Text style={s.expActionLabel}>Pay Bill</Text>
+                    <TouchableOpacity style={[s.expActionBtn, {backgroundColor: item.Balance > 0 ? COLORS.primary : COLORS.success}]} onPress={item.Balance > 0 ? () => { setSelected(item); openAddPayment(); } : undefined}>
+                      <Text style={s.expActionBtnTxt}>{item.Balance > 0 ? "Pay Bill" : "Paid"}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={s.expActionRow}>
+                    <Text style={s.expActionLabel}>Refund</Text>
+                    <TouchableOpacity style={[s.expActionBtn, {backgroundColor: "#F59E0B"}]} onPress={()=>{setSelected(item); setRemark("");setPayType("Cash");setShowRefund(true);}}>
+                      <Text style={s.expActionBtnTxt}>{item.Paid > 0 ? "Refund" : "No Refund"}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={s.expActionRow}>
+                    <Text style={s.expActionLabel}>Receipt</Text>
+                    <View style={s.expSelect}>
+                      {billLoading ? <ActivityIndicator size="small" color={COLORS.primary}/> : (
+                        <Text style={s.expSelectTxt}>{selectedReceipt ? selectedReceipt : "No Receipt"}</Text>
+                      )}
+                      <Feather name="chevron-down" size={16} color={COLORS.textSecondary}/>
+                    </View>
+                  </View>
+                  <View style={s.expActionRow}>
+                    <Text style={s.expActionLabel}>Bill</Text>
+                    <TouchableOpacity style={[s.expActionBtn, {backgroundColor: COLORS.tealDark || "#0F766E"}]} onPress={()=>handleGenerateBill(item)} disabled={generating}>
+                      {generating ? <ActivityIndicator size="small" color="#FFF"/> : <Text style={s.expActionBtnTxt}>Bill</Text>}
+                    </TouchableOpacity>
+                  </View>
+                  <View style={s.expDetailsBox}>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Status</Text><View style={[s.badge,{backgroundColor:c.bg}]}><Text style={[s.badgeTxt,{color:c.color}]}>{c.label}</Text></View></View>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Date</Text><Text style={s.expDetailVal}>{fmtDate(item.Patregdate)}</Text></View>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Reg No</Text><Text style={s.expDetailVal}>{item.PatRegID}</Text></View>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Name</Text><Text style={s.expDetailVal}>{item.Patname}</Text></View>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Age</Text><Text style={s.expDetailVal}>{item.Age}</Text></View>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Sex</Text><Text style={s.expDetailVal}>{item.sex}</Text></View>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Ref Dr</Text><Text style={s.expDetailVal}>{item.RefDr}</Text></View>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Center</Text><Text style={s.expDetailVal}>{item.CenterName}</Text></View>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Test</Text><Text style={s.expDetailVal}>{item.testname}</Text></View>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Charges</Text><Text style={s.expDetailVal}>{fmtAmt(item.Charges)}</Text></View>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Paid</Text><Text style={s.expDetailVal}>{fmtAmt(item.Paid)}</Text></View>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Disc</Text><Text style={s.expDetailVal}>{fmtAmt(item.Discount)}</Text></View>
+                    <View style={s.expDetailRow}><Text style={s.expDetailLabel}>Balance</Text><Text style={s.expDetailVal}>{fmtAmt(item.Balance)}</Text></View>
+                  </View>
+                  <TouchableOpacity style={s.expLessBtn} onPress={()=>setSelected(null)}>
+                    <Feather name="chevron-up" size={16} color={COLORS.primaryDark || "#115E59"}/>
+                    <Text style={s.expLessTxt}>Less</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            }
             return(
               <TouchableOpacity style={s.card} onPress={()=>openBill(item)} activeOpacity={0.8}>
                 <View style={s.cardTop}>
@@ -153,47 +327,6 @@ export default function BillingDeskScreen({ navigation }: any) {
           }}
         />
       }
-
-      <Modal visible={!!selected} transparent animationType="slide" onRequestClose={()=>setSelected(null)}>
-        <View style={s.overlay}><View style={[s.sheet,{paddingBottom:Math.max(insets.bottom,20)}]}>
-          <View style={s.drag}/>
-          <TouchableOpacity style={s.closeX} onPress={()=>setSelected(null)}><Feather name="x" size={22} color={COLORS.textSecondary}/></TouchableOpacity>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={s.sheetTitle}>{selected?.intial} {selected?.Patname}</Text>
-            <Text style={s.sheetSub}>PT{String(selected?.PatRegID||selected?.PID||0).padStart(6,"0")}  {selected?.CenterName}  Dr: {(selected?.RefDr||"").trim()}</Text>
-            <View style={s.summaryBox}>
-              {([["Total",selCharges,COLORS.textPrimary],["Paid",selPaid,COLORS.success],["Discount",selDiscount,"#F59E0B"],["Balance Due",selBalance,selBalance>0?COLORS.danger:COLORS.success]] as [string,number,string][]).map(([l,v,c])=>(
-                <View key={l} style={s.sumRow}><Text style={s.sumLabel}>{l}</Text><Text style={[s.sumVal,{color:c}]}>{fmtAmt(v)}</Text></View>
-              ))}
-            </View>
-            <Text style={s.sheetSub}>Tests: {selected?.testname}</Text>
-            <View style={{flexDirection:"row",gap:10,marginVertical:16}}>
-              <TouchableOpacity style={[s.actionBtn,{backgroundColor:COLORS.primary}]} onPress={openAddPayment}>
-                <Feather name="plus" size={15} color="#FFF"/><Text style={s.actionBtnTxt}>Add Payment</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[s.actionBtn,{backgroundColor:"#F59E0B"}]} onPress={()=>{setRemark("");setPayType("Cash");setShowRefund(true);}}>
-                <MaterialCommunityIcons name="cash-refund" size={15} color="#FFF"/><Text style={s.actionBtnTxt}>Refund</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={s.secLabel}>Receipt History</Text>
-            {billLoading?<ActivityIndicator color={COLORS.primary} style={{marginTop:12}}/>:
-              (bill?.Receipts??[]).length===0?<Text style={s.emptyTxt}>No receipts yet</Text>:
-              (bill?.Receipts??[]).map((r,i)=>(
-                <View key={r.RID} style={s.payRow}>
-                  <View style={{flex:1}}>
-                    <Text style={s.payAmt}>{fmtAmt(r.AmtPaid)}<Text style={s.payType}>  ({r.PaymentType})</Text></Text>
-                    <Text style={s.paySub}>{fmtDate(r.transdate)}  by {r.username}  Rcpt#{r.ReceiptNo}</Text>
-                    {(r.DisAmt>0)&&<Text style={s.paySub}>Disc: {fmtAmt(r.DisAmt)}</Text>}
-                    {!!r.DiscountRemark&&<Text style={s.paySub}>{r.DiscountRemark}</Text>}
-                  </View>
-                  <TouchableOpacity style={s.iconAct} onPress={()=>openEditPayment(r)}><Feather name="edit-2" size={14} color={COLORS.primary}/></TouchableOpacity>
-                  <TouchableOpacity style={s.iconAct} onPress={()=>Alert.alert("Delete Receipt","Delete receipt #"+r.ReceiptNo+"?",[{text:"Cancel",style:"cancel"},{text:"Delete",style:"destructive",onPress:async()=>{try{await deletePayment(r.RID);openBill(selected!);load();}catch(e:any){Alert.alert("Error",e.message);}}}])}><Feather name="trash-2" size={14} color={COLORS.danger}/></TouchableOpacity>
-                </View>
-              ))
-            }
-          </ScrollView>
-        </View></View>
-      </Modal>
 
       <Modal visible={showPay} transparent animationType="slide" onRequestClose={()=>setShowPay(false)}>
         <View style={s.overlay}><View style={[s.sheet,{paddingBottom:Math.max(insets.bottom,20)}]}>
@@ -240,7 +373,67 @@ export default function BillingDeskScreen({ navigation }: any) {
           </View>
         </View></View>
       </Modal>
-    </View>
+
+      <Modal visible={showCenter} transparent animationType="slide" onRequestClose={()=>setShowCenter(false)}>
+        <View style={s.overlay}><View style={[s.sheet,{paddingBottom:Math.max(insets.bottom,20)}]}>
+          <View style={s.drag}/>
+          <Text style={s.sheetTitle}>Select Center</Text>
+          <ScrollView style={{marginTop:12, maxHeight:400}}>
+            <TouchableOpacity style={s.payRow} onPress={()=>{setSearchCenter(0);setShowCenter(false);}}>
+              <Text style={s.payAmt}>All Center</Text>
+              {searchCenter===0&&<Feather name="check" size={18} color={COLORS.primary}/>}
+            </TouchableOpacity>
+            {centers.map((c, i)=>(
+              <TouchableOpacity key={c.CenterCode ? c.CenterCode + '-' + i : String(i)} style={s.payRow} onPress={()=>{setSearchCenter(c.CenterCode);setShowCenter(false);}}>
+                <Text style={s.payAmt}>{c.CenterName}</Text>
+                {searchCenter===c.CenterCode&&<Feather name="check" size={18} color={COLORS.primary}/>}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View></View>
+      </Modal>
+    
+      <Modal visible={showReceiptPreview} transparent animationType="slide" onRequestClose={()=>setShowReceiptPreview(false)}>
+        <View style={s.overlay}>
+          <View style={[s.sheet, {paddingBottom: Math.max(insets.bottom, 20), maxHeight: '85%'}]}>
+            <View style={s.drag}/>
+            <TouchableOpacity style={s.closeX} onPress={()=>setShowReceiptPreview(false)}><Feather name="x" size={22} color={COLORS.textSecondary}/></TouchableOpacity>
+            
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={{alignItems: 'center', marginBottom: 20}}>
+                <Text style={{fontSize: 22, fontWeight: '800', color: COLORS.primaryDark}}>RECEIPT</Text>
+                <Text style={{fontSize: 13, color: COLORS.textSecondary, marginTop: 4}}>{selected?.CenterName || 'Center'}</Text>
+              </View>
+
+              <View style={s.summaryBox}>
+                <View style={s.sumRow}><Text style={s.sumLabel}>Receipt No</Text><Text style={s.sumVal}>#{previewReceipt?.ReceiptNo}</Text></View>
+                <View style={s.sumRow}><Text style={s.sumLabel}>Date</Text><Text style={s.sumVal}>{fmtDate(previewReceipt?.transdate || '')}</Text></View>
+                <View style={s.sumRow}><Text style={s.sumLabel}>Patient</Text><Text style={s.sumVal}>{selected?.intial} {selected?.Patname}</Text></View>
+                <View style={s.sumRow}><Text style={s.sumLabel}>Reg No</Text><Text style={s.sumVal}>PT{String(selected?.PatRegID||selected?.PID||0).padStart(6,"0")}</Text></View>
+                <View style={s.sumRow}><Text style={s.sumLabel}>Tests</Text><Text style={s.sumVal} numberOfLines={2}>{selected?.testname}</Text></View>
+              </View>
+
+              <Text style={s.secLabel}>Payment Details</Text>
+              <View style={s.summaryBox}>
+                <View style={s.sumRow}><Text style={s.sumLabel}>Payment Mode</Text><Text style={s.sumVal}>{previewReceipt?.PaymentType}</Text></View>
+                {previewReceipt?.OtherCharges ? <View style={s.sumRow}><Text style={s.sumLabel}>Other Charges</Text><Text style={s.sumVal}>{fmtAmt(previewReceipt.OtherCharges)}</Text></View> : null}
+                {previewReceipt?.DisAmt ? <View style={s.sumRow}><Text style={s.sumLabel}>Discount</Text><Text style={s.sumVal}>{fmtAmt(previewReceipt.DisAmt)}</Text></View> : null}
+                <View style={[s.sumRow, {borderBottomWidth: 0, paddingTop: 10, marginTop: 4, borderTopWidth: 1, borderTopColor: COLORS.divider}]}>
+                  <Text style={[s.sumLabel, {fontWeight: '700', color: COLORS.textPrimary}]}>Total Amount Paid</Text>
+                  <Text style={[s.sumVal, {fontSize: 18, color: COLORS.success}]}>{fmtAmt(previewReceipt?.AmtPaid)}</Text>
+                </View>
+              </View>
+
+              <View style={{flexDirection: 'row', gap: 10, marginTop: 20}}>
+                <TouchableOpacity style={[s.actionBtn, {backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border}]} onPress={()=>setShowReceiptPreview(false)}>
+                  <Text style={[s.actionBtnTxt, {color: COLORS.textPrimary}]}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+</View>
   );
 }
 
@@ -301,4 +494,30 @@ const s = StyleSheet.create({
   ptActive:      { backgroundColor:COLORS.primary, borderColor:COLORS.primary },
   ptTxt:         { fontSize:13, color:COLORS.textSecondary, fontWeight:"500" },
   ptActiveTxt:   { color:"#FFF", fontWeight:"700" },
+  filterCard:    { margin:16, backgroundColor:COLORS.surface, borderRadius:12, borderWidth:1, borderColor:COLORS.border, overflow:"hidden", elevation:2, shadowColor:"#000", shadowOffset:{width:0,height:2}, shadowOpacity:0.05, shadowRadius:4 },
+  filterHeader:  { flexDirection:"row", alignItems:"center", justifyContent:"space-between", backgroundColor:COLORS.tealDark || "#0F766E", paddingHorizontal:14, paddingVertical:12 },
+  filterHeaderTxt: { color:"#FFF", fontSize:14, fontWeight:"700" },
+  filterBody:    { padding:14 },
+  inputWrapper:  { flexDirection:"row", alignItems:"center", borderWidth:1, borderColor:COLORS.border, borderRadius:8, backgroundColor:COLORS.background, height:44, paddingHorizontal:12 },
+  inputIcon:     { marginRight:8 },
+  inputInner:    { flex:1, fontSize:14, color:COLORS.textPrimary },
+  radioRow:      { flexDirection:"row", alignItems:"center", gap:16, marginTop:4 },
+  radioOption:   { flexDirection:"row", alignItems:"center", gap:6 },
+  radioTxt:      { fontSize:14, color:COLORS.textPrimary },
+  btnPrimary:    { flex:1, flexDirection:"row", alignItems:"center", justifyContent:"center", backgroundColor:"#1D4ED8", borderRadius:8, paddingVertical:12, gap:8 },
+  btnSecondary:  { flex:1, flexDirection:"row", alignItems:"center", justifyContent:"center", backgroundColor:"#6B7280", borderRadius:8, paddingVertical:12, gap:8 },
+  btnPrimaryTxt: { color:"#FFF", fontSize:14, fontWeight:"700" },
+  cardExpanded:  { backgroundColor:"#FFF", borderRadius:12, borderWidth:1, borderColor:COLORS.border, overflow:"hidden", elevation:2, shadowColor:"#000", shadowOffset:{width:0,height:2}, shadowOpacity:0.05, shadowRadius:4, marginBottom:16 },
+  expActionRow:  { flexDirection:"row", alignItems:"center", justifyContent:"space-between", paddingHorizontal:16, paddingVertical:12, borderBottomWidth:1, borderBottomColor:COLORS.border },
+  expActionLabel:{ fontSize:14, color:COLORS.textSecondary, fontWeight:"500" },
+  expActionBtn:  { paddingHorizontal:16, paddingVertical:6, borderRadius:6, minWidth:80, alignItems:"center" },
+  expActionBtnTxt:{ color:"#FFF", fontSize:13, fontWeight:"700" },
+  expSelect:     { flexDirection:"row", alignItems:"center", borderWidth:1, borderColor:COLORS.border, borderRadius:6, paddingHorizontal:10, paddingVertical:6, minWidth:120, justifyContent:"space-between" },
+  expSelectTxt:  { fontSize:13, color:COLORS.textPrimary },
+  expDetailsBox: { backgroundColor:"#E0F2FE", padding:16, margin:12, borderRadius:8 },
+  expDetailRow:  { flexDirection:"row", alignItems:"center", justifyContent:"space-between", marginBottom:12 },
+  expDetailLabel:{ fontSize:13, color:"#0369A1", fontWeight:"500", flex:1 },
+  expDetailVal:  { fontSize:13, color:"#0C4A6E", fontWeight:"700", flex:2, textAlign:"right" },
+  expLessBtn:    { flexDirection:"row", alignItems:"center", justifyContent:"center", paddingVertical:12, borderTopWidth:1, borderTopColor:COLORS.border },
+  expLessTxt:    { color:COLORS.primaryDark || "#115E59", fontWeight:"600", marginLeft:6, fontSize:13 },
 });
