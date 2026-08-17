@@ -177,6 +177,8 @@ export interface TestNameItem {
   MainTestName: string;
   TestName:     string;   // alias for MainTestName
   TestCode:     string;
+  Price?:       number;   // MRP/Rate for the test
+  Amount?:      number;   // Alternative price field
 }
 
 export interface SubDeptItem {
@@ -262,6 +264,8 @@ export async function getTestNames(branchId: number = 1): Promise<TestNameItem[]
       MainTestName: (r.MainTestName ?? r.mainTestName ?? r.TestName ?? '').trim(),
       TestName:     (r.MainTestName ?? r.mainTestName ?? r.TestName ?? '').trim(),
       TestCode:     (r.TestCode     ?? r.testCode     ?? r.Code   ?? '').trim(),
+      Price:        r.Price ?? r.price ?? r.MRP ?? r.mrp ?? r.Rate ?? r.rate ?? undefined,
+      Amount:       r.Amount ?? r.amount ?? r.TestCharges ?? r.testCharges ?? undefined,
     }));
   } catch { return []; }
 }
