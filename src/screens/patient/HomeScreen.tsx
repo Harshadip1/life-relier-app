@@ -255,71 +255,45 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Health Summary Banner */}
-        <LinearGradient
-          colors={['#E6F4F8', '#CBECE8']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.bannerContainer}
-        >
-          {/* Banner Title Pill */}
-          <View style={styles.bannerTitlePill}>
-            <View style={styles.bannerTitleIconCircle}>
-              <MaterialCommunityIcons name="heart-pulse" size={14} color="#0D9488" />
-            </View>
-            <Text style={styles.bannerTitle}>Health Summary</Text>
-          </View>
-
-          {/* 3D microscope image */}
-          <Image
-            source={require('../../../assets/microscope.png')}
-            style={styles.microscopeImage}
-            resizeMode="contain"
-          />
-
-          {/* Inner White Stats Card */}
-          <View style={styles.bannerWhiteCard}>
-            <View style={styles.bStat}>
-              <View style={[styles.statIconCircle, { backgroundColor: '#E0F2F1' }]}>
-                <MaterialCommunityIcons name="file-document-outline" size={16} color="#0D9488" />
+        {/* Offers Section */}
+        <View style={{ marginBottom: 24, paddingLeft: 20 }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 12 }}>Special Offers</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 40 }}>
+            {/* Amazon Offer */}
+            <View style={{ backgroundColor: '#FFF7ED', padding: 16, borderRadius: 16, width: 280, borderWidth: 1, borderColor: '#FFEDD5' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                <View style={{ backgroundColor: '#FFEDD5', width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center' }}>
+                  <MaterialCommunityIcons name="shopping" size={24} color="#EA580C" />
+                </View>
+                <View style={{ marginLeft: 12, flex: 1 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#9A3412' }}>Amazon Gift Card</Text>
+                  <Text style={{ fontSize: 12, color: '#C2410C', fontWeight: '600', marginTop: 2 }}>Worth ₹500</Text>
+                </View>
               </View>
-              <Text style={styles.bStatVal}>{totalReportsCount}</Text>
-              <Text style={styles.bStatLabel}>Total Reports{'\n'}Available</Text>
+              <Text style={{ fontSize: 13, color: '#431407', marginBottom: 12, lineHeight: 18 }}>Book a Full Body Checkup and get a free Amazon Gift Card on us.</Text>
+              <TouchableOpacity style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#EA580C', borderRadius: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFF' }}>Claim Now</Text>
+              </TouchableOpacity>
             </View>
-
-            <View style={styles.bDivider} />
-
-            <View style={styles.bStat}>
-              <View style={[styles.statIconCircle, { backgroundColor: '#E0F2FE' }]}>
-                <MaterialCommunityIcons name="clock-outline" size={16} color="#0284C7" />
+            
+            {/* Flipkart Offer */}
+            <View style={{ backgroundColor: '#EFF6FF', padding: 16, borderRadius: 16, width: 280, borderWidth: 1, borderColor: '#DBEAFE' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                <View style={{ backgroundColor: '#DBEAFE', width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center' }}>
+                  <MaterialCommunityIcons name="shopping-outline" size={24} color="#2563EB" />
+                </View>
+                <View style={{ marginLeft: 12, flex: 1 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#1E40AF' }}>Flipkart Voucher</Text>
+                  <Text style={{ fontSize: 12, color: '#3B82F6', fontWeight: '600', marginTop: 2 }}>10% Extra Discount</Text>
+                </View>
               </View>
-              <Text style={styles.bStatVal}>2</Text>
-              <Text style={styles.bStatLabel}>Pending{'\n'}Reports</Text>
+              <Text style={{ fontSize: 13, color: '#172554', marginBottom: 12, lineHeight: 18 }}>Get a Flipkart discount voucher when you refer a friend to our lab.</Text>
+              <TouchableOpacity style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#2563EB', borderRadius: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFF' }}>Claim Now</Text>
+              </TouchableOpacity>
             </View>
-
-            <View style={styles.bDivider} />
-
-            <View style={styles.bStat}>
-              <View style={[styles.statIconCircle, { backgroundColor: '#E8F5E9' }]}>
-                <MaterialCommunityIcons name="calendar-month-outline" size={16} color="#2E7D32" />
-              </View>
-              <Text style={styles.bStatVal}>15 Jun 2025</Text>
-              <Text style={styles.bStatLabel}>Last Test{'\n'}Date</Text>
-            </View>
-
-            <View style={styles.bDivider} />
-
-            <View style={styles.bStat}>
-              <View style={[styles.statIconCircle, { backgroundColor: '#FEE2E2' }]}>
-                <MaterialCommunityIcons name="wallet-outline" size={16} color="#EF4444" />
-              </View>
-              <Text style={[styles.bStatVal, { color: outstandingBalance > 0 ? COLORS.danger : '#10B981' }]}>
-                ₹{outstandingBalance.toLocaleString('en-IN')}
-              </Text>
-              <Text style={styles.bStatLabel}>Outstanding{'\n'}Balance</Text>
-            </View>
-          </View>
-        </LinearGradient>
+          </ScrollView>
+        </View>
 
         {/* Quick Actions */}
         <SectionHeader title="Quick Actions" />

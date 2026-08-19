@@ -255,18 +255,28 @@ export async function getCenters(branchId: number = 1): Promise<CenterItem[]> {
 /** POST /api/TestStatus/GetTestName */
 export async function getTestNames(branchId: number = 1): Promise<TestNameItem[]> {
   try {
-    const data = await postRaw<any>(`${API_BASE_URL}/api/TestStatus/GetTestName`, { BranchId: branchId });
-    const raw: any[] = Array.isArray(data) ? data
-      : data?.value && Array.isArray(data.value) ? data.value
-      : data?.data  && Array.isArray(data.data)  ? data.data : [];
-    return raw.map(r => ({
-      MainTestId:   r.MainTestId   ?? r.mainTestId   ?? r.ID   ?? r.Id   ?? 0,
-      MainTestName: (r.MainTestName ?? r.mainTestName ?? r.TestName ?? '').trim(),
-      TestName:     (r.MainTestName ?? r.mainTestName ?? r.TestName ?? '').trim(),
-      TestCode:     (r.TestCode     ?? r.testCode     ?? r.Code   ?? '').trim(),
-      Price:        r.Price ?? r.price ?? r.MRP ?? r.mrp ?? r.Rate ?? r.rate ?? undefined,
-      Amount:       r.Amount ?? r.amount ?? r.TestCharges ?? r.testCharges ?? undefined,
-    }));
+    // GetTestName API only returns MainTestName and lacks IDs/Codes.
+    // We must use GetAllTestCharges to get the actual MainTestId and MTCode.
+    const charges = await getAllTestCharges({ BranchId: branchId });
+    
+    // Deduplicate by test name
+    const seen = new Set<string>();
+    const result: TestNameItem[] = [];
+    
+    for (const c of charges) {
+      if (!c.TestName || seen.has(c.TestName.trim().toLowerCase())) continue;
+      seen.add(c.TestName.trim().toLowerCase());
+      
+      result.push({
+        MainTestId:   c.MainTestId ?? 0,
+        MainTestName: c.TestName.trim(),
+        TestName:     c.TestName.trim(),
+        TestCode:     c.MTCODE ?? c.MTCode ?? '',
+        Price:        c.ClientRate ?? c.Amount ?? 0,
+        Amount:       c.Amount ?? 0,
+      });
+    }
+    return result;
   } catch { return []; }
 }
 

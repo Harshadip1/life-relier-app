@@ -8,6 +8,10 @@ import { COLORS } from '../utils/constants';
 import PhlebotomistHomeScreen     from '../screens/phlebotomist/PhlebotomistHomeScreen';
 import PhlebotomistSettingsScreen from '../screens/phlebotomist/PhlebotomistSettingsScreen';
 import PhlebotomistFrontDeskScreen from '../screens/phlebotomist/PhlebotomistFrontDeskScreen';
+import PhlebotomistSampleAcceptScreen from '../screens/phlebotomist/PhlebotomistSampleAcceptScreen';
+import PhleboSampleCollectionScreen from '../screens/phlebotomist/PhleboSampleCollectionScreen';
+import PhleboAccessionScreen        from '../screens/phlebotomist/PhleboAccessionScreen';
+import PhleboStatusScreen           from '../screens/phlebotomist/PhleboStatusScreen';
 
 import NewRegistrationScreen      from '../screens/admin/NewRegistrationScreen';
 import PatientsScreen             from '../screens/admin/PatientsScreen';
@@ -17,11 +21,12 @@ import SearchAvailableSlotsScreen from '../screens/admin/SearchAvailableSlotsScr
 import CompletedReportsScreen     from '../screens/admin/CompletedReportsScreen';
 import BillingDeskScreen          from '../screens/shared/BillingDeskScreen';
 import PendingReportsScreen       from '../screens/admin/PendingReportsScreen';
+import SamplesScreen              from '../screens/admin/SamplesScreen';
 
 const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-const TAB_ROOTS = new Set(['SamplesMain', 'FrontDeskMain', 'SettingsMain']);
+const TAB_ROOTS = new Set(['HomeMain', 'SampleAcceptMain', 'FrontDeskMain', 'SettingsMain']);
 
 function getTabStyle(route: any) {
   const name = getFocusedRouteNameFromRoute(route) ?? '';
@@ -41,11 +46,23 @@ function getTabStyle(route: any) {
   };
 }
 
-// ── SAMPLES STACK ─────────────────────────────────────────────────────────────
-function SamplesStack() {
+// ── HOME STACK ────────────────────────────────────────────────────────────────
+function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="SamplesMain" component={PhlebotomistHomeScreen} />
+      <Stack.Screen name="HomeMain" component={PhlebotomistHomeScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// ── SAMPLE ACCEPT STACK ───────────────────────────────────────────────────────
+function SampleAcceptStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="SampleAcceptMain" component={PhlebotomistSampleAcceptScreen} />
+      <Stack.Screen name="PhleboSampleCollection" component={PhleboSampleCollectionScreen} />
+      <Stack.Screen name="PhleboAccession"        component={PhleboAccessionScreen} />
+      <Stack.Screen name="PhleboStatusScreen"     component={PhleboStatusScreen} />
     </Stack.Navigator>
   );
 }
@@ -80,7 +97,9 @@ export default function PhlebotomistNavigator() {
         tabBarStyle: getTabStyle(route),
         tabBarIcon: ({ color, focused }) => {
           switch (route.name) {
-            case 'Samples':
+            case 'Home':
+              return <MaterialCommunityIcons name={focused ? 'home' : 'home-outline'} size={24} color={color} />;
+            case 'SampleAccept':
               return <MaterialCommunityIcons name={focused ? 'test-tube' : 'test-tube-empty'} size={24} color={color} />;
             case 'FrontDesk':
               return <MaterialCommunityIcons name={focused ? 'desk' : 'desk'} size={24} color={color} />;
@@ -92,8 +111,9 @@ export default function PhlebotomistNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Samples"   component={SamplesStack}              options={{ title: 'Samples'    }} />
-      <Tab.Screen name="FrontDesk" component={FrontDeskStack}            options={{ title: 'Front Desk' }} />
+      <Tab.Screen name="Home"         component={HomeStack}               options={{ title: 'Home' }} />
+      <Tab.Screen name="SampleAccept" component={SampleAcceptStack}       options={{ title: 'Sample Accept' }} />
+      <Tab.Screen name="FrontDesk"    component={FrontDeskStack}          options={{ title: 'Front Desk' }} />
       <Tab.Screen name="Settings"  component={PhlebotomistSettingsScreen} options={{ title: 'Settings'   }} />
     </Tab.Navigator>
   );

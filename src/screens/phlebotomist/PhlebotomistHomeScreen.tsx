@@ -95,6 +95,46 @@ export default function PhlebotomistHomeScreen({ navigation }: any) {
           });
         }
       }
+
+      // 2. Fetch all registered patients from GetGrid to catch those without tests
+      try {
+        const res2 = await fetch(`${API_BASE_URL}/api/EditPatient/GetGrid`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            BranchId: 1, FromDate: `${today}T00:00:00`, ToDate: `${today}T23:59:59`,
+            PageNo: 1, PageSize: 100, CenterName: '', PatientName: '', MobileNo: '', PatRegID: 0
+          }),
+        });
+        const data2 = await res2.json();
+        let rows2: any[] = [];
+        if (data2?.Table0 && Array.isArray(data2.Table0)) rows2 = data2.Table0;
+        else if (data2?.GridData && Array.isArray(data2.GridData)) rows2 = data2.GridData;
+        else if (Array.isArray(data2)) rows2 = data2;
+
+        for (const r of rows2) {
+          const pid = r.PID || r.PatRegID;
+          if (pid && !map.has(pid)) {
+            map.set(pid, {
+              PID:           pid, PatRegID: r.PatRegID || r.PID,
+              PatientName:   r.PatientName ?? r.Name ?? r.Patname ?? '—',
+              Patphoneno:    r.MobileNo ?? r.Patphoneno ?? '—',
+              Status:        'Registered',
+              Patregdate:    r.Patregdate  ?? '',
+              BarcodeID:     '—',
+              Drname:        '—',
+              CenterName:    r.CenterName  ?? '—',
+              IspheboAccept: 0,
+              Isemergency:   false,
+              TestCharges:   0,
+              tests:         ['No Test Added'],
+            });
+          }
+        }
+      } catch (e) {
+        console.log('[PhlebotomistHome] GetGrid fetch failed:', e);
+      }
+
       setSamples(Array.from(map.values()));
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to load samples.');

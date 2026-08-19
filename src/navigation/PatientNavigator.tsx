@@ -9,7 +9,8 @@ import HomeScreen from '../screens/patient/HomeScreen';
 import ServicesScreen from '../screens/patient/ServicesScreen';
 import PatientProfileScreen from '../screens/patient/PatientProfileScreen';
 import PersonalInfoScreen from '../screens/patient/PersonalInfoScreen';
-import MyBookingsScreen from '../screens/patient/BookingTests';
+import MyBookingsScreen from '../screens/patient/MyBookingsScreen';
+import BookingTestsScreen from '../screens/patient/BookingTests';
 import PaymentsScreen from '../screens/patient/PaymentsScreen';
 import ReportsScreen from '../screens/patient/ReportsScreen';
 import ScheduleCollectionScreen from '../screens/patient/ScheduleCollectionScreen';
@@ -26,6 +27,7 @@ function HomeStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="HomeMain" component={HomeScreen} />
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
+      <Stack.Screen name="BookingTests" component={BookingTestsScreen} />
       <Stack.Screen name="ScheduleCollection" component={ScheduleCollectionScreen} />
       <Stack.Screen name="Payments" component={PaymentsScreen} />
       <Stack.Screen name="BookAppointment" component={BookAppointmentScreen} />
@@ -50,6 +52,7 @@ function ProfileStack() {
       <Stack.Screen name="ProfileMain" component={PatientProfileScreen} />
       <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
+      <Stack.Screen name="BookingTests" component={BookingTestsScreen} />
       <Stack.Screen name="ScheduleCollection" component={ScheduleCollectionScreen} />
       <Stack.Screen name="Payments" component={PaymentsScreen} />
     </Stack.Navigator>

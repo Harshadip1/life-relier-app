@@ -10,10 +10,56 @@ import {
   getDoctorDropdown,
   getAllSlots,
   saveAppointment,
+  getAllDoctorSchedules,
+  getAllAppointments,
   DoctorDropdownItem,
   DrSlotRecord,
+  DoctorScheduleRecord,
+  AppointmentRecord,
 } from '../../services/doctorScheduleService';
 import { useAuth } from '../../context/AuthContext';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function parseTimeToMins(t: string): number {
+  if (!t) return 0;
+  t = t.trim();
+  if (/AM|PM/i.test(t)) {
+    const [timePart, meridiem] = t.split(' ');
+    let [h, m] = timePart.split(':').map(Number);
+    if (/PM/i.test(meridiem) && h !== 12) h += 12;
+    if (/AM/i.test(meridiem) && h === 12) h = 0;
+    return h * 60 + m;
+  }
+  const parts = t.split(':').map(Number);
+  return parts[0] * 60 + (parts[1] || 0);
+}
+
+function minsToSlotKey(mins: number): string {
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+function generateSlots(startTime: string, endTime: string, slotMins: number): string[] {
+  const start = parseTimeToMins(startTime);
+  const end   = parseTimeToMins(endTime);
+  const slots: string[] = [];
+  for (let t = start; t + slotMins <= end; t += slotMins) {
+    slots.push(minsToSlotKey(t));
+  }
+  return slots;
+}
+
+function slotKeyToDisplay(slot: string): string {
+  if (!slot) return slot;
+  if (/AM|PM/i.test(slot)) return slot;
+  const [hStr, mStr] = slot.split(':');
+  let h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12  = h % 12 || 12;
+  return `${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ampm}`;
+}
 
 const THEME = {
   primary:      '#0F766E',
@@ -56,7 +102,10 @@ export default function BookAppointmentScreen({ navigation }: any) {
   const [booking, setBooking]             = useState(false);
 
   const [doctors, setDoctors]     = useState<DoctorDropdownItem[]>([]);
-  const [slots, setSlots]         = useState<DrSlotRecord[]>([]);
+  const [generatedSlots, setGeneratedSlots] = useState<string[]>([]);
+  const [bookedSlots, setBookedSlots]       = useState<string[]>([]);
+  const [slotDurationMins, setSlotDurationMins] = useState(30);
+
   const [loadingDr, setLoadingDr] = useState(false);
   const [loadingSl, setLoadingSl] = useState(false);
 
@@ -71,22 +120,79 @@ export default function BookAppointmentScreen({ navigation }: any) {
   useEffect(() => {
     if (step !== 2 || !selectedDoc) return;
     setLoadingSl(true);
-    getAllSlots(1)
-      .then(all => setSlots(all.filter(s => s.DrId === selectedDoc.Id)))
-      .catch(() => {})
-      .finally(() => setLoadingSl(false));
-  }, [step, selectedDoc]);
 
-  // Generate time grid from slot duration
-  const slotMins = parseInt(String(slots[0]?.Slot ?? '30'), 10) || 30;
-  const timeSlots: string[] = [];
-  for (let h = 8; h < 20; h++) {
-    for (let m = 0; m < 60; m += slotMins) {
-      const ampm = h >= 12 ? 'PM' : 'AM';
-      const h12  = h % 12 || 12;
-      timeSlots.push(`${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ampm}`);
+    async function loadSlotsAndAppointments() {
+      try {
+        const dateStr = selectedDate.iso;
+        
+        const [schedB1, schedB4] = await Promise.all([
+          getAllDoctorSchedules(1).catch(() => []),
+          getAllDoctorSchedules(4).catch(() => []),
+        ]);
+        const schedules = [...schedB1, ...schedB4];
+        
+        const match = schedules.find(sc => {
+          const drId = sc.DrId ?? (sc as any).drId;
+          if (Number(drId) !== Number(selectedDoc!.Id)) return false;
+          const startMatch = String(sc.StartDate).match(/^(\d{4})-(\d{2})-(\d{2})/);
+          const endMatch   = String(sc.EndDate).match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (!startMatch || !endMatch) return false;
+          const start = `${startMatch[1]}-${startMatch[2]}-${startMatch[3]}`;
+          const end   = `${endMatch[1]}-${endMatch[2]}-${endMatch[3]}`;
+          return dateStr >= start && dateStr <= end;
+        });
+
+        if (!match) {
+           setGeneratedSlots([]);
+           setBookedSlots([]);
+           return;
+        }
+
+        const [slotsB1, slotsB4] = await Promise.all([
+          getAllSlots(1).catch(() => []),
+          getAllSlots(4).catch(() => []),
+        ]);
+        const allSlots = [...slotsB1, ...slotsB4];
+        const drSlot = allSlots.find(sl => Number(sl.DrId) === Number(selectedDoc!.Id) && sl.IsActive)
+                    || allSlots.find(sl => Number(sl.DrId) === Number(selectedDoc!.Id));
+        const slotMins = drSlot ? parseInt(drSlot.Slot, 10) : 30;
+        setSlotDurationMins(slotMins);
+
+        const slotsList = generateSlots(match.StartTime, match.EndTime || '20:00:00', slotMins);
+        setGeneratedSlots(slotsList);
+
+        const [apptB1, apptB4] = await Promise.all([
+          getAllAppointments(1).catch(() => []),
+          getAllAppointments(4).catch(() => []),
+        ]);
+        const allAppts = [...apptB1, ...apptB4];
+        const booked = allAppts
+          .filter(a => {
+            const dateMatch = String(a.AppointmentDate).match(/^(\d{4})-(\d{2})-(\d{2})/);
+            const aDate = dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : '';
+            return Number(a.DrId) === Number(selectedDoc!.Id) && aDate === dateStr;
+          })
+          .map(a => {
+            const slot = a.Slot ?? '';
+            if (/AM|PM/i.test(slot)) {
+              const [timePart, meridiem] = slot.trim().split(' ');
+              let [h, m] = timePart.split(':').map(Number);
+              if (/PM/i.test(meridiem) && h !== 12) h += 12;
+              if (/AM/i.test(meridiem) && h === 12) h = 0;
+              return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+            }
+            return slot.trim().substring(0, 5);
+          });
+        setBookedSlots(booked);
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setLoadingSl(false);
+      }
     }
-  }
+
+    loadSlotsAndAppointments();
+  }, [step, selectedDoc, selectedDate]);
 
   const handleBack = () => {
     if (step > 1) setStep(step - 1);
@@ -238,19 +344,43 @@ export default function BookAppointmentScreen({ navigation }: any) {
             <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Available Slots</Text>
             {loadingSl ? (
               <ActivityIndicator color={THEME.primary} style={{ marginTop: 16 }} />
+            ) : generatedSlots.length === 0 ? (
+              <Text style={{ marginTop: 16, color: THEME.textSecondary, fontSize: 14 }}>
+                No schedule available for this date.
+              </Text>
             ) : (
               <View style={styles.slotGrid}>
-                {timeSlots.map((slot, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    style={[styles.slotBtn, selectedSlot === slot && styles.slotBtnActive]}
-                    onPress={() => setSelectedSlot(slot)}
-                  >
-                    <Text style={[styles.slotText, selectedSlot === slot && styles.textWhite]}>
-                      {slot}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {generatedSlots.map((slotTime, i) => {
+                  const isBooked = bookedSlots.includes(slotTime);
+                  const isToday = selectedDate.iso === new Date().toISOString().split('T')[0];
+                  const now = new Date();
+                  const currentMins = now.getHours() * 60 + now.getMinutes();
+                  const slotMinsVal = parseTimeToMins(slotTime);
+                  const past = isToday && (slotMinsVal < currentMins);
+
+                  return (
+                    <TouchableOpacity
+                      key={i}
+                      style={[
+                        styles.slotBtn, 
+                        selectedSlot === slotTime && styles.slotBtnActive,
+                        isBooked && styles.slotBooked,
+                        past && !isBooked && styles.slotPast
+                      ]}
+                      disabled={isBooked || past}
+                      onPress={() => setSelectedSlot(slotTime)}
+                    >
+                      <Text style={[
+                        styles.slotText, 
+                        selectedSlot === slotTime && styles.textWhite,
+                        isBooked && styles.slotBookedTxt,
+                        past && !isBooked && styles.slotPastTxt
+                      ]}>
+                        {slotKeyToDisplay(slotTime)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             )}
           </View>
@@ -273,7 +403,7 @@ export default function BookAppointmentScreen({ navigation }: any) {
                 <Feather name="calendar" size={18} color={THEME.textSecondary} />
                 <View style={styles.summaryInfo}>
                   <Text style={styles.summaryLabel}>Date & Time</Text>
-                  <Text style={styles.summaryValue}>{selectedDate.full} at {selectedSlot}</Text>
+                  <Text style={styles.summaryValue}>{selectedDate.full} at {slotKeyToDisplay(selectedSlot || '')}</Text>
                 </View>
               </View>
               <View style={styles.divider} />
@@ -320,7 +450,7 @@ export default function BookAppointmentScreen({ navigation }: any) {
             <Text style={styles.successTitle}>Booking Confirmed!</Text>
             <Text style={styles.successSubtitle}>
               Your appointment with {selectedDoc?.FullName} is scheduled for{' '}
-              {selectedDate?.full} at {selectedSlot}.
+              {selectedDate?.full} at {slotKeyToDisplay(selectedSlot || '')}.
             </Text>
             <TouchableOpacity
               style={[styles.primaryBtn, { width: '100%', marginTop: 24 }]}
@@ -376,6 +506,10 @@ const styles = StyleSheet.create({
   slotBtn:           { width: '30%', backgroundColor: THEME.bg, paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: THEME.border, alignItems: 'center' },
   slotBtnActive:     { backgroundColor: THEME.primary, borderColor: THEME.primary },
   slotText:          { fontSize: 12, fontWeight: '600', color: THEME.textPrimary },
+  slotBooked:        { backgroundColor: '#FEF2F2', borderColor: '#EF4444' },
+  slotBookedTxt:     { color: '#EF4444' },
+  slotPast:          { backgroundColor: '#F1F5F9', borderColor: '#CBD5E1' },
+  slotPastTxt:       { color: '#94A3B8' },
 
   // Step 3
   summaryCard:  { backgroundColor: THEME.bg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: THEME.border },

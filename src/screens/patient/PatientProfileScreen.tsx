@@ -9,8 +9,7 @@ const SECTIONS = [
   {
     title: 'Account',
     items: [
-      { id: 'personal', icon: 'user', label: 'Personal Information', sublabel: 'View and update your personal details', type: 'feather' },
-      { id: 'password', icon: 'lock', label: 'Change Password', sublabel: 'Update your account password', type: 'feather' },
+      { id: 'personal', icon: 'user', label: 'My Profile', sublabel: 'View personal information', type: 'feather' },
     ]
   },
   {
@@ -41,7 +40,13 @@ export default function PatientProfileScreen({ navigation }: any) {
 
   const handleMenuPress = (id: string) => {
     switch (id) {
-      case 'personal': navigation.navigate('PersonalInfo'); break;
+      case 'personal': 
+        Alert.alert(
+          'Profile',
+          `Name: ${user?.name || 'N/A'}\nEmail: ${(user as any)?.email || 'N/A'}\nPhone: ${user?.phone || 'N/A'}`,
+          [{ text: 'OK' }]
+        );
+        break;
       case 'bookings': navigation.navigate('MyBookings'); break;
       case 'payments': navigation.navigate('Payments'); break;
       default: Alert.alert('Coming Soon', 'This section will be enabled in the next update.'); break;
@@ -87,11 +92,6 @@ export default function PatientProfileScreen({ navigation }: any) {
               <Text style={styles.phoneText}>{user?.phone || '+91 91234 56789'}</Text>
             </View>
           </View>
-
-          <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('PersonalInfo')}>
-            <Feather name="edit-2" size={12} color={COLORS.primary} style={{ marginRight: 4 }} />
-            <Text style={styles.editBtnText}>Edit</Text>
-          </TouchableOpacity>
         </View>
 
         {/* ── Dynamic Menu Sections ── */}

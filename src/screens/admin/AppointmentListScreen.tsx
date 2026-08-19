@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
-import { COLORS } from '../../utils/constants';
+import { useAuth } from '../../context/AuthContext';
+import { COLORS, API_BASE_URL } from '../../utils/constants';
 import {
   getDoctorDropdown,
   getAllAppointments,
@@ -35,7 +36,10 @@ function formatSlot(slot: string): string {
 
 export default function AppointmentListScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const [date, setDate]               = useState<Date | null>(null); // null = show all
+  const { user } = useAuth();
+  const isPhlebo = user?.role === 'phlebotomist';
+
+  const [date, setDate]               = useState<Date | null>(new Date()); // defaults to current date
   const [showPicker, setShowPicker]   = useState(false);
   const [doctors, setDoctors]         = useState<DoctorDropdownItem[]>([]);
   const [selectedDrId, setSelectedDrId]   = useState<number | null>(null);
@@ -45,10 +49,15 @@ export default function AppointmentListScreen({ navigation }: any) {
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState<string | null>(null);
+  const [testStatusMap, setTestStatusMap] = useState<Record<string, 'loading' | 'hasTests' | 'noTests'>>({});
 
   useEffect(() => {
     getDoctorDropdown(1).then(setDoctors).catch(() => {});
-  }, []);
+    if (isPhlebo && user?.id) {
+      setSelectedDrId(Number(user.id));
+      setSelectedDrName(user.name ?? '');
+    }
+  }, [isPhlebo, user]);
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
@@ -101,6 +110,46 @@ export default function AppointmentListScreen({ navigation }: any) {
     })();
     return matchesSearch && matchesDoctor && matchesDate;
   });
+
+  useEffect(() => {
+    const newMobiles = [...new Set(filtered.map(a => a.Mobile).filter(m => m && !testStatusMap[m]))];
+    if (newMobiles.length === 0) return;
+
+    setTestStatusMap(prev => {
+      const next = { ...prev };
+      newMobiles.forEach(m => { next[m] = 'loading'; });
+      return next;
+    });
+
+    const fetchTests = async () => {
+      const results = await Promise.all(newMobiles.map(async m => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({
+              BranchId: 1, FromDate: '2020-01-01', ToDate: '2030-01-01',
+              PatRegID: '', PatientName: '',
+              DoctorName: '', TestName: '', MobileNo: m,
+              Barcode: '', CenterCode: '', SubDepartment: '', Status: 'All',
+            }),
+          });
+          const data = await res.json();
+          const rows = Array.isArray(data) ? data : Array.isArray(data?.value) ? data.value : [];
+          return { mobile: m, status: rows.length > 0 ? 'hasTests' : 'noTests' } as const;
+        } catch {
+          return { mobile: m, status: 'noTests' } as const;
+        }
+      }));
+
+      setTestStatusMap(prev => {
+        const next = { ...prev };
+        results.forEach(r => { next[r.mobile] = r.status; });
+        return next;
+      });
+    };
+    fetchTests();
+  }, [filtered]);
 
   /** Robust date formatter — parses "YYYY-MM-DDT..." or "YYYY-MM-DD" without timezone shift */
   function fmtDate(iso: string): string {
@@ -202,27 +251,31 @@ export default function AppointmentListScreen({ navigation }: any) {
                 onChange={(_, s) => { setShowPicker(false); if (s) setDate(s); }} />
             )}
 
-            {/* Doctor dropdown */}
-            <Text style={[styles.label, { marginTop: 16 }]}>Collection Person</Text>
-            <TouchableOpacity style={styles.dropdown} onPress={() => setShowDropdown(!showDropdown)}>
-              <Text style={[styles.dropdownText, !selectedDrName && { color: COLORS.textMuted }]}>
-                {selectedDrName || 'Select...'}
-              </Text>
-              <Feather name="chevron-down" size={18} color="#64748B" />
-            </TouchableOpacity>
-            {showDropdown && (
-              <View style={styles.dropdownMenu}>
-                <TouchableOpacity style={styles.dropdownItem}
-                  onPress={() => { setSelectedDrId(null); setSelectedDrName(''); setShowDropdown(false); }}>
-                  <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>All Doctors</Text>
+            {/* Doctor dropdown (Hidden for phlebotomists) */}
+            {!isPhlebo && (
+              <>
+                <Text style={[styles.label, { marginTop: 16 }]}>Collection Person</Text>
+                <TouchableOpacity style={styles.dropdown} onPress={() => setShowDropdown(!showDropdown)}>
+                  <Text style={[styles.dropdownText, !selectedDrName && { color: COLORS.textMuted }]}>
+                    {selectedDrName || 'Select...'}
+                  </Text>
+                  <Feather name="chevron-down" size={18} color="#64748B" />
                 </TouchableOpacity>
-                {doctors.map(d => (
-                  <TouchableOpacity key={d.Id} style={styles.dropdownItem}
-                    onPress={() => { setSelectedDrId(d.Id); setSelectedDrName(d.FullName); setShowDropdown(false); }}>
-                    <Text style={styles.dropdownItemText}>{d.FullName}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                {showDropdown && (
+                  <View style={styles.dropdownMenu}>
+                    <TouchableOpacity style={styles.dropdownItem}
+                      onPress={() => { setSelectedDrId(null); setSelectedDrName(''); setShowDropdown(false); }}>
+                      <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>All Doctors</Text>
+                    </TouchableOpacity>
+                    {doctors.map(d => (
+                      <TouchableOpacity key={d.Id} style={styles.dropdownItem}
+                        onPress={() => { setSelectedDrId(d.Id); setSelectedDrName(d.FullName); setShowDropdown(false); }}>
+                        <Text style={styles.dropdownItemText}>{d.FullName}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </>
             )}
 
             {/* Search */}
@@ -258,8 +311,23 @@ export default function AppointmentListScreen({ navigation }: any) {
                 const patientName = item.Name
                   || (item.FirstName ? `${item.FirstName} ${item.LastName ?? ''}`.trim() : '')
                   || '—';
+                const tStatus = testStatusMap[item.Mobile];
+                const isUnregistered = tStatus === 'noTests';
+
                 return (
-                <View key={String(item.AppointmentId ?? idx)} style={styles.apptRow}>
+                <TouchableOpacity 
+                  key={String(item.AppointmentId ?? idx)} 
+                  style={[
+                    styles.apptRow,
+                    isUnregistered && { backgroundColor: '#FFF7ED', borderColor: '#F97316', borderWidth: 1, borderRadius: 10, marginVertical: 4, paddingHorizontal: 10 }
+                  ]}
+                  onPress={() => {
+                    if (isUnregistered) {
+                      navigation.navigate('NewRegistration', { mobile: item.Mobile, name: patientName });
+                    }
+                  }}
+                  activeOpacity={isUnregistered ? 0.7 : 1}
+                >
                   <View style={styles.apptIcon}>
                     <MaterialCommunityIcons name="calendar-account" size={18} color={COLORS.primary} />
                   </View>
@@ -280,15 +348,18 @@ export default function AppointmentListScreen({ navigation }: any) {
                   {/* Status badge */}
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>
                     <View style={[styles.statusPill, {
-                      backgroundColor: item.Status === 'Pending' ? '#FFFBEB'
+                      backgroundColor: item.Status === 'Cancelled' ? '#FEF2F2'
+                        : item.Status === 'Pending' ? '#FFFBEB'
                         : item.IsActive ? '#F0FDFA' : '#F1F5F9',
                     }]}>
                       <View style={[styles.statusDot, {
-                        backgroundColor: item.Status === 'Pending' ? '#F59E0B'
+                        backgroundColor: item.Status === 'Cancelled' ? '#EF4444'
+                          : item.Status === 'Pending' ? '#F59E0B'
                           : item.IsActive ? '#10B981' : '#94A3B8',
                       }]} />
                       <Text style={[styles.statusText, {
-                        color: item.Status === 'Pending' ? '#F59E0B'
+                        color: item.Status === 'Cancelled' ? '#EF4444'
+                          : item.Status === 'Pending' ? '#F59E0B'
                           : item.IsActive ? '#10B981' : '#94A3B8',
                       }]}>
                         {item.Status ?? (item.IsActive ? 'Active' : 'Done')}
@@ -301,7 +372,7 @@ export default function AppointmentListScreen({ navigation }: any) {
                       <Feather name="trash-2" size={12} color="#EF4444" />
                     </TouchableOpacity>
                   </View>
-                </View>
+                </TouchableOpacity>
               ); })
             )}
           </View>

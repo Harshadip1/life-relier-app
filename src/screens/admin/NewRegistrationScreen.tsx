@@ -14,7 +14,7 @@ import {
   getInitials, searchPatient, searchPatientByMobile, searchTests,
   InitialItem, SearchPatientItem, TestResult,
 } from '../../services/registrationService';
-import { getTestNames, getAllTestCharges, TestNameItem } from '../../services/testChargesService';
+import { getTestNames, getAllTestCharges, TestNameItem, getCenters, CenterItem } from '../../services/testChargesService';
 import { getAllReferringDoctors, ReferringDoctorRecord } from '../../services/referringDoctorService';
 import { API_BASE_URL , COLORS} from '../../utils/constants';
 
@@ -145,13 +145,15 @@ function StepIndicator({ current }: { current: number }) {
   );
 }
 
-export default function NewRegistrationScreen({ navigation }: any) {
+export default function NewRegistrationScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const [step, setStep] = useState(1);
 
   const [mainLab,      setMainLab]      = useState('');
   const [rateType,     setRateType]     = useState('MRP1');
+  const [centerCode,   setCenterCode]   = useState('');
+  const [centers,      setCenters]      = useState<CenterItem[]>([]);
   const [refDoctor,    setRefDoctor]    = useState('');
   const [initial,      setInitial]      = useState('');
   const [patName,      setPatName]      = useState('');
@@ -231,6 +233,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
   const [mobileMessage, setMobileMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    getCenters(1).then(d => setCenters(d)).catch(() => {});
     getInitials().then(d => { if (d.length) setInitialsList(d); }).catch(() => {});
     // Load referring doctors from real API — always prepend "Self"
     getAllReferringDoctors(1).then(d => setDoctorsList(d)).catch(() => {});;
@@ -247,14 +250,14 @@ export default function NewRegistrationScreen({ navigation }: any) {
   }, []);
 
   // ── Auto-fill all fields from a searched patient ───────────────────────────
-  const handlePatientSelect = (p: SearchPatientItem) => {
+  const handlePatientSelect = async (p: SearchPatientItem) => {
     setPatSearch('');
     setPatSearchResults([]);
     setShowNameDrop(false);
     setNameResults([]);
     setMobileMessage(null);
     
-    // Populate all fields from the search result
+    // Populate basic fields from the search result immediately
     setRegNo(String(p.PPID));
     if (p.intial)          setInitial(p.intial);
     if (p.Patname)         setPatName(p.Patname);
@@ -275,8 +278,48 @@ export default function NewRegistrationScreen({ navigation }: any) {
       if (!isNaN(d.getTime())) setDob(d);
     }
     
+    // Fetch full patient details since GetGrid doesn't provide them
+    try {
+      const { getPatient } = await import('../../services/editPatientService');
+      const full = await getPatient(p.PPID);
+      if (full) {
+        if (full.Initial) setInitial(full.Initial);
+        if (full.Gender) setGender(full.Gender);
+        if (full.Age) setAge(String(full.Age));
+        if (full.DOB) setDob(new Date(full.DOB));
+        if (full.Email) setEmail(full.Email);
+        if (full.Address || full.Pataddress) setAddress(full.Address || full.Pataddress || '');
+      }
+    } catch(e) {
+      // ignore, basic data is already populated
+    }
+
     Alert.alert('✅ Patient Loaded', `Data auto-filled for ${p.Patname ?? 'Patient'} (ID: ${p.PPID})`);
   };
+
+  // ── Pre-fill from route params ─────────────────────────────────────────────
+  useEffect(() => {
+    if (route?.params) {
+      const { mobile: rMobile, name: rName } = route.params;
+      if (rMobile) {
+        setMobile(rMobile);
+        // Automatically search and populate the rest of the patient details
+        import('../../services/registrationService').then(({ searchPatient }) => {
+          searchPatient(rMobile).then(results => {
+            if (results && results.length > 0) {
+              handlePatientSelect(results[0]);
+            } else if (rName) {
+              setPatName(rName);
+            }
+          }).catch(() => {
+            if (rName) setPatName(rName);
+          });
+        });
+      } else if (rName) {
+        setPatName(rName);
+      }
+    }
+  }, [route?.params]);
 
   // ── Live search helpers ────────────────────────────────────────────────────
   const searchByName = async (txt: string) => {
@@ -528,6 +571,7 @@ export default function NewRegistrationScreen({ navigation }: any) {
     if (!age.trim())       missing.push('• Age');
     if (!mobile.trim())    missing.push('• Mobile Number');
     if (!refDoctor.trim()) missing.push('• Ref Doctor');
+    if (!centerCode)       missing.push('• Center');
     if (!address.trim())   missing.push('• Address');
     if (addedTests.length === 0) missing.push('• At least one Test');
     if (!paidAmt.trim() || parseFloat(paidAmt) < 0) missing.push('• Paid Amount');
@@ -586,6 +630,9 @@ export default function NewRegistrationScreen({ navigation }: any) {
         PatientCardNo:     patCardNo.trim(),
         PatientCardExpNo:  cardExp.trim(),
         HospitalNo:        hospitalId.trim(),
+        // ── Center ─────────────────────────────────────────────────────────
+        CenterCode:        centerCode ? parseInt(centerCode, 10) : null,
+        CenterName:        centers.find(c => String(c.CenterCode) === centerCode)?.CenterName || '',
         // ── Clinical ──────────────────────────────────────────────────────
         Weights:           weight.trim(),
         Heights:           height.trim(),
@@ -605,11 +652,14 @@ export default function NewRegistrationScreen({ navigation }: any) {
         TestList:   addedTests.map(name => ({
           MainTestId:   addedTestIds[name] ?? allTests.find(t => t.TestName === name || t.MainTestName === name)?.MainTestId ?? 0,
           TestName:     name,
-          TestType:     'Test',
+          PatTestName:  name,
+          MainTestName: name,
+          TestType:     'T',
           PackageId:    0,
           PackageCode:  '',
-          MTCode:       '',
+          MTCode:       allTests.find(t => t.TestName === name || t.MainTestName === name)?.TestCode ?? '',
           Amount:       testPrices[name] ?? 0,
+          TestRate:     testPrices[name] ?? 0,
           ClientRate:   testPrices[name] ?? 0,
         })),
         // ── Payment / billing ──────────────────────────────────────────────
@@ -621,6 +671,11 @@ export default function NewRegistrationScreen({ navigation }: any) {
         OtherChargeRemark: otherRemark.trim(),
         Remark:            remark.trim(),
         RateType:          rateType,
+        TestCharges:       testTotal,
+        BillAmt:           grossTotal,
+        AmtPaid:           parseFloat(paidAmt) || 0,
+        DisAmt:            parseFloat(discAmt) || 0,
+        BalAmt:            balance,
         Status:            'Registered',
       });
 
@@ -824,6 +879,19 @@ export default function NewRegistrationScreen({ navigation }: any) {
                     .filter(d => d.DoctorName?.toLowerCase() !== 'self')
                     .map(d => d.DoctorName)]}
                   onSelect={setRefDoctor} placeholder="Ref Doctor" />
+              </Field>
+
+              {/* Center */}
+              <Field>
+                <InlineSelect
+                  value={centers.find(c => String(c.CenterCode) === centerCode)?.CenterName || ''}
+                  options={centers.map(c => c.CenterName)}
+                  onSelect={(name: string) => {
+                    const match = centers.find(c => c.CenterName === name);
+                    if (match) setCenterCode(String(match.CenterCode));
+                  }}
+                  placeholder="Select Center"
+                />
               </Field>
 
               {/* Address */}

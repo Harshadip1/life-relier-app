@@ -52,6 +52,9 @@ export interface RegisterPatientPayload {
   PatientCardNo:     string;
   PatientCardExpNo:  string;
   HospitalNo:        string;
+  // ── Center ────────────────────────────────────────────────────────────────
+  CenterCode:        number | null;
+  CenterName:        string;
   // ── Clinical ──────────────────────────────────────────────────────────────
   Weights:           string;
   Heights:           string;
@@ -66,25 +69,33 @@ export interface RegisterPatientPayload {
   Isemergency:       boolean;
   // ── Tests ─────────────────────────────────────────────────────────────────
   TestNames:         string[];   // backward compat — array of test name strings
-  TestList?:         Array<{     // preferred — objects with MainTestId for proper billing record creation
-    MainTestId:  number;
-    TestName:    string;
-    TestType:    string;
-    PackageId:   number;
-    PackageCode: string;
-    MTCode:      string;
-    Amount:      number;
-    ClientRate?: number;
+  TestList: Array<{
+    MainTestId:   number;
+    TestName:     string;
+    PatTestName:  string;
+    MainTestName: string;
+    TestType:     string;
+    PackageId:    number;
+    PackageCode:  string;
+    MTCode:       string;
+    Amount:       number;
+    TestRate:     number;
+    ClientRate:   number;
   }>;
   // ── Payment / billing ─────────────────────────────────────────────────────
   PaymentType:       string;
-  TotalAmount:       number;
-  PaidAmount:        number;
-  DiscountAmount:    number;
+  TotalAmount?:      number;
+  PaidAmount?:       number;
+  DiscountAmount?:   number;
   OtherCharges:      number;
   OtherChargeRemark: string;
   Remark:            string;
   RateType:          string;
+  TestCharges:       number;
+  BillAmt:           number;
+  AmtPaid:           number;
+  DisAmt:            number;
+  BalAmt:            number;
   // ── Status — required so backend creates the billing record ───────────────
   Status:            string;
 }
@@ -187,57 +198,49 @@ export async function getDoctors(): Promise<DoctorItem[]> {
 }
 
 /**
- * Search patients by name using GetPatientTestStatus (confirmed working).
+ * Search patients by name using GetGrid.
  * De-duplicates by PID so each patient appears once in dropdown.
  */
 export async function searchPatient(searchText: string): Promise<SearchPatientItem[]> {
   if (!searchText || searchText.trim().length < 2) return [];
   const today = new Date().toISOString().split('T')[0];
   try {
-    const res = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+    const res = await fetch(`${API_BASE_URL}/api/EditPatient/GetGrid`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
-        BranchId: 1, FromDate: '2024-01-01', ToDate: today,
-        PatRegID: '', PatientName: searchText.trim(),
-        DoctorName: '', TestName: '', MobileNo: '',
-        Barcode: '', CenterCode: '', SubDepartment: '', Status: 'All',
+        BranchId: 1, FromDate: '2024-01-01T00:00:00', ToDate: `${today}T23:59:59`,
+        PageNo: 1, PageSize: 30, CenterName: '', PatientName: searchText.trim(), MobileNo: '', PatRegID: 0
       }),
     });
     const data = await res.json();
-    const rows: any[] = Array.isArray(data) ? data : (data?.value ?? []);
-    
-    // Debug: Log ALL field names from first row to see what's available
-    if (rows.length > 0) {
-      console.log('[SearchPatient] Available fields:', Object.keys(rows[0]).sort().join(', '));
-      console.log('[SearchPatient] Sample data:', {
-        intial: rows[0].intial ?? rows[0].Initial ?? rows[0].Intial,
-        DOB: rows[0].DateOfBirth ?? rows[0].DOB,
-        RefDoctor: rows[0].RefDoctor ?? rows[0].DoctorName ?? rows[0].Drname,
-        Address: rows[0].Pataddress ?? rows[0].Address,
-      });
-    }
+    let rows: any[] = [];
+    if (data?.Table0 && Array.isArray(data.Table0)) rows = data.Table0;
+    else if (data?.GridData && Array.isArray(data.GridData)) rows = data.GridData;
+    else if (Array.isArray(data)) rows = data;
+    else if (data?.data && Array.isArray(data.data)) rows = data.data;
+    else if (data?.value && Array.isArray(data.value)) rows = data.value;
     
     // De-duplicate by PID
     const seen = new Set<number>();
     const result: SearchPatientItem[] = [];
     for (const r of rows) {
       const pid = r.PatRegID ?? r.PID ?? r.PPID;
-      if (seen.has(pid)) continue;
+      if (!pid || seen.has(pid)) continue;
       seen.add(pid);
       result.push({
         PPID:             pid,
-        Patname:          r.Patname ?? r.PatientName ?? r.Name ?? null,
+        Patname:          r.PatientName ?? r.Name ?? r.Patname ?? null,
         intial:           r.intial ?? r.Initial ?? r.Intial ?? null,
-        sex:              r.sex ?? r.Gender ?? null,
+        sex:              r.Gender ?? r.sex ?? null,
         Age:              r.Age ?? null,
         MDY:              r.MDY ?? 'Year',
-        MobileNo:         r.Patphoneno ?? r.MobileNo ?? r.Phone ?? null,
+        MobileNo:         r.MobileNo ?? r.Patphoneno ?? r.Phone ?? null,
         Email:            r.Email ?? r.EmailID ?? null,
-        Pataddress:       r.Pataddress ?? r.Address ?? r.PatientAddress ?? null,
+        Pataddress:       r.Address ?? r.Pataddress ?? r.PatientAddress ?? null,
         PatientCardNo:    r.PatientCardNo ?? r.CardNo ?? null,
         PatientCardExpNo: r.PatientCardExpNo ?? r.CardExpNo ?? null,
-        DateOfBirth:      r.DateOfBirth ?? r.DOB ?? r.dob ?? null,
+        DateOfBirth:      r.DOB ?? r.DateOfBirth ?? r.dob ?? null,
         RefDoctor:        r.RefDoctor ?? r.Drname ?? r.DoctorName ?? r.ReferingDoctor ?? null,
         DoctorName:       r.DoctorName ?? r.Drname ?? r.RefDoctor ?? null,
       });
@@ -256,6 +259,7 @@ export async function searchTests(searchText: string): Promise<TestResult[]> {
   const data = await postJson<any>('/api/Search/SearchTestAndPackage', {
     SearchText: searchText,
     BranchId:   1,
+    RateTypeId: 1, // Required by backend
   });
   const list: any[] = Array.isArray(data) ? data
     : data?.data && Array.isArray(data.data) ? data.data : [];
@@ -273,62 +277,54 @@ export async function searchTests(searchText: string): Promise<TestResult[]> {
 }
 
 /**
- * Search patients by mobile number.
+ * Search patients by mobile number using GetGrid.
  * Requires exactly 10 digits and only returns exact matches.
  */
 export async function searchPatientByMobile(mobileNo: string): Promise<SearchPatientItem[]> {
   if (!mobileNo || mobileNo.trim().length !== 10) return [];
   const today = new Date().toISOString().split('T')[0];
   try {
-    const res = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
+    const res = await fetch(`${API_BASE_URL}/api/EditPatient/GetGrid`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
-        BranchId: 1, FromDate: '2024-01-01', ToDate: today,
-        PatRegID: '', PatientName: '', DoctorName: '', TestName: '', MobileNo: mobileNo.trim(),
-        Barcode: '', CenterCode: '', SubDepartment: '', Status: 'All',
+        BranchId: 1, FromDate: '2024-01-01T00:00:00', ToDate: `${today}T23:59:59`,
+        PageNo: 1, PageSize: 30, CenterName: '', PatientName: '', MobileNo: mobileNo.trim(), PatRegID: 0
       }),
     });
     const data = await res.json();
-    const rows: any[] = Array.isArray(data) ? data : (data?.value ?? []);
-    
-    // Debug: Log ALL field names from first row to see what's available
-    if (rows.length > 0) {
-      console.log('[SearchPatientByMobile] Available fields:', Object.keys(rows[0]).sort().join(', '));
-      console.log('[SearchPatientByMobile] Sample data:', {
-        intial: rows[0].intial ?? rows[0].Initial ?? rows[0].Intial,
-        DOB: rows[0].DateOfBirth ?? rows[0].DOB,
-        RefDoctor: rows[0].RefDoctor ?? rows[0].DoctorName ?? rows[0].Drname,
-        Address: rows[0].Pataddress ?? rows[0].Address,
-      });
-    }
+    let rows: any[] = [];
+    if (data?.Table0 && Array.isArray(data.Table0)) rows = data.Table0;
+    else if (data?.GridData && Array.isArray(data.GridData)) rows = data.GridData;
+    else if (Array.isArray(data)) rows = data;
+    else if (data?.data && Array.isArray(data.data)) rows = data.data;
+    else if (data?.value && Array.isArray(data.value)) rows = data.value;
     
     // We only want exact matches
     const exactMatches = rows.filter(r => {
-      const p = (r.Patphoneno || r.MobileNo || '').toString().trim();
+      const p = (r.MobileNo || r.Patphoneno || r.Phone || '').toString().trim();
       return p === mobileNo.trim();
     });
 
-    // De-duplicate by PID
     const seen = new Set<number>();
     const result: SearchPatientItem[] = [];
     for (const r of exactMatches) {
       const pid = r.PatRegID ?? r.PID ?? r.PPID;
-      if (seen.has(pid)) continue;
+      if (!pid || seen.has(pid)) continue;
       seen.add(pid);
       result.push({
         PPID:             pid,
-        Patname:          r.Patname ?? r.PatientName ?? r.Name ?? null,
+        Patname:          r.PatientName ?? r.Name ?? r.Patname ?? null,
         intial:           r.intial ?? r.Initial ?? r.Intial ?? null,
-        sex:              r.sex ?? r.Gender ?? null,
+        sex:              r.Gender ?? r.sex ?? null,
         Age:              r.Age ?? null,
         MDY:              r.MDY ?? 'Year',
-        MobileNo:         (r.Patphoneno || r.MobileNo || r.Phone || '').toString().trim() || null,
+        MobileNo:         (r.MobileNo || r.Patphoneno || r.Phone || '').toString().trim() || null,
         Email:            r.Email ?? r.EmailID ?? null,
-        Pataddress:       r.Pataddress ?? r.Address ?? r.PatientAddress ?? null,
+        Pataddress:       r.Address ?? r.Pataddress ?? r.PatientAddress ?? null,
         PatientCardNo:    r.PatientCardNo ?? r.CardNo ?? null,
         PatientCardExpNo: r.PatientCardExpNo ?? r.CardExpNo ?? null,
-        DateOfBirth:      r.DateOfBirth ?? r.DOB ?? r.dob ?? null,
+        DateOfBirth:      r.DOB ?? r.DateOfBirth ?? r.dob ?? null,
         RefDoctor:        r.RefDoctor ?? r.Drname ?? r.DoctorName ?? r.ReferingDoctor ?? null,
         DoctorName:       r.DoctorName ?? r.Drname ?? r.RefDoctor ?? null,
       });
