@@ -188,13 +188,31 @@ export async function getPatientBill(PID: number, BranchId = 1): Promise<Patient
   };
 }
 
+import { getCenters } from './testChargesService';
+
 /** GET billing centers */
 export async function getBillingCenters(BranchId = 1): Promise<BillingCenter[]> {
-  const data = await post<any>('/api/BillingDesk/GetCenters', { BranchId });
-  const list: any[] = Array.isArray(data) ? data
-    : data?.value ? data.value
-    : data?.data  ? data.data : [];
-  return list;
+  try {
+    const centers = await getCenters(BranchId);
+    if (centers && centers.length > 0) {
+      return centers.map(c => ({
+        CenterCode: Number(c.CenterCode),
+        CenterName: c.CenterName,
+      }));
+    }
+  } catch {}
+  try {
+    const data = await post<any>('/api/BillingDesk/GetCenters', { BranchId });
+    const list: any[] = Array.isArray(data) ? data
+      : data?.value ? data.value
+      : data?.data  ? data.data : [];
+    return list.map(r => ({
+      CenterCode: r.value ?? r.CenterCode ?? 0,
+      CenterName: r.label ?? r.CenterName ?? '',
+    }));
+  } catch {
+    return [];
+  }
 }
 
 /** SAVE new payment */

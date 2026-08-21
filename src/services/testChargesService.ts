@@ -239,14 +239,53 @@ export interface UpdateTestChargePayload extends SaveTestChargePayload {
 
 // ─── Centers ───────────────────────────────────────────────────────────────────
 
-/** POST /api/TestStatus/GetCenter */
+/** POST /api/CenterMaster/GetAllCenters (returns all registered centers/labs) */
 export async function getCenters(branchId: number = 1): Promise<CenterItem[]> {
   try {
+    const masterRes = await fetch(`${API_BASE_URL}/api/CenterMaster/GetAllCenters`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ BranchId: branchId }),
+    });
+    if (masterRes.ok) {
+      const data = await masterRes.json();
+      const rows = Array.isArray(data) ? data : (data?.value ?? data?.data ?? []);
+      if (rows.length > 0) {
+        return rows.map((r: any) => ({
+          CenterCode: String(r.dr_codeid ?? r.CenterCode ?? r.DoctorCode ?? ''),
+          CenterName: r.DoctorName ?? r.CenterName ?? r.DoctorCode ?? '',
+          address: r.address1 || r.city || '',
+          phone: r.DoctorPhoneno || '',
+        }));
+      }
+    }
+  } catch {}
+
+  try {
+    const dueRes = await fetch(`${API_BASE_URL}/api/DueReport/GetCenters`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ BranchId: branchId }),
+    });
+    if (dueRes.ok) {
+      const data = await dueRes.json();
+      const rows = Array.isArray(data) ? data : (data?.value ?? data?.data ?? []);
+      if (rows.length > 0) {
+        return rows.map((r: any) => ({
+          CenterCode: String(r.CenterCode ?? r.DoctorCode ?? ''),
+          CenterName: r.CenterName ?? r.DoctorName ?? '',
+        }));
+      }
+    }
+  } catch {}
+
+  try {
     const data = await postRaw<any>(`${API_BASE_URL}/api/TestStatus/GetCenter`, { BranchId: branchId });
-    if (Array.isArray(data)) return data;
-    if (data?.value && Array.isArray(data.value)) return data.value;
-    if (data?.data  && Array.isArray(data.data))  return data.data;
-    return [];
+    const rows = Array.isArray(data) ? data : (data?.value ?? data?.data ?? []);
+    return rows.map((r: any) => ({
+      CenterCode: String(r.CenterCode ?? ''),
+      CenterName: r.CenterName ?? '',
+    }));
   } catch { return []; }
 }
 

@@ -255,7 +255,15 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
   const [mobileMessage, setMobileMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    getCenters(1).then(d => setCenters(d)).catch(() => {});
+    getCenters(1).then(d => {
+      if (d && d.length > 0) {
+        setCenters(d);
+        if (!centerCode) {
+          const defaultCenter = d.find(c => c.CenterName.toLowerCase().includes('adc')) || d[0];
+          if (defaultCenter) setCenterCode(String(defaultCenter.CenterCode));
+        }
+      }
+    }).catch(() => {});
     getInitials().then(d => { if (d.length) setInitialsList(d); }).catch(() => {});
     // Load referring doctors from real API — always prepend "Self"
     getAllReferringDoctors(1).then(d => setDoctorsList(d)).catch(() => {});
