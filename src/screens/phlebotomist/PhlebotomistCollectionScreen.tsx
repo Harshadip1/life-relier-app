@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, A
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import BlinkingEmergencyBulb from '../../components/BlinkingEmergencyBulb';
 
 const T = { primary:'#0D9488', tealDark:'#0F766E', bg:'#F8FAFC', card:'#FFF', text:'#0F172A', sub:'#64748B', muted:'#94A3B8', border:'#E2E8F0', amber:'#F59E0B', green:'#10B981', blue:'#3B82F6' };
 
@@ -280,7 +281,7 @@ export default function PhlebotomistCollectionScreen() {
             </View>
           }
           renderItem={({ item }) => {
-            const isUrgent = item.Emergency === 'Y' || item.Emergency === '1' || item.Emergency === 'Yes';
+            const isUrgent = item.Emergency === 'Y' || item.Emergency === '1' || item.Emergency === 'Yes' || (item as any).Isemergency === true;
             const displayStatus = isUrgent && item.Status !== 'Collected' ? 'Urgent' : item.Status;
             const ss = STATUS_STYLE[displayStatus];
             
@@ -294,7 +295,10 @@ export default function PhlebotomistCollectionScreen() {
               <View style={s.card}>
                 <View style={s.cardHeader}>
                   <View>
-                    <Text style={s.name}>{item.PatientName}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={s.name}>{item.PatientName}</Text>
+                      {isUrgent && <BlinkingEmergencyBulb size={18} />}
+                    </View>
                     <Text style={s.pid}>PID: {item.PatRegID}</Text>
                     {item.BarcodeID && <Text style={s.pid}>Barcode: {item.BarcodeID}</Text>}
                   </View>

@@ -112,7 +112,7 @@ export default function PhlebotomistNavigator() {
       })}
     >
       <Tab.Screen name="Home"         component={HomeStack}               options={{ title: 'Home' }} />
-      <Tab.Screen name="SampleAccept" component={SampleAcceptStack}       options={{ title: 'Sample Accept' }} />
+      <Tab.Screen name="SampleAccept" component={SampleAcceptStack}       options={{ title: 'Collection' }} />
       <Tab.Screen name="FrontDesk"    component={FrontDeskStack}          options={{ title: 'Front Desk' }} />
       <Tab.Screen name="Settings"  component={PhlebotomistSettingsScreen} options={{ title: 'Settings'   }} />
     </Tab.Navigator>

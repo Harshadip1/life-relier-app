@@ -4,7 +4,8 @@ import {
   TextInput, ActivityIndicator, RefreshControl, Alert, Modal, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import BlinkingEmergencyBulb from '../../components/BlinkingEmergencyBulb';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../utils/constants';
@@ -86,7 +87,7 @@ export default function PhlebotomistHomeScreen({ navigation }: any) {
             Status:        r.Status      ?? 'Registered',
             Patregdate:    r.Patregdate  ?? '',
             BarcodeID:     r.BarcodeID   ?? '—',
-            Drname:        r.Drname      ?? '—',
+            Drname:        (r.Drname || r.RefDoctor || r.RefDr || r.DoctorName || r.OtherRefDoctor || 'Self').trim(),
             CenterName:    r.CenterName  ?? '—',
             IspheboAccept: r.IspheboAccept ?? 0,
             Isemergency:   r.Isemergency  ?? false,
@@ -261,9 +262,7 @@ export default function PhlebotomistHomeScreen({ navigation }: any) {
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={s.name}>{item.PatientName}</Text>
-                      {item.Isemergency && (
-                        <View style={s.urgentBadge}><Text style={s.urgentText}>URGENT</Text></View>
-                      )}
+                      {item.Isemergency && <BlinkingEmergencyBulb size={18} />}
                     </View>
                     <Text style={s.pid}>
                       PT{String(item.PatRegID).padStart(6,'0')}  •  Barcode: {item.BarcodeID}
@@ -330,7 +329,10 @@ export default function PhlebotomistHomeScreen({ navigation }: any) {
                     <Text style={[s.avatarText, { fontSize: 20 }]}>{selected.PatientName.charAt(0).toUpperCase()}</Text>
                   </View>
                   <View style={{ marginLeft: 14 }}>
-                    <Text style={{ fontSize: 17, fontWeight: '800', color: T.text }}>{selected.PatientName}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 17, fontWeight: '800', color: T.text }}>{selected.PatientName}</Text>
+                      {selected.Isemergency && <BlinkingEmergencyBulb size={18} />}
+                    </View>
                     <Text style={{ fontSize: 12, color: T.primary, fontWeight: '600', marginTop: 2 }}>
                       PT{String(selected.PatRegID).padStart(6,'0')}
                     </Text>
@@ -338,7 +340,7 @@ export default function PhlebotomistHomeScreen({ navigation }: any) {
                 </View>
                 {[
                   ['Barcode',   selected.BarcodeID],
-                  ['Doctor',    (selected.Drname ?? '—').trim()],
+                  ['Doctor',    ((selected.Drname && selected.Drname !== '—' ? selected.Drname : 'Self') ?? 'Self').trim()],
                   ['Center',    selected.CenterName],
                   ['Mobile',    selected.Patphoneno],
                   ['Reg Date',  fmtDate(selected.Patregdate)],

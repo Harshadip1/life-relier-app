@@ -49,7 +49,7 @@ export default function AppointmentListScreen({ navigation }: any) {
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState<string | null>(null);
-  const [testStatusMap, setTestStatusMap] = useState<Record<string, 'loading' | 'hasTests' | 'noTests'>>({});
+  const [testStatusMap, setTestStatusMap] = useState<Record<string, { state: 'loading' | 'hasTests' | 'noTests'; isCompleted: boolean }>>({});
 
   useEffect(() => {
     getDoctorDropdown(1).then(setDoctors).catch(() => {});
@@ -117,7 +117,7 @@ export default function AppointmentListScreen({ navigation }: any) {
 
     setTestStatusMap(prev => {
       const next = { ...prev };
-      newMobiles.forEach(m => { next[m] = 'loading'; });
+      newMobiles.forEach(m => { next[m] = { state: 'loading', isCompleted: false }; });
       return next;
     });
 
@@ -136,15 +136,24 @@ export default function AppointmentListScreen({ navigation }: any) {
           });
           const data = await res.json();
           const rows = Array.isArray(data) ? data : Array.isArray(data?.value) ? data.value : [];
-          return { mobile: m, status: rows.length > 0 ? 'hasTests' : 'noTests' } as const;
+          const hasTests = rows.length > 0;
+          const isCompleted = rows.some((r: any) => {
+            const st = String(r.Status || '').trim().toLowerCase();
+            return st === 'report ready' || st === 'completed' || st === 'done' || st === 'delivered';
+          });
+          return {
+            mobile: m,
+            state: (hasTests ? 'hasTests' : 'noTests') as 'hasTests' | 'noTests',
+            isCompleted,
+          };
         } catch {
-          return { mobile: m, status: 'noTests' } as const;
+          return { mobile: m, state: 'noTests' as const, isCompleted: false };
         }
       }));
 
       setTestStatusMap(prev => {
         const next = { ...prev };
-        results.forEach(r => { next[r.mobile] = r.status; });
+        results.forEach(r => { next[r.mobile] = { state: r.state, isCompleted: r.isCompleted }; });
         return next;
       });
     };
@@ -311,8 +320,16 @@ export default function AppointmentListScreen({ navigation }: any) {
                 const patientName = item.Name
                   || (item.FirstName ? `${item.FirstName} ${item.LastName ?? ''}`.trim() : '')
                   || '—';
-                const tStatus = testStatusMap[item.Mobile];
-                const isUnregistered = tStatus === 'noTests';
+                const tInfo = testStatusMap[item.Mobile];
+                const isUnregistered = tInfo?.state === 'noTests';
+                const apptStatus = String(item.Status || '').trim().toLowerCase();
+                const isTestCompleted = Boolean(
+                  tInfo?.isCompleted ||
+                  apptStatus === 'completed' ||
+                  apptStatus === 'done' ||
+                  apptStatus === 'report ready' ||
+                  apptStatus === 'test completed'
+                );
 
                 return (
                 <TouchableOpacity 
@@ -365,12 +382,14 @@ export default function AppointmentListScreen({ navigation }: any) {
                         {item.Status ?? (item.IsActive ? 'Active' : 'Done')}
                       </Text>
                     </View>
-                    <TouchableOpacity
-                      style={styles.deleteBtn}
-                      onPress={() => handleDelete(item)}
-                    >
-                      <Feather name="trash-2" size={12} color="#EF4444" />
-                    </TouchableOpacity>
+                    {!isTestCompleted && (
+                      <TouchableOpacity
+                        style={styles.deleteBtn}
+                        onPress={() => handleDelete(item)}
+                      >
+                        <Feather name="trash-2" size={12} color="#EF4444" />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </TouchableOpacity>
               ); })

@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import BlinkingEmergencyBulb from "../../components/BlinkingEmergencyBulb";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../../context/AuthContext";
 import { COLORS } from "../../utils/constants";
@@ -341,7 +342,10 @@ export default function BillingDeskScreen({ navigation }: any) {
                 <View style={s.cardTop}>
                   <View style={s.avatar}><Text style={s.avatarTxt}>{((item.Patname||item.PatientName)||"?").charAt(0).toUpperCase()}</Text></View>
                   <View style={{flex:1}}>
-                    <Text style={s.name}>{item.intial} {item.Patname}</Text>
+                    <View style={{flexDirection:"row", alignItems:"center", gap:6}}>
+                      <Text style={s.name}>{item.intial} {item.Patname}</Text>
+                      {item.Isemergency && <BlinkingEmergencyBulb size={18} />}
+                    </View>
                     <Text style={s.meta}>PT{String(item.PatRegID||item.PID).padStart(6,"0")}  {item.Patphoneno||"---"}</Text>
                     <Text style={s.meta}>{item.CenterName}  {fmtDate(item.Patregdate)}</Text>
                     <Text style={s.tests} numberOfLines={1}>{item.testname}</Text>

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator }     from '@react-navigation/stack';
@@ -91,10 +91,7 @@ function FrontDeskStack() {
       <Stack.Screen name="NewRegistration" component={NewRegistrationScreen} />
       <Stack.Screen name="PatientStatus"   component={PatientsScreen} />
       <Stack.Screen name="EditPatient"     component={EditPatientScreen} />
-      <Stack.Screen name="BillPayment"
-        component={PlaceholderScreen}
-        initialParams={{ title: 'Bill Payment', icon: 'cash-register' }}
-      />
+      <Stack.Screen name="BillPayment"     component={BillingDeskScreen} />
       <Stack.Screen name="HomeCollection"
         component={PlaceholderScreen}
         initialParams={{ title: 'Home Collection Booking', icon: 'home-city-outline' }}

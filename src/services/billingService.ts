@@ -40,6 +40,8 @@ export interface BillingPatient {
   ReceiptNumbers:  string;
   TotalRecords:    number;
   PaymentStatus:   string;
+  Isemergency?:    boolean;
+  [key: string]:   any;
 }
 
 export interface PatientBill {

@@ -8,6 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
+import { getEditPatientGrid } from '../../services/editPatientService';
+import BlinkingEmergencyBulb from '../../components/BlinkingEmergencyBulb';
 import { API_BASE_URL , COLORS} from '../../utils/constants';
 
 const T = {
@@ -104,7 +106,7 @@ async function fetchPatients(fromDate: Date, toDate: Date, status: string): Prom
         sex:               r.sex ?? '',
         Age:               r.Age ?? 0,
         MDY:               r.MDY ?? 'Year',
-        Drname:            r.Drname ?? '—',
+        Drname:            (r.Drname || r.RefDoctor || r.RefDr || r.DoctorName || r.OtherRefDoctor || 'Self').trim(),
         CenterName:        r.CenterName ?? '—',
         Status:            r.Status ?? 'Registered',
         Patregdate:        r.Patregdate ?? '',
@@ -148,7 +150,10 @@ function PatientCard({ item, onView, onEdit }: {
           <Text style={s.avatarText}>{(item.PatientName ?? '?').charAt(0).toUpperCase()}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={s.name} numberOfLines={1}>{item.PatientName}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[s.name, { flexShrink: 1 }]} numberOfLines={1}>{item.PatientName}</Text>
+            {item.Isemergency && <BlinkingEmergencyBulb size={18} />}
+          </View>
           <Text style={s.pid}>
             PID: <Text style={{ color: COLORS.primary }}>PT{String(item.PatRegID).padStart(6,'0')}</Text>
             {'  ·  '}{item.sex || '—'}, {item.Age ?? '—'} {item.MDY ?? 'Year'}
@@ -187,7 +192,7 @@ function PatientCard({ item, onView, onEdit }: {
         <View style={s.billingItem}>
           <Text style={s.billingLabel}>Doctor</Text>
           <Text style={[s.billingValue, { fontWeight: '700' }]} numberOfLines={1}>
-            {(() => { const d = (item.Drname ?? '').trim(); return d && d !== '—' ? d : 'Application'; })()}
+            {item.Drname && item.Drname !== '—' ? item.Drname : 'Self'}
           </Text>
         </View>
       </View>
@@ -234,7 +239,10 @@ function DetailSheet({ item, onClose, onEdit }: {
               <Text style={[s.avatarText, { fontSize: 20 }]}>{(item.PatientName ?? '?').charAt(0).toUpperCase()}</Text>
             </View>
             <View style={{ marginLeft: 14, flex: 1 }}>
-              <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.textPrimary }}>{item.PatientName}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.textPrimary }}>{item.PatientName}</Text>
+                {item.Isemergency && <BlinkingEmergencyBulb size={18} />}
+              </View>
               <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: '600', marginTop: 2 }}>
                 PT{String(item.PatRegID).padStart(6,'0')}
               </Text>
@@ -248,7 +256,7 @@ function DetailSheet({ item, onClose, onEdit }: {
             ['Gender',    `${item.sex || '—'}, ${item.Age} ${item.MDY}`],
             ['Mobile',    item.Patphoneno || '—'],
             ['Center',    item.CenterName || '—'],
-            ['Doctor',    (item.Drname ?? '—').trim()],
+            ['Doctor',    (item.Drname && item.Drname !== '—' ? item.Drname : 'Self').trim()],
             ['Reg Date',  fmtDate(item.Patregdate)],
             ['Tests',     item.tests.join(', ') || '—'],
             ['Charges',   `₹${(item.TestCharges ?? 0).toFixed(2)}`],

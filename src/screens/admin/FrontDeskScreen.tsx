@@ -7,7 +7,19 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
-const MODULES = [
+interface ModuleItem {
+  title:   string;
+  sub:     string;
+  icon:    string;
+  fam:     string;
+  color:   string;
+  bg:      string;
+  border:  string;
+  screen:  string;
+  future?: boolean;
+}
+
+const MODULES: ModuleItem[] = [
   {
     title:   'New Registration',
     sub:     'Register walk-in patients & create IDs',
@@ -37,17 +49,6 @@ const MODULES = [
     bg:      '#F0FDF4',
     border:  '#BBF7D0',
     screen:  'BillPayment',
-  },
-  {
-    title:   'Sample Collection',
-    sub:     'Schedule sample collection visits',
-    icon:    'eyedropper-variant',
-    fam:     'material',
-    color:   '#0891B2',
-    bg:      '#ECFEFF',
-    border:  '#A5F3FC',
-    screen:  'SampleCollection',
-    future:  true,
   },
 ];
 

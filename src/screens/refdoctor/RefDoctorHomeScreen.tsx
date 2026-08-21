@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import BlinkingEmergencyBulb from '../../components/BlinkingEmergencyBulb';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../utils/constants';
@@ -52,8 +53,10 @@ function statusColor(s: string) {
 interface PatientRow {
   PID: number; PatRegID: number; PatientName: string;
   Patphoneno: string; Status: string; Patregdate: string;
-  TestCharges: number; PaidAmount: number;
-  Drname: string; tests: string[];
+  TestCharges: number;  PaidAmount: number;
+  Drname: string;
+  Isemergency?: boolean;
+  tests: string[];
 }
 
 export default function RefDoctorHomeScreen() {
@@ -95,7 +98,8 @@ export default function RefDoctorHomeScreen() {
             Patregdate:   r.Patregdate  ?? '',
             TestCharges:  r.TestCharges ?? 0,
             PaidAmount:   r.PaidAmount  ?? 0,
-            Drname:       r.Drname      ?? '—',
+            Drname:       (r.Drname || r.RefDoctor || r.RefDr || r.DoctorName || r.OtherRefDoctor || 'Self').trim(),
+            Isemergency:  r.Isemergency ?? false,
             tests:        [r.MainTestName],
           });
         }
@@ -190,7 +194,10 @@ export default function RefDoctorHomeScreen() {
                     <Text style={s.avatarText}>{item.PatientName.charAt(0).toUpperCase()}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.name}>{item.PatientName}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={s.name}>{item.PatientName}</Text>
+                      {item.Isemergency && <BlinkingEmergencyBulb size={18} />}
+                    </View>
                     <Text style={s.pid}>
                       PID: <Text style={{ color: T.primary }}>PT{String(item.PatRegID).padStart(6,'0')}</Text>
                     </Text>
@@ -246,7 +253,10 @@ export default function RefDoctorHomeScreen() {
                   <Text style={[s.avatarText, { fontSize: 20 }]}>{selected.PatientName.charAt(0).toUpperCase()}</Text>
                 </View>
                 <View style={{ marginLeft: 14, flex: 1 }}>
-                  <Text style={{ fontSize: 17, fontWeight: '800', color: T.text }}>{selected.PatientName}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={{ fontSize: 17, fontWeight: '800', color: T.text }}>{selected.PatientName}</Text>
+                    {selected.Isemergency && <BlinkingEmergencyBulb size={18} />}
+                  </View>
                   <Text style={{ fontSize: 12, color: T.primary, fontWeight: '600', marginTop: 2 }}>
                     PT{String(selected.PatRegID).padStart(6,'0')}
                   </Text>

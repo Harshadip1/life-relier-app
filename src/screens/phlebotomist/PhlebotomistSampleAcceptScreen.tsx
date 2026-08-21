@@ -13,21 +13,14 @@ const T = {
 const ITEMS = [
   {
     label: 'Sample Collection',
-    sub:   'Collect samples from patients',
+    sub:   'Collect & accept samples from patients',
     icon:  'test-tube',
     color: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD',
     screen: 'PhleboSampleCollection',
   },
   {
-    label: 'Accession',
-    sub:   'Accept samples in lab',
-    icon:  'barcode-scan',
-    color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE',
-    screen: 'PhleboAccession',
-  },
-  {
     label: 'Phlebo Status',
-    sub:   'View patient status',
+    sub:   'View patient collection status',
     icon:  'clipboard-pulse-outline',
     color: '#B45309', bg: '#FFFBEB', border: '#FDE68A',
     screen: 'PhleboStatusScreen',
@@ -46,8 +39,8 @@ export default function PhlebotomistSampleAcceptScreen({ navigation }: any) {
           <MaterialCommunityIcons name="test-tube" size={22} color="#FFF" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>Sample Accept</Text>
-          <Text style={s.headerSub}>Manage sample collection & accession</Text>
+          <Text style={s.headerTitle}>Sample Collection</Text>
+          <Text style={s.headerSub}>Manage sample collection & status</Text>
         </View>
       </View>
 

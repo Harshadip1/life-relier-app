@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import BlinkingEmergencyBulb from '../../components/BlinkingEmergencyBulb';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -54,27 +55,40 @@ function SectionBar({ icon, title }: { icon: string; title: string }) {
   );
 }
 
-function Field({ children }: { children: React.ReactNode }) {
-  return <View style={s.fieldWrap}>{children}</View>;
+function Field({ children, style }: { children: React.ReactNode; style?: any }) {
+  return <View style={[s.fieldWrap, style]}>{children}</View>;
 }
 
-function InlineSelect({ value, options, onSelect, placeholder }: any) {
+function InlineSelect({ value, options, onSelect, placeholder, minWidth }: any) {
   const [open, setOpen] = useState(false);
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ position: 'relative', zIndex: open ? 9999 : 1 }}>
       <TouchableOpacity style={s.inlineSelect} onPress={() => setOpen(!open)} activeOpacity={0.8}>
         <Text style={[s.inlineSelectText, !value && { color: COLORS.textMuted }]} numberOfLines={1}>
           {value || placeholder}
         </Text>
-        <Feather name="chevron-down" size={14} color={COLORS.textSecondary} />
+        <Feather name={open ? "chevron-up" : "chevron-down"} size={14} color={COLORS.textSecondary} />
       </TouchableOpacity>
       {open && (
-        <View style={s.ddMenu}>
-          {options.map((o: string) => (
-            <TouchableOpacity key={o} style={s.ddItem} onPress={() => { onSelect(o); setOpen(false); }}>
-              <Text style={s.ddItemText}>{o}</Text>
-            </TouchableOpacity>
-          ))}
+        <View style={[s.ddMenu, minWidth ? { minWidth } : null]}>
+          <ScrollView
+            style={{ maxHeight: 200 }}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={true}
+            keyboardShouldPersistTaps="handled"
+          >
+            {options.map((o: string) => (
+              <TouchableOpacity
+                key={o}
+                style={[s.ddItem, value === o && { backgroundColor: '#F0FDFA' }]}
+                onPress={() => { onSelect(o); setOpen(false); }}
+              >
+                <Text style={[s.ddItemText, value === o && { color: COLORS.primary, fontWeight: '700' }]}>
+                  {o}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
       )}
     </View>
@@ -154,7 +168,7 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
   const [rateType,     setRateType]     = useState('MRP1');
   const [centerCode,   setCenterCode]   = useState('');
   const [centers,      setCenters]      = useState<CenterItem[]>([]);
-  const [refDoctor,    setRefDoctor]    = useState('');
+  const [refDoctor,    setRefDoctor]    = useState('Self');
   const [initial,      setInitial]      = useState('');
   const [patName,      setPatName]      = useState('');
   const [gender,       setGender]       = useState('');
@@ -197,6 +211,7 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
   const [discType,     setDiscType]     = useState('Amt');
   const [discAmt,      setDiscAmt]      = useState('0');
   const [paidAmt,      setPaidAmt]      = useState('0.00');
+  const [userEditedPaid, setUserEditedPaid] = useState(false);
   const [remark,       setRemark]       = useState('');
   const [emergency,    setEmergency]    = useState(false);
 
@@ -209,6 +224,13 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
     ? grossTotal - (grossTotal * disc / 100)
     : grossTotal - disc;
   const balance     = netTotal - (parseFloat(paidAmt) || 0);
+
+  // Auto-sync paid amount with net total by default, allowing user override
+  useEffect(() => {
+    if (!userEditedPaid) {
+      setPaidAmt(netTotal > 0 ? netTotal.toFixed(2) : '0.00');
+    }
+  }, [netTotal, userEditedPaid]);
   const [prescriptionFile, setPrescriptionFile] = useState<string | null>(null);
   const [photoFile,        setPhotoFile]        = useState<string | null>(null);
 
@@ -288,7 +310,8 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
       const { getPatient } = await import('../../services/editPatientService');
       const full = await getPatient(p.PPID);
       if (full) {
-        if (full.Initial || full.intial || full.Intial) setInitial(full.Initial ?? full.intial ?? full.Intial);
+        const fetchedInitial = full.Initial || full.intial || full.Intial;
+        if (fetchedInitial) setInitial(fetchedInitial);
         const fetchedGender = full.Gender ?? full.sex ?? full.Sex ?? full.gender ?? null;
         if (fetchedGender) setGender(fetchedGender);
         if (full.Age) setAge(String(full.Age));
@@ -567,7 +590,7 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
     setTestSearch(''); setAddedTests([]); setAddedTestIds({});
     setTestResults([]); setShowTestDrop(false);
     setPayType('Cash'); setOtherCharge('0'); setOtherRemark('');
-    setDiscType('Amt'); setDiscAmt('0'); setPaidAmt('0.00');
+    setDiscType('Amt'); setDiscAmt('0'); setPaidAmt('0.00'); setUserEditedPaid(false);
     setRemark(''); setEmergency(false);
     setPrescriptionFile(null); setPhotoFile(null);
     setRegNo('—');
@@ -601,8 +624,9 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
     setRegistering(true);
     try {
       // Resolve referring doctor code (dr_codeid) from the loaded list
+      const docName = (refDoctor || 'Self').trim();
       const doctorMatch = doctorsList.find(
-        d => d.DoctorName?.toLowerCase() === refDoctor.toLowerCase()
+        d => d.DoctorName?.trim().toLowerCase() === docName.toLowerCase()
       );
       const doctorCode =
         doctorMatch?.dr_codeid ??
@@ -610,9 +634,9 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
         doctorMatch?.ReferringDoctorId ??
         doctorMatch?.ReferingDoctorId ??
         doctorMatch?.DoctorId ??
-        null;
-      // Also send the doctor name in both field names the backend accepts
-      const resolvedDoctorName = doctorMatch?.DoctorName ?? refDoctor.trim();
+        (docName.toLowerCase() === 'self' ? 7 : null);
+      // Also send the doctor name in all field names the backend accepts
+      const resolvedDoctorName = doctorMatch?.DoctorName?.trim() || docName;
 
       // Format DOB as ISO date string (YYYY-MM-DD)
       const dobISO = dob ? `${dob.getFullYear()}-${String(dob.getMonth() + 1).padStart(2, '0')}-${String(dob.getDate()).padStart(2, '0')}` : null;
@@ -647,8 +671,12 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
         DateOfBirth:       dobISO,
         // ── Referring doctor ───────────────────────────────────────────────
         RefDoctor:         resolvedDoctorName,
-        DoctorCode:        doctorCode ? Number(doctorCode) : null,
+        RefDr:             resolvedDoctorName,
+        DoctorCode:        doctorCode ? Number(doctorCode) : 7,
         Drname:            resolvedDoctorName,
+        DoctorName:        resolvedDoctorName,
+        ReferingDoctor:    resolvedDoctorName,
+        OtherRefDoctor:    null,
         // ── Patient card / hospital ────────────────────────────────────────
         PatientCardNo:     patCardNo.trim(),
         PatientCardExpNo:  cardExp.trim(),
@@ -776,7 +804,7 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
 
 
               {/* Initial | Name — with autocomplete */}
-              <Field>
+              <Field style={{ zIndex: 100 }}>
                 <View style={s.rowWrap}>
                   <View style={{ width: 90 }}>
                     <InlineSelect
@@ -832,12 +860,12 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
               </Field>
 
               {/* Gender — auto-set from Initial, can still be changed */}
-              <Field>
+              <Field style={{ zIndex: 90 }}>
                 <InlineSelect value={gender} options={GENDERS} onSelect={setGender} placeholder="Gender" />
               </Field>
 
               {/* DOB — auto-fills Age */}
-              <Field>
+              <Field style={{ zIndex: 80 }}>
                 <View style={s.rowWrap}>
                   <Text style={[s.inputLabel, { marginRight: 8, alignSelf: 'center', width: 30 }]}>DOB</Text>
                   <View style={{ flex: 1 }}><DateField value={dob} onChange={handleDobChange} /></View>
@@ -845,7 +873,7 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
               </Field>
 
               {/* Age Type | Age — auto-filled from DOB, editable */}
-              <Field>
+              <Field style={{ zIndex: 70 }}>
                 <View style={s.rowWrap}>
                   <View style={{ width: 90 }}>
                     <InlineSelect value={ageType} options={AGE_TYPES} onSelect={setAgeType} placeholder="Year" />
@@ -863,7 +891,7 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
               </Field>
 
               {/* Mobile */}
-              <Field>
+              <Field style={{ zIndex: 60 }}>
                 <View style={[s.input, { flexDirection: 'row', alignItems: 'center', height: 44, paddingHorizontal: 12 }]}>
                   <Feather name="phone" size={15} color={COLORS.textSecondary} style={{ marginRight: 8 }} />
                   <TextInput
@@ -896,7 +924,7 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
               </Field>
 
               {/* Ref Doctor */}
-              <Field>
+              <Field style={{ zIndex: 50 }}>
                 <InlineSelect value={refDoctor}
                   options={['Self', ...doctorsList
                     .filter(d => d.DoctorName?.toLowerCase() !== 'self')
@@ -905,7 +933,7 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
               </Field>
 
               {/* Center */}
-              <Field>
+              <Field style={{ zIndex: 40 }}>
                 <InlineSelect
                   value={centers.find(c => String(c.CenterCode) === centerCode)?.CenterName || ''}
                   options={centers.map(c => c.CenterName)}
@@ -918,7 +946,7 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
               </Field>
 
               {/* Address */}
-              <Field>
+              <Field style={{ zIndex: 30 }}>
                 <TextInput
                   style={[s.input, { height: 72, textAlignVertical: 'top', paddingTop: 8 }]}
                   placeholder="Enter Address"
@@ -1111,7 +1139,16 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
               <View style={s.rowWrap2}>
                 <View style={{ flex: 1, marginRight: 8 }}>
                   <Text style={s.fieldLabel}>Paid Amt <Text style={{ color: COLORS.danger }}>*</Text></Text>
-                  <TextInput style={s.input} value={paidAmt} onChangeText={setPaidAmt} keyboardType="numeric" placeholderTextColor={COLORS.textMuted} />
+                  <TextInput
+                    style={s.input}
+                    value={paidAmt}
+                    onChangeText={val => {
+                      setUserEditedPaid(true);
+                      setPaidAmt(val);
+                    }}
+                    keyboardType="numeric"
+                    placeholderTextColor={COLORS.textMuted}
+                  />
                 </View>
                 <View style={{ flex: 1.5 }}>
                   <Text style={s.fieldLabel}>Balance <Text style={{ color: COLORS.danger }}>*</Text></Text>
@@ -1128,6 +1165,7 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
                 <Checkbox value={emergency} onToggle={() => setEmergency(!emergency)} label="Emergency" />
+                {emergency && <BlinkingEmergencyBulb size={18} style={{ marginLeft: 8 }} />}
               </View>
               <View style={s.uploadRow}>
                 <Text style={s.uploadLabel}>Upload Prescription</Text>
@@ -1207,8 +1245,8 @@ const s = StyleSheet.create({
   sectionBar:  { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primaryDark, paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
   sectionBarText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
   formCard:    { backgroundColor: COLORS.background, paddingHorizontal: 12, paddingTop: 8, marginBottom: 2 },
-  fieldWrap:   { marginBottom: 8 },
-  rowWrap:     { flexDirection: 'row', alignItems: 'center' },
+  fieldWrap:   { marginBottom: 8, position: 'relative' },
+  rowWrap:     { flexDirection: 'row', alignItems: 'flex-start' },
   rowWrap2:    { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
   input:       { borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 6, paddingHorizontal: 10, height: 40, fontSize: 13, color: COLORS.textPrimary, backgroundColor: COLORS.background },
   inputHighlight: { borderColor: COLORS.primary, borderWidth: 1.5 },
@@ -1218,7 +1256,7 @@ const s = StyleSheet.create({
   datePickerText: { flex: 1, fontSize: 13, color: COLORS.textPrimary },
   inlineSelect: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 6, paddingHorizontal: 8, height: 40, backgroundColor: COLORS.background },
   inlineSelectText: { flex: 1, fontSize: 13, color: COLORS.textPrimary },
-  ddMenu:      { borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 6, backgroundColor: COLORS.background, zIndex: 999, elevation: 8, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 6 },
+  ddMenu:      { position: 'absolute', top: 42, left: 0, right: 0, minWidth: '100%', borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 6, backgroundColor: COLORS.background, zIndex: 99999, elevation: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 },
   ddItem:      { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F8FAFC' },
   ddItemText:  { fontSize: 13, color: COLORS.textPrimary },
   checkRow:    { flexDirection: 'row', alignItems: 'center', marginRight: 16 },

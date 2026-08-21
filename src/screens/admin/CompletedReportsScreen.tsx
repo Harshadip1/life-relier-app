@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import BlinkingEmergencyBulb from '../../components/BlinkingEmergencyBulb';
 import { useFocusEffect } from '@react-navigation/native';
 import { API_BASE_URL , COLORS} from '../../utils/constants';
 
@@ -32,6 +33,7 @@ interface PatientRow {
   BarcodeID:    string;
   TestCharges:  number;
   PaidAmount:   number;
+  Isemergency?: boolean;
 }
 
 function formatDate(iso: string) {
@@ -179,7 +181,10 @@ export default function CompletedReportsScreen({ navigation }: any) {
                     <Text style={styles.avatarText}>{r.PatientName.charAt(0).toUpperCase()}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.patientName}>{r.PatientName}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.patientName}>{r.PatientName}</Text>
+                      {r.Isemergency && <BlinkingEmergencyBulb size={18} />}
+                    </View>
                     <Text style={styles.patientId}>
                       PT{String(r.PatRegID).padStart(6,'0')}  •  {formatDate(r.Patregdate)}
                     </Text>

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import BlinkingEmergencyBulb from '../../components/BlinkingEmergencyBulb';
 import * as ImagePicker from 'expo-image-picker';
 import { API_BASE_URL , COLORS} from '../../utils/constants';
 import { getPatient, updatePatient, updatePatientFiles, PatientDetail, UpdatePatientPayload } from '../../services/editPatientService';
@@ -380,12 +381,12 @@ export default function EditPatientScreen({ navigation, route }: any) {
                   </TouchableOpacity>
                 </Field>
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, position: 'relative', zIndex: genderOpen ? 9999 : 1 }}>
                 <Field label="Gender" required>
                   <TouchableOpacity style={s.inputRow} activeOpacity={0.8}
                     onPress={() => setGenderOpen(o => !o)}>
                     <Text style={[s.input, !gender && { color: COLORS.textMuted }]}>{gender || 'Select'}</Text>
-                    <Feather name="chevron-down" size={13} color={COLORS.textSecondary} />
+                    <Feather name={genderOpen ? "chevron-up" : "chevron-down"} size={13} color={COLORS.textSecondary} />
                   </TouchableOpacity>
                   {genderOpen && (
                     <View style={s.ddMenu}>
@@ -566,11 +567,7 @@ export default function EditPatientScreen({ navigation, route }: any) {
                 {isEmergency && <Feather name="check" size={12} color="#FFF" />}
               </View>
               <Text style={s.toggleLabel}>Emergency</Text>
-              {isEmergency && (
-                <View style={s.urgentBadge}>
-                  <Text style={s.urgentText}>URGENT</Text>
-                </View>
-              )}
+              {isEmergency && <BlinkingEmergencyBulb size={18} style={{ marginLeft: 6 }} />}
             </TouchableOpacity>
           </View>
 
@@ -721,11 +718,15 @@ const s = StyleSheet.create({
 
   // Gender dropdown
   ddMenu:     {
+    position: 'absolute',
+    top: 64,
+    left: 0,
+    right: 0,
     borderWidth: 1, borderColor: COLORS.cardBorder, borderRadius: 8,
-    backgroundColor: COLORS.background, marginTop: 2,
-    elevation: 6, shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 6,
-    zIndex: 999,
+    backgroundColor: COLORS.background,
+    elevation: 20, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8,
+    zIndex: 99999,
   },
   ddItem:     {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

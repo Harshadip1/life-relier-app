@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import BlinkingEmergencyBulb from '../../components/BlinkingEmergencyBulb';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../utils/constants';
@@ -50,6 +51,7 @@ export interface PatientRow {
   PaidAmount?: number;
   OutstandingAmount?: number;
   DiscountAmount?: number;
+  Isemergency?: boolean;
   tests: string[];
 }
 
@@ -195,7 +197,10 @@ export default function RefPatientsScreen({ navigation }: any) {
                 <View style={s.cardTop}>
                   <View style={s.avatar}><Text style={s.avatarTxt}>{item.PatientName.charAt(0).toUpperCase()}</Text></View>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.name}>{item.PatientName}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={s.name}>{item.PatientName}</Text>
+                      {item.Isemergency && <BlinkingEmergencyBulb size={18} />}
+                    </View>
                     <Text style={s.pid}>PID: PT{String(item.PatRegID).padStart(6,'0')}  •  {fmtDate(item.Patregdate)}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
                       <Feather name="phone" size={11} color={T.muted} /><Text style={s.meta}>{item.Patphoneno}</Text>
@@ -269,9 +274,12 @@ export default function RefPatientsScreen({ navigation }: any) {
                   <View style={s.sheetAvatar}>
                     <Text style={s.sheetAvatarTxt}>{selected.PatientName.charAt(0).toUpperCase()}</Text>
                   </View>
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={s.sheetName}>{selected.PatientName}</Text>
-                    <Text style={s.sheetPid}>PID: PT{String(selected.PatRegID).padStart(6,'0')}</Text>
+                  <View style={{ marginLeft: 14 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 17, fontWeight: '800', color: T.text }}>{selected.PatientName}</Text>
+                      {selected.Isemergency && <BlinkingEmergencyBulb size={18} />}
+                    </View>
+                    <Text style={{ fontSize: 12, color: T.primary, fontWeight: '600', marginTop: 2 }}>PID: PT{String(selected.PatRegID).padStart(6,'0')}</Text>
                     <Text style={s.sheetSub}>{selected.Age} yrs  •  {selected.Gender || 'Male'}  •  {selected.Patphoneno}</Text>
                   </View>
                 </View>

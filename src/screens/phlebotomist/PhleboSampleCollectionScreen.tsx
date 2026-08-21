@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import BlinkingEmergencyBulb from '../../components/BlinkingEmergencyBulb';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, API_BASE_URL } from '../../utils/constants';
 
@@ -45,11 +46,12 @@ export default function PhleboSampleCollectionScreen({ navigation }: any) {
             gender: r.sex ?? 'Unknown',
             age: r.Age ? `${r.Age} ${r.MDY || 'Year'}` : '—',
             center: r.CenterName ?? '—',
-            doc: r.Drname ?? '—',
+            doc: (r.Drname || r.RefDoctor || r.RefDr || r.DoctorName || r.OtherRefDoctor || 'Self').trim(),
             test: r.MainTestName ?? '',
             type: 'Whole Blood', // API doesn't seem to return sample type reliably
             barcode: r.BarcodeID ?? '',
-            isPhleboAccept: r.IspheboAccept ?? 0
+            isPhleboAccept: r.IspheboAccept ?? 0,
+            isEmergency: r.Isemergency ?? false,
           });
         }
       }
@@ -75,7 +77,10 @@ export default function PhleboSampleCollectionScreen({ navigation }: any) {
       <View style={s.row}>
         <View style={s.avatar}><Text style={s.avatarText}>{item.name.charAt(0)}</Text></View>
         <View style={{ flex: 1 }}>
-          <Text style={s.name}>{item.name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={s.name}>{item.name}</Text>
+            {item.isEmergency && <BlinkingEmergencyBulb size={16} />}
+          </View>
           <Text style={s.subInfo}>{item.gender}, {item.age} • Dr. {item.doc}</Text>
         </View>
       </View>

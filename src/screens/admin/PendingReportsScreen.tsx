@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import BlinkingEmergencyBulb from '../../components/BlinkingEmergencyBulb';
 import { useFocusEffect } from '@react-navigation/native';
 import { API_BASE_URL , COLORS} from '../../utils/constants';
 
@@ -41,39 +42,6 @@ function fmtDate(iso: string) {
   catch { return iso; }
 }
 
-// Blinking lightbulb component for urgent reports
-function BlinkingUrgentIcon() {
-  const [blinkAnim] = useState(new Animated.Value(1));
-
-  useEffect(() => {
-    // Create a blinking animation that loops forever
-    const blinkSequence = Animated.sequence([
-      Animated.timing(blinkAnim, {
-        toValue: 0.2,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(blinkAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]);
-
-    Animated.loop(blinkSequence).start();
-  }, [blinkAnim]);
-
-  return (
-    <Animated.View style={{ opacity: blinkAnim }}>
-      <MaterialCommunityIcons 
-        name="lightbulb-on" 
-        size={20} 
-        color={THEME.danger} 
-      />
-    </Animated.View>
-  );
-}
-
 async function fetchReports(status: string): Promise<ReportRow[]> {
   const today = new Date().toISOString().split('T')[0];
   const apiStatus = status === 'All' ? 'All'
@@ -93,7 +61,7 @@ async function fetchReports(status: string): Promise<ReportRow[]> {
   const map = new Map<number, ReportRow>();
   for (const r of rows) {
     if (map.has(r.PID)) { map.get(r.PID)!.tests.push(r.MainTestName); }
-    else { map.set(r.PID, { ...r, tests: [r.MainTestName] }); }
+    else { map.set(r.PID, { ...r, Drname: (r.Drname || r.RefDoctor || r.RefDr || r.DoctorName || r.OtherRefDoctor || 'Self').trim(), tests: [r.MainTestName] }); }
   }
   return Array.from(map.values());
 }
@@ -259,7 +227,7 @@ export default function PendingReportsScreen({ navigation }: any) {
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         <Text style={styles.name}>{item.PatientName}</Text>
-                        {item.Isemergency && <BlinkingUrgentIcon />}
+                        {item.Isemergency && <BlinkingEmergencyBulb size={18} />}
                       </View>
                       <Text style={styles.pid}>
                         PT{String(item.PatRegID).padStart(6,'0')}  •  {fmtDate(item.Patregdate)}
@@ -290,7 +258,7 @@ export default function PendingReportsScreen({ navigation }: any) {
                     </View>
                     <View style={styles.billingItem}>
                       <Text style={styles.billingLabel}>Doctor</Text>
-                      <Text style={styles.billingValue} numberOfLines={1}>{(item.Drname ?? '—').trim()}</Text>
+                      <Text style={styles.billingValue} numberOfLines={1}>{(item.Drname && item.Drname !== '—' ? item.Drname : 'Self').trim()}</Text>
                     </View>
                   </View>
 

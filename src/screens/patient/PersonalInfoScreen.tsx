@@ -107,12 +107,6 @@ export default function PersonalInfoScreen({ navigation }: any) {
       const updatePayload = {
         PID: patientData?.PID || user?.id,
         BranchId: patientData?.BranchId || 1,
-        Patname: name.trim(),
-        sex: gender || 'Male',
-        Age: age ? parseInt(age, 10) : 0,
-        MobileNo: phone.replace(/\D/g, ''),
-        Pataddress: address.trim(),
-        Email: email.trim(),
         // Include other required fields from existing patient data
         ...patientData,
         // Override with updated values

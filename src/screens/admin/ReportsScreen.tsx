@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import BlinkingEmergencyBulb from '../../components/BlinkingEmergencyBulb';
 import { useFocusEffect } from '@react-navigation/native';
 import { API_BASE_URL , COLORS} from '../../utils/constants';
 
@@ -43,7 +44,7 @@ async function fetchTestStatus(status: string): Promise<TestRow[]> {
     if (map.has(r.PID)) {
       map.get(r.PID)!.tests.push(r.MainTestName);
     } else {
-      map.set(r.PID, { ...r, tests: [r.MainTestName] });
+      map.set(r.PID, { ...r, Drname: (r.Drname || r.RefDoctor || r.RefDr || r.DoctorName || r.OtherRefDoctor || 'Self').trim(), tests: [r.MainTestName] });
     }
   }
   return Array.from(map.values());
@@ -144,11 +145,7 @@ export default function ReportsScreen({ navigation }: any) {
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={styles.patientName}>{item.PatientName}</Text>
-                      {item.Isemergency && (
-                        <View style={styles.urgentBadge}>
-                          <Text style={styles.urgentText}>URGENT</Text>
-                        </View>
-                      )}
+                      {item.Isemergency && <BlinkingEmergencyBulb size={18} />}
                     </View>
                     <Text style={styles.patientId}>
                       PT{String(item.PatRegID).padStart(6,'0')}  •  Barcode: {item.BarcodeID}
@@ -168,7 +165,7 @@ export default function ReportsScreen({ navigation }: any) {
                 <View style={styles.cardFooter}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Feather name="user-check" size={12} color={THEME.textSecondary} />
-                    <Text style={styles.metaText}>{item.Drname?.trim() || '—'}</Text>
+                    <Text style={styles.metaText}>{item.Drname && item.Drname !== '—' ? item.Drname.trim() : 'Self'}</Text>
                     <Text style={[styles.metaText, { marginLeft: 10, color: THEME.primary, fontWeight: '700' }]}>
                       ₹{(item.PaidAmount ?? 0).toFixed(0)}
                     </Text>

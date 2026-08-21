@@ -9,10 +9,9 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { API_BASE_URL } from '../../utils/constants';
 
-// Workflow steps — stat values injected at runtime
+// Workflow cards — stat values injected at runtime
 const WORKFLOW_META = [
   {
-    step: 1,
     title:  'Sample Collection',
     sub:    'Collect patient samples in the lab or at home',
     icon:   'eyedropper-variant',
@@ -24,21 +23,8 @@ const WORKFLOW_META = [
     statKey:   'samplePending',
   },
   {
-    step: 2,
-    title:  'Accession',
-    sub:    'Receive, label and route samples to departments',
-    icon:   'line-scan',
-    color:  '#6D28D9',
-    bg:     '#F5F3FF',
-    border: '#DDD6FE',
-    screen: 'Accession',
-    statLabel: 'Awaiting',
-    statKey:   'sampleCollected',
-  },
-  {
-    step: 3,
     title:  'Result Entry',
-    sub:    'Enter test results for accessioned samples',
+    sub:    'Enter test results for collected samples',
     icon:   'clipboard-edit-outline',
     color:  '#C2410C',
     bg:     '#FFF7ED',
@@ -48,7 +34,6 @@ const WORKFLOW_META = [
     statKey:   'processing',
   },
   {
-    step: 4,
     title:  'Pending Reports',
     sub:    'Review entered results before approval',
     icon:   'file-clock-outline',
@@ -60,7 +45,6 @@ const WORKFLOW_META = [
     statKey:   'pendingReports',
   },
   {
-    step: 5,
     title:  'Report Approval',
     sub:    'Pathologist approval before releasing reports',
     icon:   'check-decagram-outline',
@@ -182,57 +166,40 @@ export default function LaboratoryScreen({ navigation }: any) {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         {/* ── Workflow label ── */}
-        <Text style={styles.workflowLabel}>
-          <MaterialCommunityIcons name="arrow-down-circle-outline" size={14} color={COLORS.primary} />
-          {'  '}Lab Workflow
-        </Text>
+        <Text style={styles.workflowLabel}>Lab Workflow</Text>
 
-        {WORKFLOW_META.map((w, i) => (
-          <View key={w.step}>
-            <TouchableOpacity
-              style={[styles.workCard, { borderColor: w.border, borderLeftColor: w.color }]}
-              onPress={() => navigation.navigate(w.screen)}
-              activeOpacity={0.75}
-            >
-              {/* Step badge */}
-              <View style={[styles.stepBadge, { backgroundColor: w.color }]}>
-                <Text style={styles.stepNum}>{w.step}</Text>
-              </View>
+        {WORKFLOW_META.map((w) => (
+          <TouchableOpacity
+            key={w.title}
+            style={[styles.workCard, { borderColor: w.border, borderLeftColor: w.color }]}
+            onPress={() => navigation.navigate(w.screen)}
+            activeOpacity={0.75}
+          >
+            {/* Icon */}
+            <View style={[styles.workIconBox, { backgroundColor: w.bg }]}>
+              <MaterialCommunityIcons name={w.icon as any} size={26} color={w.color} />
+            </View>
 
-              {/* Icon */}
-              <View style={[styles.workIconBox, { backgroundColor: w.bg }]}>
-                <MaterialCommunityIcons name={w.icon as any} size={26} color={w.color} />
-              </View>
+            {/* Text */}
+            <View style={styles.workText}>
+              <Text style={styles.workTitle}>{w.title}</Text>
+              <Text style={styles.workSub}>{w.sub}</Text>
+            </View>
 
-              {/* Text */}
-              <View style={styles.workText}>
-                <Text style={styles.workTitle}>{w.title}</Text>
-                <Text style={styles.workSub}>{w.sub}</Text>
+            {/* Stat chip */}
+            <View style={styles.workRight}>
+              <View style={[styles.statChip, { backgroundColor: w.bg }]}>
+                {loading
+                  ? <ActivityIndicator size="small" color={w.color} />
+                  : <Text style={[styles.statChipValue, { color: w.color }]}>
+                      {stats ? String(stats[w.statKey as keyof LabStats]) : '—'}
+                    </Text>
+                }
+                <Text style={[styles.statChipLabel, { color: w.color }]}>{w.statLabel}</Text>
               </View>
-
-              {/* Stat chip */}
-              <View style={styles.workRight}>
-                <View style={[styles.statChip, { backgroundColor: w.bg }]}>
-                  {loading
-                    ? <ActivityIndicator size="small" color={w.color} />
-                    : <Text style={[styles.statChipValue, { color: w.color }]}>
-                        {stats ? String(stats[w.statKey as keyof LabStats]) : '—'}
-                      </Text>
-                  }
-                  <Text style={[styles.statChipLabel, { color: w.color }]}>{w.statLabel}</Text>
-                </View>
-                <Feather name="chevron-right" size={18} color={COLORS.textMuted} style={{ marginTop: 6 }} />
-              </View>
-            </TouchableOpacity>
-
-            {/* connector arrow between cards */}
-            {i < WORKFLOW_META.length - 1 && (
-              <View style={styles.connector}>
-                <View style={styles.connectorLine} />
-                <MaterialCommunityIcons name="chevron-down" size={16} color={COLORS.textMuted} style={styles.connectorArrow} />
-              </View>
-            )}
-          </View>
+              <Feather name="chevron-right" size={18} color={COLORS.textMuted} style={{ marginTop: 6 }} />
+            </View>
+          </TouchableOpacity>
         ))}
 
         <View style={{ height: 110 }} />
@@ -263,12 +230,7 @@ const styles = StyleSheet.create({
   pillLabel: { fontSize: 10, fontWeight: '600', marginTop: 2 },
   scroll: { padding: 16 },
   workflowLabel: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 16 },
-  connector: { alignItems: 'center', height: 28 },
-  connectorLine: { width: 2, flex: 1, backgroundColor: COLORS.divider },
-  connectorArrow: { marginTop: -4 },
-  workCard: { backgroundColor: COLORS.card, borderRadius: 14, borderWidth: 1, borderLeftWidth: 4, flexDirection: 'row', alignItems: 'center', padding: 14, elevation: 1, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, position: 'relative', overflow: 'visible' },
-  stepBadge: { position: 'absolute', top: -8, left: 12, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  stepNum: { fontSize: 10, fontWeight: '900', color: '#FFF' },
+  workCard: { backgroundColor: COLORS.card, borderRadius: 14, borderWidth: 1, borderLeftWidth: 4, flexDirection: 'row', alignItems: 'center', padding: 14, marginBottom: 12, elevation: 1, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, position: 'relative', overflow: 'visible' },
   workIconBox: { width: 50, height: 50, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   workText: { flex: 1 },
   workTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 3 },

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import BlinkingEmergencyBulb from '../../components/BlinkingEmergencyBulb';
 import { useFocusEffect } from '@react-navigation/native';
 import { API_BASE_URL , COLORS} from '../../utils/constants';
 
@@ -47,7 +48,7 @@ async function fetchSamples(): Promise<SampleRow[]> {
     if (map.has(r.PID)) {
       map.get(r.PID)!.tests.push(r.MainTestName);
     } else {
-      map.set(r.PID, { ...r, tests: [r.MainTestName] });
+      map.set(r.PID, { ...r, Drname: (r.Drname || r.RefDoctor || r.RefDr || r.DoctorName || r.OtherRefDoctor || 'Self').trim(), tests: [r.MainTestName] });
     }
   }
   return Array.from(map.values());
@@ -87,7 +88,7 @@ export default function SamplesScreen({ navigation }: any) {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color={THEME.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Accession</Text>
+        <Text style={styles.headerTitle}>Sample Collection</Text>
         <TouchableOpacity style={styles.iconBtn} onPress={() => load(true)}>
           <Feather name="refresh-cw" size={20} color={THEME.primary} />
         </TouchableOpacity>
@@ -173,10 +174,12 @@ export default function SamplesScreen({ navigation }: any) {
                       <Text style={styles.avatarText}>{item.PatientName.charAt(0).toUpperCase()}</Text>
                     </View>
                     <View style={styles.patientInfo}>
-                      <Text style={styles.patientName}>{item.PatientName}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={styles.patientName}>{item.PatientName}</Text>
+                        {item.Isemergency && <BlinkingEmergencyBulb size={18} />}
+                      </View>
                       <Text style={styles.patientId}>
                         PT{String(item.PatRegID).padStart(6,'0')}
-                        {item.Isemergency ? '  🚨 URGENT' : ''}
                       </Text>
                       <View style={styles.cardMetaRow}>
                         <Feather name="phone" size={12} color={THEME.textSecondary} />
@@ -205,7 +208,7 @@ export default function SamplesScreen({ navigation }: any) {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.idLabel}>Doctor</Text>
-                      <Text style={styles.idValue}>{item.Drname?.trim() || '—'}</Text>
+                      <Text style={styles.idValue}>{item.Drname && item.Drname !== '—' ? item.Drname.trim() : 'Self'}</Text>
                     </View>
                     <MaterialCommunityIcons name="barcode" size={28} color={THEME.textSecondary} />
                   </View>
