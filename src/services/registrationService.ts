@@ -48,6 +48,7 @@ export interface RegisterPatientPayload {
   // ── Referring doctor ──────────────────────────────────────────────────────
   RefDoctor:         string;
   DoctorCode:        number | null;   // dr_codeid from referingDoctorService
+  Drname?:           string;          // doctor name alias — some backends read this field
   // ── Patient card / hospital ───────────────────────────────────────────────
   PatientCardNo:     string;
   PatientCardExpNo:  string;

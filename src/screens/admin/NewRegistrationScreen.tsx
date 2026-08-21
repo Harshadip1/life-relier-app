@@ -33,7 +33,7 @@ const T = {
   green:      '#15803D',
 };
 
-const INITIALS      = ['Mr','Mrs','Ms','Dr','Master'];
+const INITIALS      = ['Mr','Mrs','Ms','Dr','Master','Miss'];
 const GENDERS       = ['Male','Female','Other'];
 const AGE_TYPES     = ['Year','Month','Day'];
 const PAYMENT_TYPES = ['Cash','Cheque','Card','Online'];
@@ -236,7 +236,7 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
     getCenters(1).then(d => setCenters(d)).catch(() => {});
     getInitials().then(d => { if (d.length) setInitialsList(d); }).catch(() => {});
     // Load referring doctors from real API — always prepend "Self"
-    getAllReferringDoctors(1).then(d => setDoctorsList(d)).catch(() => {});;
+    getAllReferringDoctors(1).then(d => setDoctorsList(d)).catch(() => {});
     // Load all test names once for local filtering
     getTestNames(1).then(d => setAllTests(d)).catch(() => {});
     // Load test charges to build name->price map
@@ -276,6 +276,11 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
     if (p.DateOfBirth) {
       const d = new Date(p.DateOfBirth);
       if (!isNaN(d.getTime())) setDob(d);
+    } else if (p.Age != null) {
+      // Reverse-calculate birth year from age when no exact DOB is available
+      const currentYear = new Date().getFullYear();
+      const birthYear = currentYear - Number(p.Age);
+      setDob(new Date(birthYear, 0, 1)); // Jan 1st of estimated birth year
     }
     
     // Fetch full patient details since GetGrid doesn't provide them
@@ -283,10 +288,18 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
       const { getPatient } = await import('../../services/editPatientService');
       const full = await getPatient(p.PPID);
       if (full) {
-        if (full.Initial) setInitial(full.Initial);
-        if (full.Gender) setGender(full.Gender);
+        if (full.Initial || full.intial || full.Intial) setInitial(full.Initial ?? full.intial ?? full.Intial);
+        const fetchedGender = full.Gender ?? full.sex ?? full.Sex ?? full.gender ?? null;
+        if (fetchedGender) setGender(fetchedGender);
         if (full.Age) setAge(String(full.Age));
-        if (full.DOB) setDob(new Date(full.DOB));
+        if (full.DOB) {
+          setDob(new Date(full.DOB));
+        } else if (full.Age) {
+          // Reverse-calculate birth year from age when no exact DOB is available
+          const currentYear = new Date().getFullYear();
+          const birthYear = currentYear - Number(full.Age);
+          setDob(new Date(birthYear, 0, 1));
+        }
         if (full.Email) setEmail(full.Email);
         if (full.Address || full.Pataddress) setAddress(full.Address || full.Pataddress || '');
       }
@@ -485,11 +498,12 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
     setShowTestDrop(false);
   };
 
-  // Auto-set gender based on initial
+  // Auto-set gender based on initial (new patients only — fetched patients preserve their saved gender)
   const handleInitialSelect = (val: string) => {
     setInitial(val);
-    if (['Mr', 'Master', 'Dr'].includes(val))         setGender('Male');
-    else if (['Mrs', 'Ms'].includes(val))             setGender('Female');
+    const v = val.trim().toLowerCase();
+    if (['mr', 'master', 'dr'].includes(v))              setGender('Male');
+    else if (['mrs', 'ms', 'miss'].includes(v))          setGender('Female');
   };
 
   // Auto-calculate age from DOB
@@ -590,7 +604,15 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
       const doctorMatch = doctorsList.find(
         d => d.DoctorName?.toLowerCase() === refDoctor.toLowerCase()
       );
-      const doctorCode = doctorMatch?.dr_codeid ?? doctorMatch?.ReferingDoctorId ?? null;
+      const doctorCode =
+        doctorMatch?.dr_codeid ??
+        doctorMatch?.DoctorCode ??
+        doctorMatch?.ReferringDoctorId ??
+        doctorMatch?.ReferingDoctorId ??
+        doctorMatch?.DoctorId ??
+        null;
+      // Also send the doctor name in both field names the backend accepts
+      const resolvedDoctorName = doctorMatch?.DoctorName ?? refDoctor.trim();
 
       // Format DOB as ISO date string (YYYY-MM-DD)
       const dobISO = dob ? `${dob.getFullYear()}-${String(dob.getMonth() + 1).padStart(2, '0')}-${String(dob.getDate()).padStart(2, '0')}` : null;
@@ -624,8 +646,9 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
         EmailID:           email.trim(),
         DateOfBirth:       dobISO,
         // ── Referring doctor ───────────────────────────────────────────────
-        RefDoctor:         refDoctor.trim(),
-        DoctorCode:        doctorCode,
+        RefDoctor:         resolvedDoctorName,
+        DoctorCode:        doctorCode ? Number(doctorCode) : null,
+        Drname:            resolvedDoctorName,
         // ── Patient card / hospital ────────────────────────────────────────
         PatientCardNo:     patCardNo.trim(),
         PatientCardExpNo:  cardExp.trim(),
@@ -758,7 +781,7 @@ export default function NewRegistrationScreen({ navigation, route }: any) {
                   <View style={{ width: 90 }}>
                     <InlineSelect
                       value={initial}
-                      options={initialsList.length ? initialsList.map(i => i.Name) : INITIALS}
+                      options={INITIALS}
                       onSelect={handleInitialSelect}
                       placeholder="Initial"
                     />

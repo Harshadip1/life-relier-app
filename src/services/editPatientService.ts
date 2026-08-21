@@ -127,6 +127,9 @@ export interface PatientDetail {
   MobileNo:     string;
   Age:          number | string;
   Gender:       string;
+  sex?:         string;
+  Sex?:         string;
+  gender?:      string;
   DOB:          string | null;
   CenterName:   string;
   Patregdate:   string;
@@ -139,6 +142,8 @@ export interface PatientDetail {
   Notes?:       string;
   Remark?:      string;
   Initial?:     string;
+  intial?:      string;
+  Intial?:      string;
   Patphoneno?:  string;
   [key: string]: any;
 }

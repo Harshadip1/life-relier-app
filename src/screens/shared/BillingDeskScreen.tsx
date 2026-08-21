@@ -140,13 +140,16 @@ export default function BillingDeskScreen({ navigation }: any) {
   };
 
   const selCharges  = selected?.Charges  ?? 0;
-  const selPaid     = selected?.Paid     ?? 0;
   const selDiscount = selected?.Discount ?? 0;
-  const selBalance  = selected?.Balance  ?? 0;
+  // Always derive balance from the latest fetched bill data when available,
+  // so partial payments are reflected correctly without needing a full list reload.
+  const selPaid = bill?.Patient?.[0]?.Paid ?? selected?.Paid ?? 0;
+  const selBalance = bill?.Patient?.[0]?.Balance ?? selected?.Balance ?? 0;
 
   const handleSavePayment = async () => {
     if (!selected) return;
     if (!amtPaid||Number(amtPaid)<=0) { Alert.alert("Required","Enter amount paid"); return; }
+    if (!editPay && Number(amtPaid) > selBalance) { Alert.alert("Invalid Amount", `Payment cannot exceed the current balance of ${fmtAmt(selBalance)}`); return; }
     setSaving(true);
     try {
       if (editPay) {
@@ -155,7 +158,22 @@ export default function BillingDeskScreen({ navigation }: any) {
         await savePayment({ PID:selected.PID, BranchId:1, AmtPaid:Number(amtPaid), DisAmt:Number(disAmt), DiscountRemark:remark, OtherCharges:Number(otherAmt), OtherChargeRemark:"", PaymentType:payType, Username:user?.name||"admin", TransDate:new Date().toISOString(), Remark:remark, BankName:"", ChqNo:"", ChqDate:null, CardNo:"", CardName:"", CardType:"", CardTransactionID:"", OnlineTransType:"", OnlineTransID:"" });
       }
       Alert.alert("Success", editPay?"Payment updated":"Payment saved");
-      setShowPay(false); setEditPay(null); openBill(selected); load();
+      setShowPay(false); setEditPay(null);
+      // Reload both the bill detail (for accurate selBalance) and the full list
+      setBillLoad(true);
+      try {
+        const [freshBill, freshList] = await Promise.all([
+          getPatientBill(selected.PID),
+          getBillingPatients({ BranchId:1, FromDate:fromDate, ToDate:toDate2, PaymentStatus:statusFilter, PatientName:searchName, MobileNo:searchMobile, PatRegID:searchRegNo ? Number(searchRegNo) : 0, CenterCode:searchCenter }),
+        ]);
+        setBill(freshBill);
+        if (freshBill?.Receipts?.length) setSelectedReceipt(freshBill.Receipts[0].ReceiptNo);
+        setPatients(freshList);
+        // Update selected with the freshest patient record so the card shows correct Due
+        const updatedPatient = freshList.find(p => p.PID === selected.PID);
+        if (updatedPatient) setSelected(updatedPatient);
+      } catch { /* ignore refresh errors — payment already saved */ }
+      finally { setBillLoad(false); }
     } catch (e:any) { Alert.alert("Error", e.message||"Failed"); }
     finally { setSaving(false); }
   };
@@ -165,12 +183,25 @@ export default function BillingDeskScreen({ navigation }: any) {
     setSaving(true);
     try {
       await saveRefund({ PID:selected.PID, BranchId:1, Username:user?.name||"admin", PaymentType:payType, TransDate:new Date().toISOString(), Remark:remark||"Refund", BankName:null, ChqNo:null, ChqDate:null, CardNo:null, CardName:null, CardType:null, CardTransactionID:null, OnlineTransType:null, OnlineTransID:null });
-      Alert.alert("Success","Refund processed"); setShowRefund(false); openBill(selected); load();
+      Alert.alert("Success","Refund processed"); setShowRefund(false);
+      setBillLoad(true);
+      try {
+        const [freshBill, freshList] = await Promise.all([
+          getPatientBill(selected.PID),
+          getBillingPatients({ BranchId:1, FromDate:fromDate, ToDate:toDate2, PaymentStatus:statusFilter, PatientName:searchName, MobileNo:searchMobile, PatRegID:searchRegNo ? Number(searchRegNo) : 0, CenterCode:searchCenter }),
+        ]);
+        setBill(freshBill);
+        if (freshBill?.Receipts?.length) setSelectedReceipt(freshBill.Receipts[0].ReceiptNo);
+        setPatients(freshList);
+        const updatedPatient = freshList.find(p => p.PID === selected.PID);
+        if (updatedPatient) setSelected(updatedPatient);
+      } catch { /* ignore */ }
+      finally { setBillLoad(false); }
     } catch (e:any) { Alert.alert("Error",e.message||"Failed"); }
     finally { setSaving(false); }
   };
 
-  const openAddPayment = () => { setAmtPaid(""); setDisAmt("0"); setOtherAmt("0"); setPayType("Cash"); setRemark(""); setEditPay(null); setShowPay(true); };
+  const openAddPayment = () => { setAmtPaid(selBalance > 0 ? String(selBalance) : ""); setDisAmt("0"); setOtherAmt("0"); setPayType("Cash"); setRemark(""); setEditPay(null); setShowPay(true); };
   const openEditPayment = (p:ReceiptRecord) => { setAmtPaid(String(p.AmtPaid)); setDisAmt(String(p.DisAmt??0)); setOtherAmt(String(p.OtherCharges??0)); setPayType(p.PaymentType); setRemark(p.DiscountRemark??""); setEditPay(p); setShowPay(true); };
 
   return (
@@ -334,7 +365,7 @@ export default function BillingDeskScreen({ navigation }: any) {
           <Text style={s.sheetTitle}>{editPay?"Edit Receipt":"Add Payment"}</Text>
           <Text style={s.sheetSub}>{selected?.intial} {selected?.Patname}  Balance: {fmtAmt(selBalance)}</Text>
           <ScrollView style={{marginTop:16}}>
-            <Text style={s.fldLabel}>Amount Paid *</Text>
+            <Text style={s.fldLabel}>Balance Amount *</Text>
             <TextInput style={s.input} value={amtPaid} onChangeText={setAmtPaid} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textMuted}/>
             <Text style={s.fldLabel}>Discount</Text>
             <TextInput style={s.input} value={disAmt} onChangeText={setDisAmt} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textMuted}/>
@@ -347,7 +378,7 @@ export default function BillingDeskScreen({ navigation }: any) {
             <View style={{flexDirection:"row",gap:10,marginTop:16}}>
               <TouchableOpacity style={[s.actionBtn,{flex:1,backgroundColor:COLORS.textSecondary}]} onPress={()=>setShowPay(false)}><Text style={s.actionBtnTxt}>Cancel</Text></TouchableOpacity>
               <TouchableOpacity style={[s.actionBtn,{flex:2,backgroundColor:COLORS.primary}]} onPress={handleSavePayment} disabled={saving}>
-                {saving?<ActivityIndicator color="#FFF" size="small"/>:<Text style={s.actionBtnTxt}>{editPay?"Update":"Save"}</Text>}
+                {saving?<ActivityIndicator color="#FFF" size="small"/>:<Text style={s.actionBtnTxt}>{editPay?"Update":"Pay Bill"}</Text>}
               </TouchableOpacity>
             </View>
           </ScrollView>

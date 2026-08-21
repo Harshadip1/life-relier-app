@@ -318,7 +318,7 @@ export default function DashboardScreen({ navigation }: any) {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
           <AlertCard
             number={statsLoading ? null : (criticalResults !== null ? String(criticalResults) : '—')}
-            label="Critical Results"
+            label="Panic Results"
             icon="alert-circle-outline"
             color="#7C3AED" bg="#F5F3FF" border="#DDD6FE"
             onPress={() => navigation.navigate('PendingReports')}

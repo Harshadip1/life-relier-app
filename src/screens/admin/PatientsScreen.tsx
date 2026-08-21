@@ -187,7 +187,7 @@ function PatientCard({ item, onView, onEdit }: {
         <View style={s.billingItem}>
           <Text style={s.billingLabel}>Doctor</Text>
           <Text style={[s.billingValue, { fontWeight: '700' }]} numberOfLines={1}>
-            {(item.Drname ?? '—').trim()}
+            {(() => { const d = (item.Drname ?? '').trim(); return d && d !== '—' ? d : 'Application'; })()}
           </Text>
         </View>
       </View>
@@ -275,10 +275,10 @@ function DetailSheet({ item, onClose, onEdit }: {
 export default function PatientsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
 
-  // Date state — wide range by default to show all records
+  // Date state — defaults to first day of the current month → today
   const today      = new Date();
-  const yearStart  = new Date('2024-01-01');
-  const [fromDate, setFromDate]   = useState<Date>(yearStart);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const [fromDate, setFromDate]   = useState<Date>(monthStart);
   const [toDate,   setToDate]     = useState<Date>(today);
   const [showFrom, setShowFrom]       = useState(false);
   const [showTo,   setShowTo]         = useState(false);
