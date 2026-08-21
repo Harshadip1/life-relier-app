@@ -182,6 +182,7 @@ export default function DashboardScreen({ navigation }: any) {
     try {
       // Today's Revenue — same API & logic as CompletedReportsScreen (Today filter)
       // Uses today → today, Status: 'All', sums PaidAmount
+      // IMPORTANT: Group by PID first to avoid counting the same payment multiple times
       const revRes = await fetch(`${API_BASE_URL}/api/TestStatus/GetPatientTestStatus`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -196,7 +197,17 @@ export default function DashboardScreen({ navigation }: any) {
       });
       const revData = await revRes.json();
       const revRows: any[] = Array.isArray(revData) ? revData : (revData?.value ?? []);
-      const total = revRows.reduce((sum: number, r: any) => sum + (r.PaidAmount ?? 0), 0);
+      
+      // Group by PID to avoid duplicate counting (each patient may have multiple test records)
+      const revMap = new Map<number, any>();
+      for (const r of revRows) {
+        if (!revMap.has(r.PID)) {
+          revMap.set(r.PID, r);
+        }
+      }
+      
+      // Sum PaidAmount from unique patients only
+      const total = Array.from(revMap.values()).reduce((sum: number, r: any) => sum + (r.PaidAmount ?? 0), 0);
       setTodayRevenue(total);
     } catch {
       setTodayRevenue(null);

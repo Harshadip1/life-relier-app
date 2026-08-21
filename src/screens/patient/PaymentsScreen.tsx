@@ -101,11 +101,31 @@ export default function PaymentsScreen({ navigation, route }: any) {
           PT{String(item.PatRegID).padStart(6, '0')}  •  Barcode: {item.BarcodeID}
         </Text>
         {item.OutstandingAmount > 0 && (
-          <Text style={styles.dueText}>Due: ₹{(item.OutstandingAmount ?? 0).toFixed(0)}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={styles.dueText}>Due: ₹{(item.OutstandingAmount ?? 0).toFixed(0)}</Text>
+            <TouchableOpacity
+              style={styles.payNowBtn}
+              onPress={() => handlePayNow(item)}
+            >
+              <MaterialCommunityIcons name="credit-card-outline" size={14} color="#FFF" />
+              <Text style={styles.payNowText}>Pay Now</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     </View>
   );
+
+  const handlePayNow = (item: BillingRow) => {
+    navigation.navigate('PaymentGateway', {
+      PID: item.PID,
+      PatRegID: item.PatRegID,
+      amount: item.OutstandingAmount,
+      patientName: item.PatientName || user?.name || 'Patient',
+      billNo: String(item.PatRegID).padStart(6, '0'),
+      BranchId: 1,
+    });
+  };
 
   return (
     <SafeAreaView style={styles.root}>
@@ -183,4 +203,6 @@ const styles = StyleSheet.create({
   emptySub:   { fontSize: 12, color: COLORS.textMuted, marginTop: 4, textAlign: 'center', paddingHorizontal: 24 },
   retryBtn:   { flexDirection: 'row', alignItems: 'center', marginTop: 16, borderWidth: 1.5, borderColor: COLORS.primary, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 7 },
   retryTxt:   { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+  payNowBtn:  { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5, gap: 4 },
+  payNowText: { fontSize: 11, fontWeight: '700', color: '#FFF' },
 });

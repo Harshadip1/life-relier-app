@@ -12,6 +12,8 @@ import PersonalInfoScreen from '../screens/patient/PersonalInfoScreen';
 import MyBookingsScreen from '../screens/patient/MyBookingsScreen';
 import BookingTestsScreen from '../screens/patient/BookingTests';
 import PaymentsScreen from '../screens/patient/PaymentsScreen';
+import PaymentGatewayScreen from '../screens/patient/PaymentGatewayScreen';
+import PaymentSuccessScreen from '../screens/patient/PaymentSuccessScreen';
 import ReportsScreen from '../screens/patient/ReportsScreen';
 import ScheduleCollectionScreen from '../screens/patient/ScheduleCollectionScreen';
 import BookAppointmentScreen from '../screens/patient/BookAppointmentScreen';
@@ -30,6 +32,8 @@ function HomeStack() {
       <Stack.Screen name="BookingTests" component={BookingTestsScreen} />
       <Stack.Screen name="ScheduleCollection" component={ScheduleCollectionScreen} />
       <Stack.Screen name="Payments" component={PaymentsScreen} />
+      <Stack.Screen name="PaymentGateway" component={PaymentGatewayScreen} />
+      <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
       <Stack.Screen name="BookAppointment" component={BookAppointmentScreen} />
     </Stack.Navigator>
   );
@@ -55,6 +59,8 @@ function ProfileStack() {
       <Stack.Screen name="BookingTests" component={BookingTestsScreen} />
       <Stack.Screen name="ScheduleCollection" component={ScheduleCollectionScreen} />
       <Stack.Screen name="Payments" component={PaymentsScreen} />
+      <Stack.Screen name="PaymentGateway" component={PaymentGatewayScreen} />
+      <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
     </Stack.Navigator>
   );
 }

@@ -25,7 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const QUICK_ACTIONS = [
   { id: 'reports', icon: 'file-document-plus', label: 'View\nReports', color: '#0D9488', bg: '#E0F2F1' },
-  { id: 'book', icon: 'flask', label: 'Book\nTest', color: '#16A34A', bg: '#DCFCE7' },
+  { id: 'book', icon: 'calendar-check', label: 'Book\nAppointment', color: '#16A34A', bg: '#DCFCE7' },
   { id: 'pay', icon: 'credit-card', label: 'Pay\nOnline', color: '#EF4444', bg: '#FEE2E2' },
   { id: 'contact', icon: 'phone', label: 'Contact\nLab', color: '#8B5CF6', bg: '#EDE9FE' },
 ];
@@ -180,9 +180,8 @@ export default function HomeScreen() {
     if (actionId === 'reports') {
       navigation.navigate('Reports');
     } else if (actionId === 'book') {
-      
-      navigation.navigate('MyBookings');
-      
+      // Navigate to Book Appointment (simplified flow)
+      navigation.navigate('BookAppointment');
     } else if (actionId === 'pay') {
       if (outstandingBalance === 0) {
         Alert.alert('No Balance Due', 'Your outstanding balance is already ₹0. Thank you!');
